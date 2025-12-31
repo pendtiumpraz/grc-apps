@@ -1,0 +1,367 @@
+'use client'
+
+import React, { useEffect, useState } from 'react'
+import Sidebar from '@/components/dashboard/Sidebar'
+import TopNav from '@/components/dashboard/TopNav'
+import { Card } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Search, FileText, AlertTriangle, CheckCircle, TrendingUp, Plus, Filter, Download } from 'lucide-react'
+import { useRegOpsGapAnalysisStore } from '@/stores/useRegOpsGapAnalysisStore'
+
+interface ComplianceGap {
+  id: number
+  regulation: string
+  requirement: string
+  currentStatus: string
+  gapStatus: 'critical' | 'high' | 'medium' | 'low'
+  riskLevel: number
+  recommendation: string
+  priority: number
+  lastAssessed: string
+}
+
+export default function ComplianceGapAnalysis() {
+  const [searchTerm, setSearchTerm] = useState('')
+  const [filterStatus, setFilterStatus] = useState('all')
+  const [selectedGap, setSelectedGap] = useState<ComplianceGap | null>(null)
+  
+  const { gaps, loading, error, fetchGaps, createGap, updateGap, deleteGap, getStats } = useRegOpsGapAnalysisStore()
+
+  useEffect(() => {
+    fetchGaps()
+    getStats()
+  }, [])
+
+  const getGapStatusColor = (status: string) => {
+    switch (status) {
+      case 'critical': return 'text-red-400 bg-red-500/20 border-red-500/30'
+      case 'high': return 'text-orange-400 bg-orange-500/20 border-orange-500/30'
+      case 'medium': return 'text-yellow-400 bg-yellow-500/20 border-yellow-500/30'
+      case 'low': return 'text-green-400 bg-green-500/20 border-green-500/30'
+      default: return 'text-gray-400 bg-gray-500/20 border-gray-500/30'
+    }
+  }
+
+  const filteredGaps = gaps.filter(gap => {
+    const matchesSearch = gap.regulation.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         gap.requirement.toLowerCase().includes(searchTerm.toLowerCase())
+    const matchesFilter = filterStatus === 'all' || gap.gapStatus === filterStatus
+    return matchesSearch && matchesFilter
+  })
+
+  const handleViewGap = (gap: ComplianceGap) => {
+    setSelectedGap(gap)
+  }
+
+  const handleCreateGap = () => {
+    const newGap = {
+      regulation: 'New Regulation',
+      requirement: 'New Requirement',
+      currentStatus: 'Not Assessed',
+      gapStatus: 'medium' as 'low' | 'medium' | 'high' | 'critical',
+      riskLevel: 5,
+      recommendation: 'To be determined',
+      priority: 2,
+      lastAssessed: new Date().toISOString().split('T')[0],
+    }
+    createGap(newGap)
+  }
+
+  const handleUpdateGap = (gap: ComplianceGap) => {
+    updateGap(gap.id, { currentStatus: 'In Progress' })
+  }
+
+  const handleDeleteGap = (id: number) => {
+    if (confirm('Are you sure you want to delete this gap?')) {
+      deleteGap(id)
+    }
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-[#0a0e1a] flex items-center justify-center">
+        <div className="text-red-400 text-lg">Error: {error}</div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="min-h-screen bg-[#0a0e1a] flex">
+      <Sidebar />
+      <div className="flex-1 flex flex-col overflow-hidden">
+        <TopNav />
+        <main className="flex-1 overflow-y-auto">
+          <div className="max-w-7xl mx-auto px-6 py-6">
+            {/* Header */}
+            <div className="mb-8">
+              <h1 className="text-3xl font-bold text-white mb-2">Compliance Gap Analysis</h1>
+              <p className="text-gray-400">
+                Identifikasi dan analisis kesenjangan kepatuhan terhadap regulasi
+              </p>
+            </div>
+
+            {/* Stats */}
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+              <Card className="bg-gray-900 border-gray-700">
+                <div className="p-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-gray-400 text-sm">Critical Gaps</p>
+                      <p className="text-2xl font-bold text-red-400 mt-1">{gaps.filter(g => g.gapStatus === 'critical').length}</p>
+                    </div>
+                    <div className="p-3 bg-red-500/20 rounded-lg">
+                      <AlertTriangle className="w-6 h-6 text-red-400" />
+                    </div>
+                  </div>
+                </div>
+              </Card>
+
+              <Card className="bg-gray-900 border-gray-700">
+                <div className="p-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-gray-400 text-sm">High Priority</p>
+                      <p className="text-2xl font-bold text-orange-400 mt-1">{gaps.filter(g => g.gapStatus === 'high').length}</p>
+                    </div>
+                    <div className="p-3 bg-orange-500/20 rounded-lg">
+                      <TrendingUp className="w-6 h-6 text-orange-400" />
+                    </div>
+                  </div>
+                </div>
+              </Card>
+
+              <Card className="bg-gray-900 border-gray-700">
+                <div className="p-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-gray-400 text-sm">Medium Priority</p>
+                      <p className="text-2xl font-bold text-yellow-400 mt-1">{gaps.filter(g => g.gapStatus === 'medium').length}</p>
+                    </div>
+                    <div className="p-3 bg-yellow-500/20 rounded-lg">
+                      <FileText className="w-6 h-6 text-yellow-400" />
+                    </div>
+                  </div>
+                </div>
+              </Card>
+
+              <Card className="bg-gray-900 border-gray-700">
+                <div className="p-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-gray-400 text-sm">Compliant</p>
+                      <p className="text-2xl font-bold text-green-400 mt-1">{gaps.filter(g => g.gapStatus === 'low').length}</p>
+                    </div>
+                    <div className="p-3 bg-green-500/20 rounded-lg">
+                      <CheckCircle className="w-6 h-6 text-green-400" />
+                    </div>
+                  </div>
+                </div>
+              </Card>
+            </div>
+
+            {/* Filters */}
+            <div className="mb-8">
+              <Card className="bg-gray-900 border-gray-700">
+                <div className="p-4">
+                  <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
+                    <div className="flex flex-col md:flex-row gap-4 flex-1">
+                      <div className="relative flex-1">
+                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                        <Input
+                          type="text"
+                          placeholder="Search gaps..."
+                          value={searchTerm}
+                          onChange={(e) => setSearchTerm(e.target.value)}
+                          className="pl-10 bg-gray-800 border-gray-700 text-white placeholder-gray-400"
+                        />
+                      </div>
+                      <select
+                        value={filterStatus}
+                        onChange={(e) => setFilterStatus(e.target.value)}
+                        className="bg-gray-800 border border-gray-700 text-white rounded-md px-3 py-2"
+                      >
+                        <option value="all">All Status</option>
+                        <option value="critical">Critical</option>
+                        <option value="high">High</option>
+                        <option value="medium">Medium</option>
+                        <option value="low">Low</option>
+                      </select>
+                    </div>
+                    <div className="flex gap-2">
+                      <Button 
+                        onClick={handleCreateGap}
+                        disabled={loading}
+                        className="bg-cyan-600 hover:bg-cyan-700 text-white disabled:opacity-50"
+                      >
+                        <Plus className="w-4 h-4 mr-2" />
+                        New Assessment
+                      </Button>
+                      <Button className="bg-gray-700 hover:bg-gray-600 text-white">
+                        <Download className="w-4 h-4 mr-2" />
+                        Export
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              </Card>
+            </div>
+
+            {/* Gap List */}
+            <div className="mb-8">
+              {loading ? (
+                <Card className="bg-gray-900 border-gray-700">
+                  <div className="flex items-center justify-center py-12">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-cyan-400"></div>
+                  </div>
+                </Card>
+              ) : (
+                <Card className="bg-gray-900 border-gray-700">
+                  <div className="overflow-x-auto">
+                    <table className="w-full">
+                      <thead>
+                        <tr className="border-b border-gray-700">
+                          <th className="text-left p-4 text-gray-400 font-medium">Regulation</th>
+                          <th className="text-left p-4 text-gray-400 font-medium">Requirement</th>
+                          <th className="text-left p-4 text-gray-400 font-medium">Current Status</th>
+                          <th className="text-left p-4 text-gray-400 font-medium">Gap Status</th>
+                          <th className="text-left p-4 text-gray-400 font-medium">Risk Level</th>
+                          <th className="text-left p-4 text-gray-400 font-medium">Priority</th>
+                          <th className="text-right p-4 text-gray-400 font-medium">Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {filteredGaps.map((gap) => (
+                          <tr key={gap.id} className="border-b border-gray-800 hover:bg-gray-800/50">
+                            <td className="p-4 text-white font-medium">{gap.regulation}</td>
+                            <td className="p-4 text-white">{gap.requirement}</td>
+                            <td className="p-4 text-gray-300">{gap.currentStatus}</td>
+                            <td className="p-4">
+                              <span className={`px-2 py-1 rounded-full text-xs font-medium border ${getGapStatusColor(gap.gapStatus)}`}>
+                                {gap.gapStatus.charAt(0).toUpperCase() + gap.gapStatus.slice(1)}
+                              </span>
+                            </td>
+                            <td className="p-4">
+                              <div className="flex items-center gap-2">
+                                <div className="w-16 bg-gray-800 rounded-full h-2">
+                                  <div
+                                    className={`h-2 rounded-full transition-all duration-1000 ${
+                                      gap.riskLevel >= 8 ? 'bg-red-500' :
+                                      gap.riskLevel >= 5 ? 'bg-yellow-500' : 'bg-green-500'
+                                    }`}
+                                    style={{ width: `${gap.riskLevel * 10}%` }}
+                                  />
+                                </div>
+                                <span className="text-white text-sm">{gap.riskLevel}/10</span>
+                              </div>
+                            </td>
+                            <td className="p-4">
+                              <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                                gap.priority === 1 ? 'bg-red-500/20 text-red-400 border border-red-500/30' :
+                                gap.priority === 2 ? 'bg-yellow-500/20 text-yellow-400 border border-yellow-500/30' :
+                                'bg-green-500/20 text-green-400 border border-green-500/30'
+                              }`}>
+                                P{gap.priority}
+                              </span>
+                            </td>
+                            <td className="p-4">
+                              <div className="flex items-center justify-end gap-2">
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={() => handleViewGap(gap)}
+                                  className="text-gray-400 hover:text-white hover:bg-gray-700"
+                                >
+                                  <Filter className="w-4 h-4" />
+                                </Button>
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </Card>
+              )}
+            </div>
+
+            {/* Gap Detail Modal */}
+            {selectedGap && (
+              <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+                <Card className="bg-gray-900 border-gray-700 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+                  <div className="p-6">
+                    <div className="flex items-center justify-between mb-6">
+                      <h3 className="text-xl font-bold text-white">Gap Details</h3>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => setSelectedGap(null)}
+                        className="text-gray-400 hover:text-white hover:bg-gray-700"
+                      >
+                        <Filter className="w-5 h-5" />
+                      </Button>
+                    </div>
+                    <div className="space-y-4">
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <Label className="text-gray-400">Regulation</Label>
+                          <p className="text-white font-medium mt-1">{selectedGap.regulation}</p>
+                        </div>
+                        <div>
+                          <Label className="text-gray-400">Gap Status</Label>
+                          <p className={`mt-1 px-2 py-1 rounded-full text-xs font-medium border inline-block ${getGapStatusColor(selectedGap.gapStatus)}`}>
+                            {selectedGap.gapStatus.charAt(0).toUpperCase() + selectedGap.gapStatus.slice(1)}
+                          </p>
+                        </div>
+                        <div>
+                          <Label className="text-gray-400">Risk Level</Label>
+                          <p className="text-white mt-1">{selectedGap.riskLevel}/10</p>
+                        </div>
+                        <div>
+                          <Label className="text-gray-400">Priority</Label>
+                          <p className="text-white mt-1">P{selectedGap.priority}</p>
+                        </div>
+                        <div>
+                          <Label className="text-gray-400">Last Assessed</Label>
+                          <p className="text-white mt-1">{selectedGap.lastAssessed}</p>
+                        </div>
+                        <div>
+                          <Label className="text-gray-400">Current Status</Label>
+                          <p className="text-white mt-1">{selectedGap.currentStatus}</p>
+                        </div>
+                        <div>
+                          <Label className="text-gray-400">Requirement</Label>
+                          <p className="text-white mt-1">{selectedGap.requirement}</p>
+                        </div>
+                      </div>
+                      <div>
+                        <Label className="text-gray-400">Recommendation</Label>
+                        <p className="text-cyan-400 mt-1">{selectedGap.recommendation}</p>
+                      </div>
+                      <div className="flex gap-3 justify-end pt-4 border-t border-gray-700">
+                        <Button
+                          variant="outline"
+                          onClick={() => handleUpdateGap(selectedGap)}
+                          className="border-gray-600 text-gray-300 hover:bg-gray-700"
+                        >
+                          Edit Gap
+                        </Button>
+                        <Button 
+                          onClick={() => handleDeleteGap(selectedGap.id)}
+                          className="bg-red-600 hover:bg-red-700 text-white"
+                        >
+                          Delete Gap
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                </Card>
+              </div>
+            )}
+          </div>
+        </main>
+      </div>
+    </div>
+  )
+}

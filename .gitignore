@@ -1,0 +1,92 @@
+# Environment variables
+.env
+.env.local
+.env.production
+.env.development
+.env.*.local
+
+# Dependencies
+node_modules/
+frontend/node_modules/
+backend/vendor/
+
+# Build outputs
+frontend/.next/
+frontend/out/
+frontend/build/
+backend/grc-platform
+backend/*.exe
+
+# Database files
+*.db
+*.sqlite
+*.sqlite3
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+backend/logs/
+frontend/logs/
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Temporary files
+*.tmp
+*.temp
+*.cache
+
+# Test coverage
+coverage/
+.nyc_output/
+
+# Docker
+*.pid
+
+# Backup files
+*.bak
+*.backup
+
+# SQL scripts (keep only migrations)
+CHECK_DATABASE.sql
+CHECK_USERS.sql
+CLEANUP_PUBLIC_SCHEMA.sql
+CREATE_TEST_USERS.sql
+MIGRATE_TO_TENANT.sql
+MIGRATION_SCRIPT.sql
+SEED_GRC_DATA.sql
+UPDATE_PASSWORD_HASH.sql
+
+# Documentation (keep only README.md)
+GRC CORE.docx
+progress.md
+
+# Package lock files (optional - uncomment if you want to ignore)
+# package-lock.json
+# frontend/package-lock.json
+# backend/package-lock.json
+
+# TypeScript
+*.tsbuildinfo
+
+# Next.js
+frontend/.next/
+frontend/out/
+frontend/dist/
+
+# Go
+backend/*.test
+backend/*.exe
+backend/main
+backend/server

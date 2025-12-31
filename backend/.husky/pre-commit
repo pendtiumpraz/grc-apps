@@ -1,0 +1,8 @@
+#!/usr/bin/env sh
+. "$(dirname "$0")/_/husky.sh"
+
+# Check TypeScript compilation
+npx tsc --noEmit
+
+# Run tests
+npm test
