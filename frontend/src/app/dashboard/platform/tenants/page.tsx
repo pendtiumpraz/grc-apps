@@ -455,19 +455,27 @@ export default function TenantsPage() {
 
                   <div>
                     <Label className="text-gray-400 text-xs">PASSWORD</Label>
-                    <div className="flex items-center gap-2">
-                      <code className="flex-1 text-white bg-gray-900 px-3 py-2 rounded font-mono text-sm">
-                        {createdCredentials.admin?.password}
-                      </code>
+                    <div className="flex items-center gap-2 mt-1">
+                      <div className="flex-1 flex items-center gap-2 bg-gray-900 px-3 py-2 rounded border border-gray-700">
+                        <code className="text-cyan-400 font-mono text-lg font-semibold">
+                          {createdCredentials.admin?.password}
+                        </code>
+                        <span className="text-[10px] text-gray-500 bg-gray-800 px-1.5 py-0.5 rounded uppercase tracking-wider">Default</span>
+                      </div>
                       <Button
                         variant="outline"
                         size="sm"
                         onClick={() => copyToClipboard(createdCredentials.admin?.password, 'password')}
-                        className="border-gray-600 text-gray-300"
+                        className="border-gray-600 text-gray-300 h-10 w-10 p-0"
                       >
                         {copiedField === 'password' ? <CheckCircle className="w-4 h-4 text-green-400" /> : <Copy className="w-4 h-4" />}
                       </Button>
                     </div>
+                    <p className="text-xs text-yellow-500/80 mt-2 flex items-center gap-1">
+                      <AlertTriangle className="w-3 h-3" />
+                      Please share these credentials securely with the tenant admin.
+                    </p>
+                  </div>
                   </div>
                 </div>
               </div>
@@ -491,8 +499,9 @@ export default function TenantsPage() {
               </Button>
             </div>
           </Card>
-        </div>
-      )}
-    </div>
+        </div >
+      )
+}
+    </div >
   );
 }
