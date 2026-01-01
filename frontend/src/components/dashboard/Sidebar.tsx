@@ -200,7 +200,7 @@ export default function Sidebar() {
                     const Icon = item.icon
                     const hasSubItems = item.subItems && item.subItems.length > 0
 
-                    // Improved active check logic
+                    // Improved active check logic - only highlight the most specific match
                     const isActive = (() => {
                         if (!pathname) return false
 
@@ -209,10 +209,19 @@ export default function Sidebar() {
                             return pathname === '/dashboard'
                         }
 
-                        // For platform sub-pages, check if current path starts with the menu item href
-                        // But also handle specific cases like /tenants/[id] matching /tenants
+                        // Exact match
                         if (pathname === item.href) return true
-                        if (pathname.startsWith(item.href + '/')) return true
+
+                        // For sub-pages, only match if there's no more specific menu item
+                        if (pathname.startsWith(item.href + '/')) {
+                            // Check if any other menu item is a better (more specific) match
+                            const hasMoreSpecificMatch = menuItems.some(other =>
+                                other.href !== item.href &&
+                                other.href.startsWith(item.href) &&
+                                (pathname === other.href || pathname.startsWith(other.href + '/'))
+                            )
+                            return !hasMoreSpecificMatch
+                        }
 
                         return false
                     })()
