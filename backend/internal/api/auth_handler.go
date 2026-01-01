@@ -50,6 +50,12 @@ func (h *AuthHandler) Login(c *gin.Context) {
 		return
 	}
 
+	// Check if user is active
+	if user.Status != "active" {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Your account is not active. Please contact administrator."})
+		return
+	}
+
 	// Verify password using bcrypt
 	if !CheckPasswordHash(loginRequest.Password, user.PasswordHash) {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid credentials"})
@@ -58,9 +64,22 @@ func (h *AuthHandler) Login(c *gin.Context) {
 
 	// Validate tenant - use original tenant_id from DB
 	tenantIDForToken := user.TenantID
-	if tenantIDForToken == "" {
+	if tenantIDForToken == "" && !user.IsSuperAdmin {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid tenant configuration"})
 		return
+	}
+
+	// Check if tenant is active (skip for super admin)
+	if !user.IsSuperAdmin && tenantIDForToken != "" {
+		var tenant models.Tenant
+		if err := h.db.Where("id = ?", tenantIDForToken).First(&tenant).Error; err != nil {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "Tenant not found"})
+			return
+		}
+		if tenant.Status != "active" {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "Your organization is currently suspended. Please contact platform administrator."})
+			return
+		}
 	}
 
 	// Update last login using raw SQL to avoid JSONB issues

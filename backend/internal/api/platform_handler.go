@@ -1,12 +1,14 @@
 package api
 
 import (
+	"fmt"
 	"net/http"
 	"time"
 
 	"github.com/cyber/backend/internal/db"
 	"github.com/cyber/backend/internal/models"
 	"github.com/gin-gonic/gin"
+	"golang.org/x/crypto/bcrypt"
 )
 
 type PlatformHandler struct {
@@ -200,13 +202,15 @@ func (h *PlatformHandler) GetTenantByID(c *gin.Context) {
 	c.JSON(http.StatusOK, tenant)
 }
 
-// CreateTenant creates a new tenant
+// CreateTenant creates a new tenant with admin user
 func (h *PlatformHandler) CreateTenant(c *gin.Context) {
 	var input struct {
 		Name        string `json:"name" binding:"required"`
 		Domain      string `json:"domain" binding:"required"`
 		Description string `json:"description"`
 		Status      string `json:"status"`
+		AdminEmail  string `json:"admin_email"` // Optional - will generate if not provided
+		AdminName   string `json:"admin_name"`  // Optional
 	}
 
 	if err := c.ShouldBindJSON(&input); err != nil {
@@ -241,7 +245,60 @@ func (h *PlatformHandler) CreateTenant(c *gin.Context) {
 	}
 	h.db.Create(&sub)
 
-	c.JSON(http.StatusCreated, tenant)
+	// Create admin user for tenant
+	adminEmail := input.AdminEmail
+	if adminEmail == "" {
+		adminEmail = fmt.Sprintf("admin@%s", input.Domain)
+	}
+	adminName := input.AdminName
+	if adminName == "" {
+		adminName = "Admin"
+	}
+
+	// Generate default password
+	defaultPassword := "Welcome123!"
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(defaultPassword), bcrypt.DefaultCost)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create admin user"})
+		return
+	}
+
+	adminUser := models.User{
+		TenantID:     tenant.ID,
+		Email:        adminEmail,
+		PasswordHash: string(hashedPassword),
+		FirstName:    adminName,
+		LastName:     "",
+		Role:         "tenant_admin",
+		Status:       "active",
+		IsSuperAdmin: false,
+	}
+
+	if err := h.db.Create(&adminUser).Error; err != nil {
+		// If user creation fails, delete the tenant
+		h.db.Delete(&tenant)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create admin user. Email may already exist."})
+		return
+	}
+
+	// Log the action
+	log := models.SystemLog{
+		TenantID: tenant.ID,
+		Level:    "info",
+		Category: "system",
+		Action:   "tenant_created",
+		Message:  fmt.Sprintf("New tenant created: %s with admin %s", tenant.Name, adminEmail),
+	}
+	h.db.Create(&log)
+
+	c.JSON(http.StatusCreated, gin.H{
+		"tenant": tenant,
+		"admin": gin.H{
+			"email":    adminEmail,
+			"password": defaultPassword,
+			"message":  "Please change password after first login",
+		},
+	})
 }
 
 // UpdateTenant updates a tenant

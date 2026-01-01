@@ -10,7 +10,7 @@ import { Label } from '@/components/ui/label';
 import {
   RefreshCw, Plus, Search, Building, Users, FileText,
   AlertTriangle, MoreVertical, Edit, Trash2, Eye, X,
-  CheckCircle, XCircle, Clock
+  CheckCircle, XCircle, Clock, Copy, Key
 } from 'lucide-react';
 import { platformAPI } from '@/lib/api';
 import Link from 'next/link';
@@ -26,14 +26,26 @@ interface TenantSummary {
   created_at: string;
 }
 
+interface CreatedTenantCredentials {
+  tenant: any;
+  admin: {
+    email: string;
+    password: string;
+    message: string;
+  };
+}
+
 export default function TenantsPage() {
   const [loading, setLoading] = useState(true);
   const [tenants, setTenants] = useState<TenantSummary[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showCredentialsModal, setShowCredentialsModal] = useState(false);
   const [createLoading, setCreateLoading] = useState(false);
-  const [newTenant, setNewTenant] = useState({ name: '', domain: '', description: '' });
+  const [newTenant, setNewTenant] = useState({ name: '', domain: '', description: '', admin_email: '', admin_name: '' });
+  const [createdCredentials, setCreatedCredentials] = useState<CreatedTenantCredentials | null>(null);
+  const [copiedField, setCopiedField] = useState('');
 
   useEffect(() => {
     loadTenants();
@@ -59,9 +71,11 @@ export default function TenantsPage() {
     setCreateLoading(true);
     try {
       const res = await platformAPI.createTenant(newTenant);
-      if (res.success) {
+      if (res.success && res.data) {
         setShowCreateModal(false);
-        setNewTenant({ name: '', domain: '', description: '' });
+        setCreatedCredentials(res.data);
+        setShowCredentialsModal(true);
+        setNewTenant({ name: '', domain: '', description: '', admin_email: '', admin_name: '' });
         loadTenants();
       }
     } catch (error) {
@@ -82,6 +96,12 @@ export default function TenantsPage() {
     } catch (error) {
       console.error('Failed to delete tenant:', error);
     }
+  };
+
+  const copyToClipboard = async (text: string, field: string) => {
+    await navigator.clipboard.writeText(text);
+    setCopiedField(field);
+    setTimeout(() => setCopiedField(''), 2000);
   };
 
   const filteredTenants = tenants.filter(tenant => {
@@ -342,6 +362,7 @@ export default function TenantsPage() {
                   placeholder="example.com"
                   className="mt-1 bg-gray-800 border-gray-600 text-white"
                 />
+                <p className="text-gray-500 text-xs mt-1">Will be used to generate admin email if not specified</p>
               </div>
               <div>
                 <Label className="text-gray-300">Description</Label>
@@ -351,6 +372,29 @@ export default function TenantsPage() {
                   placeholder="Brief description..."
                   className="mt-1 bg-gray-800 border-gray-600 text-white"
                 />
+              </div>
+              <div className="border-t border-gray-700 pt-4 mt-4">
+                <p className="text-gray-400 text-sm mb-3">Admin User (Optional - will auto-generate if empty)</p>
+                <div className="space-y-3">
+                  <div>
+                    <Label className="text-gray-300">Admin Email</Label>
+                    <Input
+                      value={newTenant.admin_email}
+                      onChange={(e) => setNewTenant({ ...newTenant, admin_email: e.target.value })}
+                      placeholder={`admin@${newTenant.domain || 'example.com'}`}
+                      className="mt-1 bg-gray-800 border-gray-600 text-white"
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-gray-300">Admin Name</Label>
+                    <Input
+                      value={newTenant.admin_name}
+                      onChange={(e) => setNewTenant({ ...newTenant, admin_name: e.target.value })}
+                      placeholder="Admin"
+                      className="mt-1 bg-gray-800 border-gray-600 text-white"
+                    />
+                  </div>
+                </div>
               </div>
             </div>
             <div className="flex justify-end gap-3 mt-6">
@@ -364,6 +408,89 @@ export default function TenantsPage() {
               >
                 {createLoading ? <RefreshCw className="w-4 h-4 animate-spin mr-2" /> : <Plus className="w-4 h-4 mr-2" />}
                 Create Tenant
+              </Button>
+            </div>
+          </Card>
+        </div>
+      )}
+
+      {/* Credentials Modal - shows after successful tenant creation */}
+      {showCredentialsModal && createdCredentials && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <Card className="bg-gray-900 border-gray-700 w-full max-w-md p-6">
+            <div className="text-center mb-6">
+              <div className="w-16 h-16 rounded-full bg-green-500/20 flex items-center justify-center mx-auto mb-4">
+                <CheckCircle className="w-8 h-8 text-green-400" />
+              </div>
+              <h2 className="text-xl font-bold text-white">Tenant Created Successfully!</h2>
+              <p className="text-gray-400 mt-2">Save these credentials for the tenant admin</p>
+            </div>
+
+            <div className="bg-gray-800 rounded-lg p-4 space-y-4">
+              <div>
+                <Label className="text-gray-400 text-xs">TENANT NAME</Label>
+                <p className="text-white font-medium">{createdCredentials.tenant?.name}</p>
+              </div>
+
+              <div className="border-t border-gray-700 pt-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <Key className="w-4 h-4 text-cyan-400" />
+                  <Label className="text-cyan-400 text-sm font-medium">Admin Login Credentials</Label>
+                </div>
+
+                <div className="space-y-3">
+                  <div>
+                    <Label className="text-gray-400 text-xs">EMAIL</Label>
+                    <div className="flex items-center gap-2">
+                      <code className="flex-1 text-white bg-gray-900 px-3 py-2 rounded font-mono text-sm">
+                        {createdCredentials.admin?.email}
+                      </code>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => copyToClipboard(createdCredentials.admin?.email, 'email')}
+                        className="border-gray-600 text-gray-300"
+                      >
+                        {copiedField === 'email' ? <CheckCircle className="w-4 h-4 text-green-400" /> : <Copy className="w-4 h-4" />}
+                      </Button>
+                    </div>
+                  </div>
+
+                  <div>
+                    <Label className="text-gray-400 text-xs">PASSWORD</Label>
+                    <div className="flex items-center gap-2">
+                      <code className="flex-1 text-white bg-gray-900 px-3 py-2 rounded font-mono text-sm">
+                        {createdCredentials.admin?.password}
+                      </code>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => copyToClipboard(createdCredentials.admin?.password, 'password')}
+                        className="border-gray-600 text-gray-300"
+                      >
+                        {copiedField === 'password' ? <CheckCircle className="w-4 h-4 text-green-400" /> : <Copy className="w-4 h-4" />}
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-3 mt-4">
+                <p className="text-yellow-400 text-sm">
+                  ⚠️ {createdCredentials.admin?.message}
+                </p>
+              </div>
+            </div>
+
+            <div className="flex justify-end mt-6">
+              <Button
+                onClick={() => {
+                  setShowCredentialsModal(false);
+                  setCreatedCredentials(null);
+                }}
+                className="bg-cyan-600 hover:bg-cyan-700 text-white"
+              >
+                Done
               </Button>
             </div>
           </Card>
