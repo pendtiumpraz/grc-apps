@@ -35,7 +35,7 @@ func (h *AIDocumentHandler) GetDocumentTemplates(c *gin.Context) {
 	tenantID := c.GetString("tenant_id")
 
 	var templates []models.Document
-	if err := h.db.Where("tenant_id = ? AND is_deleted = ?", tenantID, false).Find(&templates).Error; err != nil {
+	if err := h.db.Where("tenant_id = ? AND is_deleted = ? AND is_generated = ?", tenantID, false, false).Find(&templates).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch templates"})
 		return
 	}
