@@ -33,7 +33,7 @@ func (h *AIDocumentHandler) getSQLDB() *sql.DB {
 // GetDocumentTemplates retrieves all document templates
 func (h *AIDocumentHandler) GetDocumentTemplates(c *gin.Context) {
 	tenantID := c.GetString("tenant_id")
-	
+
 	var templates []models.Document
 	if err := h.db.Where("tenant_id = ? AND is_deleted = ?", tenantID, false).Find(&templates).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch templates"})
@@ -50,7 +50,7 @@ func (h *AIDocumentHandler) GetDocumentTemplates(c *gin.Context) {
 func (h *AIDocumentHandler) GetDocumentTemplate(c *gin.Context) {
 	id := c.Param("id")
 	tenantID := c.GetString("tenant_id")
-	
+
 	var template models.Document
 	if err := h.db.Where("id = ? AND tenant_id = ? AND is_deleted = ?", id, tenantID, false).First(&template).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Template not found"})
@@ -66,31 +66,31 @@ func (h *AIDocumentHandler) GetDocumentTemplate(c *gin.Context) {
 // CreateDocumentTemplate creates a new document template
 func (h *AIDocumentHandler) CreateDocumentTemplate(c *gin.Context) {
 	var req struct {
-		Name               string                 `json:"name" binding:"required"`
-		Description        string                 `json:"description"`
-		DocumentType       string                 `json:"documentType" binding:"required"`
-		TemplateType     string                 `json:"templateType" binding:"required"`
-		TemplateContent    string                 `json:"templateContent" binding:"required"`
+		Name            string `json:"name" binding:"required"`
+		Description     string `json:"description"`
+		DocumentType    string `json:"documentType" binding:"required"`
+		TemplateType    string `json:"templateType" binding:"required"`
+		TemplateContent string `json:"templateContent" binding:"required"`
 	}
-	
+
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	
+
 	tenantID := c.GetString("tenant_id")
 	createdBy := c.GetString("user_id")
-	
+
 	template := models.Document{
-		TenantID:        tenantID,
-		Title:           req.Name,
-		Description:      req.Description,
-		DocumentType:     req.DocumentType,
-		TemplateType:     req.TemplateType,
-		Content:         req.TemplateContent,
-		Status:          "draft",
-		IsGenerated:     false,
-		CreatedBy:        createdBy,
+		TenantID:     tenantID,
+		Title:        req.Name,
+		Description:  req.Description,
+		DocumentType: req.DocumentType,
+		TemplateType: req.TemplateType,
+		Content:      req.TemplateContent,
+		Status:       "draft",
+		IsGenerated:  false,
+		CreatedBy:    createdBy,
 	}
 
 	if err := h.db.Create(&template).Error; err != nil {
@@ -108,23 +108,23 @@ func (h *AIDocumentHandler) CreateDocumentTemplate(c *gin.Context) {
 // UpdateDocumentTemplate updates an existing document template
 func (h *AIDocumentHandler) UpdateDocumentTemplate(c *gin.Context) {
 	id := c.Param("id")
-	
+
 	var req struct {
-		Name               string `json:"name"`
-		Description        string `json:"description"`
-		DocumentType       string `json:"documentType"`
-		TemplateType     string `json:"templateType"`
-		TemplateContent    string `json:"templateContent"`
+		Name            string `json:"name"`
+		Description     string `json:"description"`
+		DocumentType    string `json:"documentType"`
+		TemplateType    string `json:"templateType"`
+		TemplateContent string `json:"templateContent"`
 	}
-	
+
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	
+
 	tenantID := c.GetString("tenant_id")
 	var template models.Document
-	
+
 	if err := h.db.Where("id = ? AND tenant_id = ? AND is_deleted = ?", id, tenantID, false).First(&template).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Template not found"})
 		return
@@ -183,7 +183,7 @@ func (h *AIDocumentHandler) DeleteDocumentTemplate(c *gin.Context) {
 // GetGeneratedDocuments retrieves all generated documents
 func (h *AIDocumentHandler) GetGeneratedDocuments(c *gin.Context) {
 	tenantID := c.GetString("tenant_id")
-	
+
 	var documents []models.Document
 	if err := h.db.Where("tenant_id = ? AND is_deleted = ? AND is_generated = ?", tenantID, false, true).Find(&documents).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch documents"})
@@ -200,7 +200,7 @@ func (h *AIDocumentHandler) GetGeneratedDocuments(c *gin.Context) {
 func (h *AIDocumentHandler) GetGeneratedDocument(c *gin.Context) {
 	id := c.Param("id")
 	tenantID := c.GetString("tenant_id")
-	
+
 	var document models.Document
 	if err := h.db.Where("id = ? AND tenant_id = ? AND is_deleted = ?", id, tenantID, false).First(&document).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Document not found"})
@@ -217,38 +217,38 @@ func (h *AIDocumentHandler) GetGeneratedDocument(c *gin.Context) {
 func (h *AIDocumentHandler) GenerateDocument(c *gin.Context) {
 	tenantID := c.GetString("tenant_id")
 	createdBy := c.GetString("user_id")
-	
+
 	var req struct {
-		DocumentType       string                 `json:"documentType" binding:"required"`
+		DocumentType     string                 `json:"documentType" binding:"required"`
 		TemplateType     string                 `json:"templateType" binding:"required"`
 		Name             string                 `json:"name" binding:"required"`
 		RequirementsData map[string]interface{} `json:"requirementsData" binding:"required"`
 	}
-	
+
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	
+
 	// Generate document content using AI (simulated)
 	generatedContent := h.generateDocumentContent(req.DocumentType, req.RequirementsData)
-	
+
 	requirementsJSON, err := json.Marshal(req.RequirementsData)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-	
+
 	document := models.Document{
 		TenantID:         tenantID,
 		Title:            req.Name,
-		DocumentType:      req.DocumentType,
-		TemplateType:      req.TemplateType,
+		DocumentType:     req.DocumentType,
+		TemplateType:     req.TemplateType,
 		Content:          generatedContent,
 		StyledHTML:       h.generateStyledHTML(req.DocumentType, req.RequirementsData),
 		Status:           "draft",
 		IsGenerated:      true,
-		GenerationPrompt:  string(requirementsJSON),
+		GenerationPrompt: string(requirementsJSON),
 		AIModel:          "gemini-2.5-flash",
 		CreatedBy:        createdBy,
 	}
@@ -268,22 +268,22 @@ func (h *AIDocumentHandler) GenerateDocument(c *gin.Context) {
 // UpdateGeneratedDocument updates an existing generated document
 func (h *AIDocumentHandler) UpdateGeneratedDocument(c *gin.Context) {
 	id := c.Param("id")
-	
+
 	var req struct {
-		Name             string                 `json:"name"`
-		Content          string                 `json:"content"`
-		StyledHTML       string                 `json:"styledHtml"`
-		Status           string                 `json:"status"`
+		Name       string `json:"name"`
+		Content    string `json:"content"`
+		StyledHTML string `json:"styledHtml"`
+		Status     string `json:"status"`
 	}
-	
+
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	
+
 	tenantID := c.GetString("tenant_id")
 	var document models.Document
-	
+
 	if err := h.db.Where("id = ? AND tenant_id = ? AND is_deleted = ?", id, tenantID, false).First(&document).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Document not found"})
 		return
@@ -339,7 +339,7 @@ func (h *AIDocumentHandler) DeleteGeneratedDocument(c *gin.Context) {
 // GetDocumentAnalyses retrieves all document analyses
 func (h *AIDocumentHandler) GetDocumentAnalyses(c *gin.Context) {
 	tenantID := c.GetString("tenant_id")
-	
+
 	var analyses []models.DocumentAnalysis
 	if err := h.db.Where("tenant_id = ? AND is_deleted = ?", tenantID, false).Find(&analyses).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch analyses"})
@@ -356,7 +356,7 @@ func (h *AIDocumentHandler) GetDocumentAnalyses(c *gin.Context) {
 func (h *AIDocumentHandler) GetDocumentAnalysis(c *gin.Context) {
 	id := c.Param("id")
 	tenantID := c.GetString("tenant_id")
-	
+
 	var analysis models.DocumentAnalysis
 	if err := h.db.Where("id = ? AND tenant_id = ? AND is_deleted = ?", id, tenantID, false).First(&analysis).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Analysis not found"})
@@ -370,26 +370,55 @@ func (h *AIDocumentHandler) GetDocumentAnalysis(c *gin.Context) {
 }
 
 // AnalyzeDocument analyzes a document using AI
+// AnalyzeDocument analyzes a document using AI
 func (h *AIDocumentHandler) AnalyzeDocument(c *gin.Context) {
 	tenantID := c.GetString("tenant_id")
-	
+	userID := c.GetString("user_id")
+
 	var req struct {
-		DocumentID   string `json:"documentId" binding:"required"`
-		AnalysisType string `json:"analysisType" binding:"required"`
+		DocumentID   string `json:"documentId"` // Optional
+		AnalysisType string `json:"analysisType"`
 		DocumentName string `json:"documentName" binding:"required"`
 		FilePath     string `json:"filePath" binding:"required"`
 		FileType     string `json:"fileType" binding:"required"`
 		FileSize     int64  `json:"fileSize" binding:"required"`
 	}
-	
+
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	
+
+	documentID := req.DocumentID
+
+	// If no DocumentID provided, create a new document record first
+	if documentID == "" {
+		newDoc := models.Document{
+			TenantID:     tenantID,
+			Title:        req.DocumentName,
+			DocumentType: req.FileType,
+			FilePath:     req.FilePath,
+			FileSize:     req.FileSize,
+			FileFormat:   req.FileType,
+			Status:       "uploaded",
+			CreatedBy:    userID,
+		}
+		if err := h.db.Create(&newDoc).Error; err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to register document for analysis"})
+			return
+		}
+		documentID = newDoc.ID
+	}
+
+	// Default analysis type if not provided
+	analysisType := req.AnalysisType
+	if analysisType == "" {
+		analysisType = "compliance"
+	}
+
 	// Analyze document using AI (simulated)
 	analysisResult, summary, confidenceScore, _ := h.analyzeDocumentContent(req.FileType)
-	
+
 	// Generate analysis metadata JSON for infographics
 	analysisMetadata := map[string]interface{}{
 		"sections_found": []string{"Introduction", "Scope", "Requirements", "Conclusion"},
@@ -406,29 +435,33 @@ func (h *AIDocumentHandler) AnalyzeDocument(c *gin.Context) {
 			"Missing contact information",
 		},
 	}
-	
+
 	metadataJSON, err := json.Marshal(analysisMetadata)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-	
+
 	analysis := models.DocumentAnalysis{
-		TenantID:         tenantID,
-		DocumentID:       req.DocumentID,
-		AnalysisType:     req.AnalysisType,
-		AnalysisResult:   string(analysisResult),
-		Summary:          summary,
-		KeyPoints:         "Key findings from document analysis",
-		Recommendations:  string(metadataJSON),
-		ConfidenceScore:  confidenceScore,
-		AIModel:          "gemini-2.5-flash",
+		TenantID:        tenantID,
+		DocumentID:      documentID,
+		AnalysisType:    analysisType,
+		AnalysisResult:  string(analysisResult),
+		Summary:         summary,
+		KeyPoints:       "Key findings from document analysis",
+		Recommendations: string(metadataJSON),
+		ConfidenceScore: confidenceScore,
+		AIModel:         "gemini-2.5-flash",
 	}
 
 	if err := h.db.Create(&analysis).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to analyze document"})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to save analysis results"})
 		return
 	}
+
+	// Fetch the full analysis with ID to return
+	var fullAnalysis models.DocumentAnalysis
+	h.db.First(&fullAnalysis, "id = ?", analysis.ID)
 
 	c.JSON(http.StatusCreated, gin.H{
 		"success": true,
@@ -463,9 +496,9 @@ func (h *AIDocumentHandler) DeleteDocumentAnalysis(c *gin.Context) {
 func (h *AIDocumentHandler) generateDocumentContent(documentType string, requirements map[string]interface{}) string {
 	// This is a simplified version - in production, integrate with actual AI service
 	// For now, generate a formatted document based on requirements
-	
+
 	content := ""
-	
+
 	switch documentType {
 	case "privacy_policy":
 		content = h.generatePrivacyPolicy(requirements)
@@ -482,7 +515,7 @@ func (h *AIDocumentHandler) generateDocumentContent(documentType string, require
 	default:
 		content = h.generateGenericDocument(requirements)
 	}
-	
+
 	return content
 }
 
@@ -578,12 +611,12 @@ func (h *AIDocumentHandler) analyzeDocumentContent(fileType string) (string, str
 			"Missing contact information",
 		},
 	}
-	
+
 	resultJSON, _ := json.Marshal(analysisResult)
-	
+
 	summary := "Dokumen ini telah dianalisis secara menyeluruh. Secara umum, dokumen ini memiliki struktur yang baik namun masih memerlukan beberapa perbaikan untuk memenuhi standar kepatuhan penuh."
 	confidenceScore := 75.50
-	
+
 	return string(resultJSON), summary, confidenceScore, ""
 }
 

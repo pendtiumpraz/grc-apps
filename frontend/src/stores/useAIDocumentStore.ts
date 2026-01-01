@@ -77,18 +77,18 @@ interface AIDocumentStore {
   templates: DocumentTemplate[]
   templatesLoading: boolean
   templatesError: string | null
-  
+
   fetchTemplates: () => Promise<void>
   fetchTemplate: (id: number) => Promise<DocumentTemplate | null>
   createTemplate: (template: Partial<DocumentTemplate>) => Promise<void>
   updateTemplate: (id: number, template: Partial<DocumentTemplate>) => Promise<void>
   deleteTemplate: (id: number) => Promise<void>
-  
+
   // Generated Documents
   documents: GeneratedDocument[]
   documentsLoading: boolean
   documentsError: string | null
-  
+
   fetchDocuments: () => Promise<void>
   fetchDocument: (id: number) => Promise<GeneratedDocument | null>
   generateDocument: (data: {
@@ -98,12 +98,12 @@ interface AIDocumentStore {
   }) => Promise<void>
   updateDocument: (id: number, document: Partial<GeneratedDocument>) => Promise<void>
   deleteDocument: (id: number) => Promise<void>
-  
+
   // Document Analysis
   analyses: DocumentAnalysis[]
   analysesLoading: boolean
   analysesError: string | null
-  
+
   fetchAnalyses: () => Promise<void>
   fetchAnalysis: (id: number) => Promise<DocumentAnalysis | null>
   analyzeDocument: (data: {
@@ -115,6 +115,8 @@ interface AIDocumentStore {
   }) => Promise<void>
   deleteAnalysis: (id: number) => Promise<void>
 }
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080/api'
 
 const getAuthHeaders = () => {
   const token = localStorage.getItem('token')
@@ -129,323 +131,330 @@ export const useAIDocumentStore = create<AIDocumentStore>((set, get) => ({
   templates: [],
   templatesLoading: false,
   templatesError: null,
-  
+
   documents: [],
   documentsLoading: false,
   documentsError: null,
-  
+
   analyses: [],
   analysesLoading: false,
   analysesError: null,
-  
+
   // Document Templates
   fetchTemplates: async () => {
     set({ templatesLoading: true, templatesError: null })
     try {
-      const response = await fetch('http://localhost:8080/api/ai-documents/templates', {
+      const response = await fetch(`${API_URL}/ai-documents/templates`, {
         headers: getAuthHeaders(),
       })
-      
+
       if (!response.ok) {
         throw new Error('Failed to fetch templates')
       }
-      
+
       const result = await response.json()
       set({ templates: result.data || [], templatesLoading: false })
     } catch (error) {
-      set({ 
+      set({
         templatesError: error instanceof Error ? error.message : 'Unknown error',
-        templatesLoading: false 
+        templatesLoading: false
       })
     }
   },
-  
+
   fetchTemplate: async (id: number) => {
     try {
-      const response = await fetch(`http://localhost:8080/api/ai-documents/templates/${id}`, {
+      const response = await fetch(`${API_URL}/ai-documents/templates/${id}`, {
         headers: getAuthHeaders(),
       })
-      
+
       if (!response.ok) {
         throw new Error('Failed to fetch template')
       }
-      
+
       const result = await response.json()
       return result.data
     } catch (error) {
-      set({ 
+      set({
         templatesError: error instanceof Error ? error.message : 'Unknown error'
       })
       return null
     }
   },
-  
+
   createTemplate: async (template) => {
     try {
-      const response = await fetch('http://localhost:8080/api/ai-documents/templates', {
+      const response = await fetch(`${API_URL}/ai-documents/templates`, {
         method: 'POST',
         headers: getAuthHeaders(),
         body: JSON.stringify(template),
       })
-      
+
       if (!response.ok) {
         throw new Error('Failed to create template')
       }
-      
+
       const result = await response.json()
       set((state) => ({
         templates: [result.data, ...state.templates],
       }))
     } catch (error) {
-      set({ 
+      set({
         templatesError: error instanceof Error ? error.message : 'Unknown error'
       })
       throw error
     }
   },
-  
+
   updateTemplate: async (id, template) => {
     try {
-      const response = await fetch(`http://localhost:8080/api/ai-documents/templates/${id}`, {
+      const response = await fetch(`${API_URL}/ai-documents/templates/${id}`, {
         method: 'PUT',
         headers: getAuthHeaders(),
         body: JSON.stringify(template),
       })
-      
+
       if (!response.ok) {
         throw new Error('Failed to update template')
       }
-      
+
       set((state) => ({
-        templates: state.templates.map((t) => 
+        templates: state.templates.map((t) =>
           t.id === id ? { ...t, ...template } : t
         ),
       }))
     } catch (error) {
-      set({ 
+      set({
         templatesError: error instanceof Error ? error.message : 'Unknown error'
       })
       throw error
     }
   },
-  
+
   deleteTemplate: async (id) => {
     try {
-      const response = await fetch(`http://localhost:8080/api/ai-documents/templates/${id}`, {
+      const response = await fetch(`${API_URL}/ai-documents/templates/${id}`, {
         method: 'DELETE',
         headers: getAuthHeaders(),
       })
-      
+
       if (!response.ok) {
         throw new Error('Failed to delete template')
       }
-      
+
       set((state) => ({
         templates: state.templates.filter((t) => t.id !== id),
       }))
     } catch (error) {
-      set({ 
+      set({
         templatesError: error instanceof Error ? error.message : 'Unknown error'
       })
       throw error
     }
   },
-  
+
   // Generated Documents
   fetchDocuments: async () => {
     set({ documentsLoading: true, documentsError: null })
     try {
-      const response = await fetch('http://localhost:8080/api/ai-documents/generated', {
+      const response = await fetch(`${API_URL}/ai-documents/generated`, {
         headers: getAuthHeaders(),
       })
-      
+
       if (!response.ok) {
         throw new Error('Failed to fetch documents')
       }
-      
+
       const result = await response.json()
       set({ documents: result.data || [], documentsLoading: false })
     } catch (error) {
-      set({ 
+      set({
         documentsError: error instanceof Error ? error.message : 'Unknown error',
-        documentsLoading: false 
+        documentsLoading: false
       })
     }
   },
-  
+
   fetchDocument: async (id: number) => {
     try {
-      const response = await fetch(`http://localhost:8080/api/ai-documents/generated/${id}`, {
+      const response = await fetch(`${API_URL}/ai-documents/generated/${id}`, {
         headers: getAuthHeaders(),
       })
-      
+
       if (!response.ok) {
         throw new Error('Failed to fetch document')
       }
-      
+
       const result = await response.json()
       return result.data
     } catch (error) {
-      set({ 
+      set({
         documentsError: error instanceof Error ? error.message : 'Unknown error'
       })
       return null
     }
   },
-  
+
   generateDocument: async (data) => {
     try {
-      const response = await fetch('http://localhost:8080/api/ai-documents/generated', {
+      const response = await fetch(`${API_URL}/ai-documents/generated`, {
         method: 'POST',
         headers: getAuthHeaders(),
         body: JSON.stringify(data),
       })
-      
+
       if (!response.ok) {
         throw new Error('Failed to generate document')
       }
-      
+
       const result = await response.json()
       set((state) => ({
         documents: [result.data, ...state.documents],
       }))
     } catch (error) {
-      set({ 
+      set({
         documentsError: error instanceof Error ? error.message : 'Unknown error'
       })
       throw error
     }
   },
-  
+
   updateDocument: async (id, document) => {
     try {
-      const response = await fetch(`http://localhost:8080/api/ai-documents/generated/${id}`, {
+      const response = await fetch(`${API_URL}/ai-documents/generated/${id}`, {
         method: 'PUT',
         headers: getAuthHeaders(),
         body: JSON.stringify(document),
       })
-      
+
       if (!response.ok) {
         throw new Error('Failed to update document')
       }
-      
+
       set((state) => ({
-        documents: state.documents.map((d) => 
+        documents: state.documents.map((d) =>
           d.id === id ? { ...d, ...document } : d
         ),
       }))
     } catch (error) {
-      set({ 
+      set({
         documentsError: error instanceof Error ? error.message : 'Unknown error'
       })
       throw error
     }
   },
-  
+
   deleteDocument: async (id) => {
     try {
-      const response = await fetch(`http://localhost:8080/api/ai-documents/generated/${id}`, {
+      const response = await fetch(`${API_URL}/ai-documents/generated/${id}`, {
         method: 'DELETE',
         headers: getAuthHeaders(),
       })
-      
+
       if (!response.ok) {
         throw new Error('Failed to delete document')
       }
-      
+
       set((state) => ({
         documents: state.documents.filter((d) => d.id !== id),
       }))
     } catch (error) {
-      set({ 
+      set({
         documentsError: error instanceof Error ? error.message : 'Unknown error'
       })
       throw error
     }
   },
-  
+
   // Document Analysis
   fetchAnalyses: async () => {
     set({ analysesLoading: true, analysesError: null })
     try {
-      const response = await fetch('http://localhost:8080/api/ai-documents/analyses', {
+      const response = await fetch(`${API_URL}/ai-documents/analyses`, {
         headers: getAuthHeaders(),
       })
-      
+
       if (!response.ok) {
         throw new Error('Failed to fetch analyses')
       }
-      
+
       const result = await response.json()
       set({ analyses: result.data || [], analysesLoading: false })
     } catch (error) {
-      set({ 
+      set({
         analysesError: error instanceof Error ? error.message : 'Unknown error',
-        analysesLoading: false 
+        analysesLoading: false
       })
     }
   },
-  
+
   fetchAnalysis: async (id: number) => {
     try {
-      const response = await fetch(`http://localhost:8080/api/ai-documents/analyses/${id}`, {
+      const response = await fetch(`${API_URL}/ai-documents/analyses/${id}`, {
         headers: getAuthHeaders(),
       })
-      
+
       if (!response.ok) {
         throw new Error('Failed to fetch analysis')
       }
-      
+
       const result = await response.json()
       return result.data
     } catch (error) {
-      set({ 
+      set({
         analysesError: error instanceof Error ? error.message : 'Unknown error'
       })
       return null
     }
   },
-  
+
   analyzeDocument: async (data) => {
     try {
-      const response = await fetch('http://localhost:8080/api/ai-documents/analyses', {
+      const payload = {
+        ...data,
+        documentId: data.documentId ? String(data.documentId) : "",
+        analysisType: 'compliance' // Default analysis type
+      }
+
+      const response = await fetch(`${API_URL}/ai-documents/analyses`, {
         method: 'POST',
         headers: getAuthHeaders(),
-        body: JSON.stringify(data),
+        body: JSON.stringify(payload),
       })
-      
+
       if (!response.ok) {
-        throw new Error('Failed to analyze document')
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || 'Failed to analyze document')
       }
-      
+
       const result = await response.json()
       set((state) => ({
         analyses: [result.data, ...state.analyses],
       }))
     } catch (error) {
-      set({ 
+      set({
         analysesError: error instanceof Error ? error.message : 'Unknown error'
       })
       throw error
     }
   },
-  
+
   deleteAnalysis: async (id) => {
     try {
-      const response = await fetch(`http://localhost:8080/api/ai-documents/analyses/${id}`, {
+      const response = await fetch(`${API_URL}/ai-documents/analyses/${id}`, {
         method: 'DELETE',
         headers: getAuthHeaders(),
       })
-      
+
       if (!response.ok) {
         throw new Error('Failed to delete analysis')
       }
-      
+
       set((state) => ({
         analyses: state.analyses.filter((a) => a.id !== id),
       }))
     } catch (error) {
-      set({ 
+      set({
         analysesError: error instanceof Error ? error.message : 'Unknown error'
       })
       throw error
