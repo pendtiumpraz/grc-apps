@@ -372,6 +372,7 @@ func setupRoutes(r *gin.Engine, regopsGapAnalysisHandler *api.RegOpsGapAnalysisH
 			platform.POST("/tenants", platformHandler.CreateTenant)
 			platform.PUT("/tenants/:id", platformHandler.UpdateTenant)
 			platform.DELETE("/tenants/:id", platformHandler.DeleteTenant)
+			platform.POST("/tenants/:id/activate", platformHandler.ActivateTenant)
 
 			// User management (separate path to avoid conflict with tenants/:id)
 			platform.GET("/users/tenant/:tenantId", platformHandler.GetTenantUsers)

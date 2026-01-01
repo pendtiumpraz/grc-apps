@@ -76,9 +76,33 @@ func (h *AuthHandler) Login(c *gin.Context) {
 			c.JSON(http.StatusUnauthorized, gin.H{"error": "Tenant not found"})
 			return
 		}
-		if tenant.Status != "active" {
+
+		// Check tenant status
+		if tenant.Status == "pending" {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "Your organization is pending activation. Please wait for administrator approval."})
+			return
+		}
+		if tenant.Status == "suspended" {
 			c.JSON(http.StatusUnauthorized, gin.H{"error": "Your organization is currently suspended. Please contact platform administrator."})
 			return
+		}
+		if tenant.Status != "active" {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "Your organization is not active. Please contact platform administrator."})
+			return
+		}
+
+		// Check subscription expiry
+		var subscription models.Subscription
+		if err := h.db.Where("tenant_id = ? AND deleted_at IS NULL", tenantIDForToken).First(&subscription).Error; err == nil {
+			// Check if subscription has expired
+			if subscription.EndDate != nil && subscription.EndDate.Before(time.Now()) {
+				c.JSON(http.StatusUnauthorized, gin.H{"error": "Your subscription has expired. Please contact platform administrator to renew."})
+				return
+			}
+			if subscription.Status == "cancelled" {
+				c.JSON(http.StatusUnauthorized, gin.H{"error": "Your subscription has been cancelled. Please contact platform administrator."})
+				return
+			}
 		}
 	}
 
@@ -126,14 +150,12 @@ func (h *AuthHandler) Login(c *gin.Context) {
 
 func (h *AuthHandler) Register(c *gin.Context) {
 	var registerRequest struct {
-		Email        string `json:"email" binding:"required,email"`
-		Password     string `json:"password" binding:"required,min=6"`
-		FirstName    string `json:"firstName" binding:"required"`
-		LastName     string `json:"lastName" binding:"required"`
-		CompanyName  string `json:"companyName"` // For creating new tenant
-		TenantID     string `json:"tenantId"`
-		Role         string `json:"role"`
-		IsSuperAdmin bool   `json:"isSuperAdmin"`
+		Email         string `json:"email" binding:"required,email"`
+		Password      string `json:"password" binding:"required,min=6"`
+		FirstName     string `json:"firstName" binding:"required"`
+		LastName      string `json:"lastName" binding:"required"`
+		CompanyName   string `json:"companyName" binding:"required"` // Company/Organization name
+		CompanyDomain string `json:"companyDomain"`                  // Optional domain
 	}
 
 	if err := c.ShouldBindJSON(&registerRequest); err != nil {
@@ -144,85 +166,96 @@ func (h *AuthHandler) Register(c *gin.Context) {
 	// Check if user already exists
 	var existingUser models.User
 	if err := h.db.First(&existingUser, "email = ?", registerRequest.Email).Error; err == nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "User already exists"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Email is already registered"})
+		return
+	}
+
+	// Check if domain already exists
+	domain := registerRequest.CompanyDomain
+	if domain == "" {
+		// Generate domain from company name (lowercase, replace spaces with -)
+		domain = registerRequest.CompanyName
+	}
+
+	var existingTenant models.Tenant
+	if err := h.db.First(&existingTenant, "domain = ? AND deleted_at IS NULL", domain).Error; err == nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "An organization with this domain already exists"})
 		return
 	}
 
 	// Hash password with bcrypt
 	hashedPassword, err := HashPassword(registerRequest.Password)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to hash password"})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to process registration"})
 		return
 	}
 
-	// Set default role if not provided
-	role := registerRequest.Role
-	if role == "" {
-		role = "admin" // First user of tenant is admin
+	// Create new tenant with PENDING status
+	tenant := models.Tenant{
+		Name:        registerRequest.CompanyName,
+		Domain:      domain,
+		Description: "Registered via self-service",
+		Status:      "pending", // PENDING - requires Super Admin activation
 	}
 
-	// Handle tenant creation
-	tenantID := registerRequest.TenantID
-
-	// If no tenantID provided, create new tenant
-	if tenantID == "" {
-		// Generate tenant from company name or email domain
-		companyName := registerRequest.CompanyName
-		if companyName == "" {
-			// Extract domain from email
-			companyName = registerRequest.Email
-		}
-
-		// Create new tenant
-		tenant := models.Tenant{
-			Name:        companyName,
-			Domain:      registerRequest.Email, // Use email as domain initially
-			Description: "Auto-created tenant",
-			Status:      "active",
-		}
-
-		if err := h.db.Create(&tenant).Error; err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create tenant"})
-			return
-		}
-
-		tenantID = tenant.ID
-
-		// Create tenant schema with all GRC tables
-		if err := h.db.CreateTenantSchema(tenantID); err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create tenant schema: " + err.Error()})
-			return
-		}
-
-		role = "admin" // First user is admin
+	if err := h.db.Create(&tenant).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create organization"})
+		return
 	}
 
-	// Create new user
+	// Create subscription without end date (will be set during activation)
+	subscription := models.Subscription{
+		TenantID:     tenant.ID,
+		PlanType:     "basic",
+		Status:       "pending",
+		StartDate:    time.Now(),
+		EndDate:      nil, // Will be set by Super Admin during activation
+		BillingCycle: "monthly",
+		Price:        0, // Will be set by Super Admin
+		Currency:     "IDR",
+	}
+	h.db.Create(&subscription)
+
+	// Create tenant schema with all GRC tables
+	if err := h.db.CreateTenantSchema(tenant.ID); err != nil {
+		// Rollback - delete tenant and subscription
+		h.db.Delete(&subscription)
+		h.db.Delete(&tenant)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to setup organization: " + err.Error()})
+		return
+	}
+
+	// Create admin user for tenant
 	user := models.User{
 		Email:        registerRequest.Email,
 		PasswordHash: hashedPassword,
 		FirstName:    registerRequest.FirstName,
 		LastName:     registerRequest.LastName,
-		TenantID:     tenantID,
-		Role:         role,
+		TenantID:     tenant.ID,
+		Role:         "tenant_admin",
 		Status:       "active",
+		IsSuperAdmin: false,
 	}
 
 	if err := h.db.Create(&user).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create user"})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create user account"})
 		return
 	}
 
 	c.JSON(http.StatusCreated, gin.H{
 		"success": true,
-		"message": "User and tenant created successfully",
+		"message": "Registration successful! Your organization is pending approval. You will be notified once activated by the platform administrator.",
+		"pending": true,
 		"user": gin.H{
 			"id":        user.ID,
 			"email":     user.Email,
 			"firstName": user.FirstName,
 			"lastName":  user.LastName,
-			"role":      user.Role,
-			"tenantId":  user.TenantID,
+		},
+		"organization": gin.H{
+			"id":     tenant.ID,
+			"name":   tenant.Name,
+			"status": tenant.Status,
 		},
 	})
 }

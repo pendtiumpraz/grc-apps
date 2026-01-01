@@ -417,6 +417,95 @@ func (h *PlatformHandler) UpdateTenant(c *gin.Context) {
 	c.JSON(http.StatusOK, tenant)
 }
 
+// ActivateTenant activates a pending tenant and sets subscription dates
+func (h *PlatformHandler) ActivateTenant(c *gin.Context) {
+	id := c.Param("id")
+
+	var tenant models.Tenant
+	if err := h.db.Where("id = ? AND deleted_at IS NULL", id).First(&tenant).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Tenant not found"})
+		return
+	}
+
+	var input struct {
+		PlanType       string  `json:"plan_type"`       // basic, pro, enterprise
+		DurationMonths int     `json:"duration_months"` // How many months subscription is valid
+		Price          float64 `json:"price"`
+		BillingCycle   string  `json:"billing_cycle"` // monthly, yearly
+	}
+
+	if err := c.ShouldBindJSON(&input); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	// Default duration is 12 months if not specified
+	durationMonths := input.DurationMonths
+	if durationMonths <= 0 {
+		durationMonths = 12
+	}
+
+	// Calculate end date
+	startDate := time.Now()
+	endDate := startDate.AddDate(0, durationMonths, 0)
+
+	// Update or create subscription
+	var subscription models.Subscription
+	if err := h.db.Where("tenant_id = ? AND deleted_at IS NULL", id).First(&subscription).Error; err != nil {
+		// Create new subscription
+		subscription = models.Subscription{
+			TenantID: id,
+		}
+	}
+
+	subscription.PlanType = input.PlanType
+	if subscription.PlanType == "" {
+		subscription.PlanType = "basic"
+	}
+	subscription.Status = "active"
+	subscription.StartDate = startDate
+	subscription.EndDate = &endDate
+	subscription.BillingCycle = input.BillingCycle
+	if subscription.BillingCycle == "" {
+		subscription.BillingCycle = "monthly"
+	}
+	subscription.Price = input.Price
+	subscription.Currency = "IDR"
+
+	h.db.Save(&subscription)
+
+	// Activate tenant
+	tenant.Status = "active"
+	h.db.Save(&tenant)
+
+	// Log activation
+	log := models.SystemLog{
+		Level:    "info",
+		Category: "tenant_activation",
+		Message:  fmt.Sprintf("Tenant '%s' activated until %s", tenant.Name, endDate.Format("2006-01-02")),
+		Details:  fmt.Sprintf(`{"tenant_id":"%s","plan":"%s","duration_months":%d}`, id, subscription.PlanType, durationMonths),
+	}
+	h.db.Create(&log)
+
+	c.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"message": fmt.Sprintf("Tenant activated successfully until %s", endDate.Format("2006-01-02")),
+		"tenant": gin.H{
+			"id":     tenant.ID,
+			"name":   tenant.Name,
+			"status": tenant.Status,
+		},
+		"subscription": gin.H{
+			"id":         subscription.ID,
+			"plan_type":  subscription.PlanType,
+			"status":     subscription.Status,
+			"start_date": subscription.StartDate.Format("2006-01-02"),
+			"end_date":   subscription.EndDate.Format("2006-01-02"),
+			"price":      subscription.Price,
+		},
+	})
+}
+
 // DeleteTenant soft deletes a tenant and modifies domain to free up unique constraint
 func (h *PlatformHandler) DeleteTenant(c *gin.Context) {
 	id := c.Param("id")

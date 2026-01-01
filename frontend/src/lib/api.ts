@@ -760,6 +760,8 @@ export const platformAPI = {
   updateTenant: async (id: string, data: any) => authenticatedRequest(`/platform/tenants/${id}`, 'PUT', data),
   deleteTenant: async (id: string) => authenticatedRequest(`/platform/tenants/${id}`, 'DELETE'),
   restoreTenant: async (id: string) => authenticatedRequest(`/platform/tenants/${id}/restore`, 'POST'),
+  activateTenant: async (id: string, data: { plan_type?: string; duration_months?: number; price?: number; billing_cycle?: string }) =>
+    authenticatedRequest(`/platform/tenants/${id}/activate`, 'POST', data),
   getDeletedTenants: async () => authenticatedRequest('/platform/tenants-deleted', 'GET'),
 
   // User management
