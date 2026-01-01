@@ -476,7 +476,6 @@ export default function TenantsPage() {
                       Please share these credentials securely with the tenant admin.
                     </p>
                   </div>
-                  </div>
                 </div>
               </div>
 
@@ -501,7 +500,7 @@ export default function TenantsPage() {
           </Card>
         </div >
       )
-}
+      }
     </div >
   );
 }
