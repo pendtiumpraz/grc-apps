@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { Home, Shield, Lock, TrendingUp, FileCheck, ChevronLeft, ChevronRight, Building2, Sparkles, FileText, Database, BarChart3, Settings, AlertTriangle, Search, FileCode, Activity, Users } from 'lucide-react'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
 import { LucideIcon } from 'lucide-react'
 
@@ -157,6 +157,25 @@ export default function Sidebar() {
     }
 
     const menuItems = getMenuItems()
+
+    // Auto-expand menu based on current path
+    useEffect(() => {
+        if (!pathname) return
+
+        const matchingItem = menuItems.find(item =>
+            item.subItems &&
+            item.subItems.some(sub => pathname === sub.href || pathname.startsWith(sub.href))
+        )
+
+        if (matchingItem) {
+            setExpandedItems(prev => {
+                if (!prev.includes(matchingItem.label)) {
+                    return [...prev, matchingItem.label]
+                }
+                return prev
+            })
+        }
+    }, [pathname, user]) // user dependency is important as menuItems changes with role
 
     const toggleExpand = (label: string) => {
         setExpandedItems(prev =>
