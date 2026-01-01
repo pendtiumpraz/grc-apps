@@ -42,8 +42,10 @@ export default function RoPAPage() {
   }
 
   const filteredActivities = activities.filter(activity => {
-    const matchesSearch = activity.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         activity.category.toLowerCase().includes(searchTerm.toLowerCase())
+    const name = activity.name || ''
+    const category = activity.category || ''
+    const matchesSearch = name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      category.toLowerCase().includes(searchTerm.toLowerCase())
     const matchesFilter = filterStatus === 'all' || activity.status === filterStatus
     return matchesSearch && matchesFilter
   })
@@ -187,7 +189,7 @@ export default function RoPAPage() {
                       </select>
                     </div>
                     <div className="flex gap-2">
-                      <Button 
+                      <Button
                         onClick={() => setIsCreating(true)}
                         disabled={loading}
                         className="bg-cyan-600 hover:bg-cyan-700 text-white disabled:opacity-50"
@@ -421,7 +423,7 @@ export default function RoPAPage() {
                         <p className="text-white mt-1">{selectedActivity.legalBasis}</p>
                       </div>
                       <div className="flex gap-3 justify-end pt-4 border-t border-gray-700">
-                        <Button 
+                        <Button
                           onClick={() => handleDeleteActivity(selectedActivity.id)}
                           className="bg-red-600 hover:bg-red-700 text-white"
                         >
