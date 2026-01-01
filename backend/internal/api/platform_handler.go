@@ -3,6 +3,7 @@ package api
 import (
 	"fmt"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/cyber/backend/internal/db"
@@ -416,7 +417,7 @@ func (h *PlatformHandler) UpdateTenant(c *gin.Context) {
 	c.JSON(http.StatusOK, tenant)
 }
 
-// DeleteTenant soft deletes a tenant
+// DeleteTenant soft deletes a tenant and modifies domain to free up unique constraint
 func (h *PlatformHandler) DeleteTenant(c *gin.Context) {
 	id := c.Param("id")
 
@@ -426,7 +427,11 @@ func (h *PlatformHandler) DeleteTenant(c *gin.Context) {
 		return
 	}
 
+	// Append timestamp to domain to free up unique constraint
+	deletedDomain := fmt.Sprintf("%s_deleted_%d", tenant.Domain, time.Now().Unix())
+	h.db.Model(&tenant).Update("domain", deletedDomain)
 	h.db.Delete(&tenant)
+
 	c.JSON(http.StatusOK, gin.H{"message": "Tenant deleted successfully"})
 }
 
@@ -540,6 +545,220 @@ func (h *PlatformHandler) ResetUserPassword(c *gin.Context) {
 	h.db.Save(&user)
 
 	c.JSON(http.StatusOK, gin.H{"message": "Password updated successfully"})
+}
+
+// CreateUser creates a new user for a tenant
+func (h *PlatformHandler) CreateUser(c *gin.Context) {
+	tenantID := c.Param("tenantId")
+
+	// Verify tenant exists
+	var tenant models.Tenant
+	if err := h.db.Where("id = ? AND deleted_at IS NULL", tenantID).First(&tenant).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Tenant not found"})
+		return
+	}
+
+	var input struct {
+		Email     string `json:"email" binding:"required,email"`
+		FirstName string `json:"first_name" binding:"required"`
+		LastName  string `json:"last_name"`
+		Role      string `json:"role"`
+	}
+
+	if err := c.ShouldBindJSON(&input); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	// Check if email already exists
+	var existingUser models.User
+	if err := h.db.Where("email = ? AND deleted_at IS NULL", input.Email).First(&existingUser).Error; err == nil {
+		c.JSON(http.StatusConflict, gin.H{"error": "Email already exists"})
+		return
+	}
+
+	// Generate default password
+	defaultPassword := "Welcome123!"
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(defaultPassword), bcrypt.DefaultCost)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create user"})
+		return
+	}
+
+	role := input.Role
+	if role == "" {
+		role = "regular_user"
+	}
+
+	user := models.User{
+		TenantID:     tenantID,
+		Email:        input.Email,
+		PasswordHash: string(hashedPassword),
+		FirstName:    input.FirstName,
+		LastName:     input.LastName,
+		Role:         role,
+		Status:       "active",
+		IsSuperAdmin: false,
+	}
+
+	if err := h.db.Create(&user).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create user"})
+		return
+	}
+
+	c.JSON(http.StatusCreated, gin.H{
+		"user": gin.H{
+			"id":         user.ID,
+			"email":      user.Email,
+			"first_name": user.FirstName,
+			"last_name":  user.LastName,
+			"role":       user.Role,
+			"status":     user.Status,
+		},
+		"password": defaultPassword,
+		"message":  "User created. Please change password after first login.",
+	})
+}
+
+// DeleteUser soft deletes a user and modifies email to free up unique constraint
+func (h *PlatformHandler) DeleteUser(c *gin.Context) {
+	userID := c.Param("userId")
+
+	var user models.User
+	if err := h.db.Where("id = ? AND deleted_at IS NULL", userID).First(&user).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "User not found"})
+		return
+	}
+
+	// Append timestamp to email to free up unique constraint
+	deletedEmail := fmt.Sprintf("%s_deleted_%d", user.Email, time.Now().Unix())
+	h.db.Model(&user).Update("email", deletedEmail)
+	h.db.Delete(&user)
+
+	c.JSON(http.StatusOK, gin.H{"message": "User deleted successfully"})
+}
+
+// RestoreTenant restores a soft-deleted tenant
+func (h *PlatformHandler) RestoreTenant(c *gin.Context) {
+	id := c.Param("id")
+
+	var tenant models.Tenant
+	if err := h.db.Unscoped().Where("id = ?", id).First(&tenant).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Tenant not found"})
+		return
+	}
+
+	if tenant.DeletedAt.Time.IsZero() {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Tenant is not deleted"})
+		return
+	}
+
+	// Check if domain conflicts with existing tenant
+	var existingTenant models.Tenant
+	if err := h.db.Where("domain = ? AND deleted_at IS NULL AND id != ?", tenant.Domain, id).First(&existingTenant).Error; err == nil {
+		// Conflict exists - domain is taken by another tenant
+		c.JSON(http.StatusConflict, gin.H{
+			"error":   "Cannot restore: domain is already in use by another tenant",
+			"details": fmt.Sprintf("Domain '%s' is used by tenant '%s'", tenant.Domain, existingTenant.Name),
+		})
+		return
+	}
+
+	// Remove "_deleted_xxx" suffix from domain if present
+	if strings.Contains(tenant.Domain, "_deleted_") {
+		parts := strings.Split(tenant.Domain, "_deleted_")
+		tenant.Domain = parts[0]
+	}
+
+	// Restore by setting deleted_at to nil
+	h.db.Unscoped().Model(&tenant).Updates(map[string]interface{}{
+		"deleted_at": nil,
+		"domain":     tenant.Domain,
+		"status":     "active",
+	})
+
+	c.JSON(http.StatusOK, gin.H{"message": "Tenant restored successfully", "tenant": tenant})
+}
+
+// RestoreUser restores a soft-deleted user
+func (h *PlatformHandler) RestoreUser(c *gin.Context) {
+	userID := c.Param("userId")
+
+	var user models.User
+	if err := h.db.Unscoped().Where("id = ?", userID).First(&user).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "User not found"})
+		return
+	}
+
+	if user.DeletedAt.Time.IsZero() {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "User is not deleted"})
+		return
+	}
+
+	// Remove "_deleted_xxx" suffix from email
+	originalEmail := user.Email
+	if strings.Contains(user.Email, "_deleted_") {
+		parts := strings.Split(user.Email, "_deleted_")
+		originalEmail = parts[0]
+	}
+
+	// Check if email conflicts with existing user
+	var existingUser models.User
+	if err := h.db.Where("email = ? AND deleted_at IS NULL AND id != ?", originalEmail, userID).First(&existingUser).Error; err == nil {
+		c.JSON(http.StatusConflict, gin.H{
+			"error":   "Cannot restore: email is already in use by another user",
+			"details": fmt.Sprintf("Email '%s' is used by user '%s %s'", originalEmail, existingUser.FirstName, existingUser.LastName),
+		})
+		return
+	}
+
+	// Restore by setting deleted_at to nil
+	h.db.Unscoped().Model(&user).Updates(map[string]interface{}{
+		"deleted_at": nil,
+		"email":      originalEmail,
+		"status":     "active",
+	})
+
+	c.JSON(http.StatusOK, gin.H{"message": "User restored successfully"})
+}
+
+// GetDeletedTenants returns all soft-deleted tenants
+func (h *PlatformHandler) GetDeletedTenants(c *gin.Context) {
+	var tenants []models.Tenant
+	h.db.Unscoped().Where("deleted_at IS NOT NULL").Order("deleted_at DESC").Find(&tenants)
+
+	var result []map[string]interface{}
+	for _, t := range tenants {
+		result = append(result, map[string]interface{}{
+			"id":         t.ID,
+			"name":       t.Name,
+			"domain":     t.Domain,
+			"deleted_at": t.DeletedAt.Time.Format("2006-01-02 15:04:05"),
+		})
+	}
+
+	c.JSON(http.StatusOK, result)
+}
+
+// GetDeletedUsers returns all soft-deleted users for a tenant
+func (h *PlatformHandler) GetDeletedUsers(c *gin.Context) {
+	tenantID := c.Param("tenantId")
+
+	var users []models.User
+	h.db.Unscoped().Where("tenant_id = ? AND deleted_at IS NOT NULL", tenantID).Order("deleted_at DESC").Find(&users)
+
+	var result []map[string]interface{}
+	for _, u := range users {
+		result = append(result, map[string]interface{}{
+			"id":         u.ID,
+			"email":      u.Email,
+			"first_name": u.FirstName,
+			"last_name":  u.LastName,
+			"deleted_at": u.DeletedAt.Time.Format("2006-01-02 15:04:05"),
+		})
+	}
+
+	c.JSON(http.StatusOK, result)
 }
 
 // ===== ANALYTICS =====

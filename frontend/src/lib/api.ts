@@ -759,12 +759,18 @@ export const platformAPI = {
   createTenant: async (data: any) => authenticatedRequest('/platform/tenants', 'POST', data),
   updateTenant: async (id: string, data: any) => authenticatedRequest(`/platform/tenants/${id}`, 'PUT', data),
   deleteTenant: async (id: string) => authenticatedRequest(`/platform/tenants/${id}`, 'DELETE'),
+  restoreTenant: async (id: string) => authenticatedRequest(`/platform/tenants/${id}/restore`, 'POST'),
+  getDeletedTenants: async () => authenticatedRequest('/platform/tenants-deleted', 'GET'),
 
   // User management
   getTenantUsers: async (tenantId: string) => authenticatedRequest(`/platform/users/tenant/${tenantId}`, 'GET'),
+  createUser: async (tenantId: string, data: any) => authenticatedRequest(`/platform/users/tenant/${tenantId}`, 'POST', data),
   updateUser: async (userId: string, data: any) => authenticatedRequest(`/platform/users/${userId}`, 'PUT', data),
+  deleteUser: async (userId: string) => authenticatedRequest(`/platform/users/${userId}`, 'DELETE'),
   resetUserPassword: async (userId: string, newPassword: string) =>
     authenticatedRequest(`/platform/users/${userId}/reset-password`, 'POST', { new_password: newPassword }),
+  restoreUser: async (userId: string) => authenticatedRequest(`/platform/users/${userId}/restore`, 'POST'),
+  getDeletedUsers: async (tenantId: string) => authenticatedRequest(`/platform/users/deleted/${tenantId}`, 'GET'),
 
   // Analytics
   getAnalytics: async () => authenticatedRequest('/platform/analytics', 'GET'),
