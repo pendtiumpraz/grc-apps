@@ -58,6 +58,12 @@ func migratePublicSchema(db *gorm.DB) error {
 		&models.GlobalConfig{},
 		&models.AISettings{},
 		&models.AIUsageLog{},
+		// Billing models
+		&models.Subscription{},
+		&models.Invoice{},
+		&models.Payment{},
+		// System logs
+		&models.SystemLog{},
 	}
 
 	for _, model := range publicModels {
@@ -81,7 +87,74 @@ func migratePublicSchema(db *gorm.DB) error {
 	}
 
 	log.Println("Public schema migrated successfully")
+
+	// Seed sample data for platform demo
+	seedSampleData(db)
+
 	return nil
+}
+
+// seedSampleData adds sample data for platform demo
+func seedSampleData(db *gorm.DB) {
+	// Check if we already have subscriptions
+	var subCount int64
+	db.Model(&models.Subscription{}).Count(&subCount)
+	if subCount > 0 {
+		return // Already seeded
+	}
+
+	// Get all tenants and create subscriptions for them
+	var tenants []models.Tenant
+	db.Where("deleted_at IS NULL").Find(&tenants)
+
+	for i, t := range tenants {
+		planTypes := []string{"basic", "pro", "enterprise"}
+		plan := planTypes[i%3]
+		prices := map[string]float64{"basic": 1500000, "pro": 5000000, "enterprise": 15000000}
+
+		sub := models.Subscription{
+			TenantID:     t.ID,
+			PlanType:     plan,
+			Status:       "active",
+			StartDate:    time.Now().AddDate(0, -6, 0),
+			BillingCycle: "monthly",
+			Price:        prices[plan],
+			Currency:     "IDR",
+		}
+		db.Create(&sub)
+
+		// Create sample invoice
+		invoiceNum := fmt.Sprintf("INV-%s-%04d", time.Now().Format("200601"), i+1)
+		inv := models.Invoice{
+			TenantID:      t.ID,
+			InvoiceNumber: invoiceNum,
+			Amount:        prices[plan],
+			Tax:           prices[plan] * 0.11,
+			TotalAmount:   prices[plan] * 1.11,
+			Currency:      "IDR",
+			Status:        []string{"paid", "pending", "overdue"}[i%3],
+			Description:   fmt.Sprintf("Monthly subscription - %s plan", plan),
+		}
+		db.Create(&inv)
+	}
+
+	// Add sample system logs
+	logs := []models.SystemLog{
+		{Level: "info", Category: "system", Action: "startup", Message: "System started successfully"},
+		{Level: "info", Category: "system", Action: "backup", Message: "Database backup completed"},
+		{Level: "warning", Category: "system", Action: "storage", Message: "Storage usage at 85%"},
+		{Level: "info", Category: "api", Action: "high_usage", Message: "High API usage detected"},
+		{Level: "info", Category: "security", Action: "scan", Message: "Security scan completed"},
+		{Level: "info", Category: "auth", Action: "login", Message: "Super admin logged in"},
+		{Level: "warning", Category: "billing", Action: "overdue", Message: "Some invoices are overdue"},
+	}
+
+	for _, l := range logs {
+		l.IPAddress = "127.0.0.1"
+		db.Create(&l)
+	}
+
+	log.Println("Sample data seeded successfully")
 }
 
 // CreateTenantSchema creates a new schema for a tenant and migrates tables

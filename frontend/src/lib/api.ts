@@ -744,3 +744,37 @@ export const documentAPI = {
     })
   },
 }
+
+// Platform API (Super Admin only)
+export const platformAPI = {
+  // Dashboard stats
+  getStats: async () => authenticatedRequest('/platform/stats', 'GET'),
+  getTopTenants: async () => authenticatedRequest('/platform/top-tenants', 'GET'),
+  getRecentActivity: async () => authenticatedRequest('/platform/recent-activity', 'GET'),
+  getAlerts: async () => authenticatedRequest('/platform/alerts', 'GET'),
+
+  // Tenants management
+  getTenants: async () => authenticatedRequest('/platform/tenants', 'GET'),
+  getTenantById: async (id: string) => authenticatedRequest(`/platform/tenants/${id}`, 'GET'),
+  createTenant: async (data: any) => authenticatedRequest('/platform/tenants', 'POST', data),
+  updateTenant: async (id: string, data: any) => authenticatedRequest(`/platform/tenants/${id}`, 'PUT', data),
+  deleteTenant: async (id: string) => authenticatedRequest(`/platform/tenants/${id}`, 'DELETE'),
+
+  // Analytics
+  getAnalytics: async () => authenticatedRequest('/platform/analytics', 'GET'),
+
+  // Billing
+  getBillingOverview: async () => authenticatedRequest('/platform/billing', 'GET'),
+  getInvoices: async () => authenticatedRequest('/platform/billing/invoices', 'GET'),
+  getSubscriptions: async () => authenticatedRequest('/platform/billing/subscriptions', 'GET'),
+
+  // Logs
+  getLogs: async (level?: string, category?: string) => {
+    const params = new URLSearchParams()
+    if (level) params.append('level', level)
+    if (category) params.append('category', category)
+    const query = params.toString() ? `?${params.toString()}` : ''
+    return authenticatedRequest(`/platform/logs${query}`, 'GET')
+  },
+  getLogStats: async () => authenticatedRequest('/platform/logs/stats', 'GET'),
+}

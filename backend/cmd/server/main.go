@@ -63,7 +63,7 @@ func main() {
 
 	// Initialize API handlers
 	api.InitHandlers(dbConn)
-	
+
 	// Initialize new sub-module handlers
 	regopsGapAnalysisHandler := api.NewRegOpsGapAnalysisHandler(dbConn.DB)
 	regopsObligationMappingHandler := api.NewRegOpsObligationMappingHandler(dbConn.DB)
@@ -85,6 +85,7 @@ func main() {
 	auditopsEvidenceHandler := api.NewAuditOpsEvidenceHandler(dbConn.DB)
 	auditopsReportingHandler := api.NewAuditOpsReportingHandler(dbConn.DB)
 	aiDocumentHandler := api.NewAIDocumentHandler(dbConn.DB)
+	platformHandler := api.NewPlatformHandler(dbConn)
 
 	// Initialize Redis cache
 	if redisClient != nil {
@@ -101,7 +102,7 @@ func main() {
 	r.Use(middleware.TenantMiddleware())
 
 	// Setup routes
-	setupRoutes(r, regopsGapAnalysisHandler, regopsObligationMappingHandler, regopsPoliciesHandler, regopsControlsHandler, privacyopsDataInventoryHandler, privacyopsRoPAHandler, privacyopsDSRHandler, privacyopsDPIAHandler, privacyopsControlsHandler, privacyopsIncidentHandler, riskopsERMHandler, riskopsSecurityHandler, riskopsVendorHandler, riskopsContinuityHandler, auditopsInternalAuditHandler, auditopsGovernanceHandler, auditopsContinuousAuditHandler, auditopsEvidenceHandler, auditopsReportingHandler, aiDocumentHandler)
+	setupRoutes(r, regopsGapAnalysisHandler, regopsObligationMappingHandler, regopsPoliciesHandler, regopsControlsHandler, privacyopsDataInventoryHandler, privacyopsRoPAHandler, privacyopsDSRHandler, privacyopsDPIAHandler, privacyopsControlsHandler, privacyopsIncidentHandler, riskopsERMHandler, riskopsSecurityHandler, riskopsVendorHandler, riskopsContinuityHandler, auditopsInternalAuditHandler, auditopsGovernanceHandler, auditopsContinuousAuditHandler, auditopsEvidenceHandler, auditopsReportingHandler, aiDocumentHandler, platformHandler)
 
 	// Start server
 	port := fmt.Sprintf(":%s", cfg.Server.Port)
@@ -111,7 +112,7 @@ func main() {
 	}
 }
 
-func setupRoutes(r *gin.Engine, regopsGapAnalysisHandler *api.RegOpsGapAnalysisHandler, regopsObligationMappingHandler *api.RegOpsObligationMappingHandler, regopsPoliciesHandler *api.RegOpsPoliciesHandler, regopsControlsHandler *api.RegOpsControlsHandler, privacyopsDataInventoryHandler *api.PrivacyOpsDataInventoryHandler, privacyopsRoPAHandler *api.PrivacyOpsRoPAHandler, privacyopsDSRHandler *api.PrivacyOpsDSRHandler, privacyopsDPIAHandler *api.PrivacyOpsDPIAHandler, privacyopsControlsHandler *api.PrivacyOpsControlsHandler, privacyopsIncidentHandler *api.PrivacyOpsIncidentHandler, riskopsERMHandler *api.RiskOpsERMHandler, riskopsSecurityHandler *api.RiskOpsSecurityHandler, riskopsVendorHandler *api.RiskOpsVendorHandler, riskopsContinuityHandler *api.RiskOpsContinuityHandler, auditopsInternalAuditHandler *api.AuditOpsInternalAuditHandler, auditopsGovernanceHandler *api.AuditOpsGovernanceHandler, auditopsContinuousAuditHandler *api.AuditOpsContinuousAuditHandler, auditopsEvidenceHandler *api.AuditOpsEvidenceHandler, auditopsReportingHandler *api.AuditOpsReportingHandler, aiDocumentHandler *api.AIDocumentHandler) {
+func setupRoutes(r *gin.Engine, regopsGapAnalysisHandler *api.RegOpsGapAnalysisHandler, regopsObligationMappingHandler *api.RegOpsObligationMappingHandler, regopsPoliciesHandler *api.RegOpsPoliciesHandler, regopsControlsHandler *api.RegOpsControlsHandler, privacyopsDataInventoryHandler *api.PrivacyOpsDataInventoryHandler, privacyopsRoPAHandler *api.PrivacyOpsRoPAHandler, privacyopsDSRHandler *api.PrivacyOpsDSRHandler, privacyopsDPIAHandler *api.PrivacyOpsDPIAHandler, privacyopsControlsHandler *api.PrivacyOpsControlsHandler, privacyopsIncidentHandler *api.PrivacyOpsIncidentHandler, riskopsERMHandler *api.RiskOpsERMHandler, riskopsSecurityHandler *api.RiskOpsSecurityHandler, riskopsVendorHandler *api.RiskOpsVendorHandler, riskopsContinuityHandler *api.RiskOpsContinuityHandler, auditopsInternalAuditHandler *api.AuditOpsInternalAuditHandler, auditopsGovernanceHandler *api.AuditOpsGovernanceHandler, auditopsContinuousAuditHandler *api.AuditOpsContinuousAuditHandler, auditopsEvidenceHandler *api.AuditOpsEvidenceHandler, auditopsReportingHandler *api.AuditOpsReportingHandler, aiDocumentHandler *api.AIDocumentHandler, platformHandler *api.PlatformHandler) {
 	// Public routes
 	public := r.Group("/api")
 	{
@@ -353,6 +354,36 @@ func setupRoutes(r *gin.Engine, regopsGapAnalysisHandler *api.RegOpsGapAnalysisH
 			aiDocuments.GET("/analyses/:id", middleware.RBACMiddleware(models.PermissionDocumentView), aiDocumentHandler.GetDocumentAnalysis)
 			aiDocuments.POST("/analyses", middleware.RBACMiddleware(models.PermissionDocumentAnalyze), aiDocumentHandler.AnalyzeDocument)
 			aiDocuments.DELETE("/analyses/:id", middleware.RBACMiddleware(models.PermissionDocumentDelete), aiDocumentHandler.DeleteDocumentAnalysis)
+		}
+
+		// Platform routes - Super Admin only
+		platform := protected.Group("/platform")
+		platform.Use(middleware.RequireSuperAdmin())
+		{
+			// Dashboard stats
+			platform.GET("/stats", platformHandler.GetPlatformStats)
+			platform.GET("/top-tenants", platformHandler.GetTopTenants)
+			platform.GET("/recent-activity", platformHandler.GetRecentActivity)
+			platform.GET("/alerts", platformHandler.GetSystemAlerts)
+
+			// Tenants management
+			platform.GET("/tenants", platformHandler.GetAllTenants)
+			platform.GET("/tenants/:id", platformHandler.GetTenantByID)
+			platform.POST("/tenants", platformHandler.CreateTenant)
+			platform.PUT("/tenants/:id", platformHandler.UpdateTenant)
+			platform.DELETE("/tenants/:id", platformHandler.DeleteTenant)
+
+			// Analytics
+			platform.GET("/analytics", platformHandler.GetAnalytics)
+
+			// Billing
+			platform.GET("/billing", platformHandler.GetBillingOverview)
+			platform.GET("/billing/invoices", platformHandler.GetInvoices)
+			platform.GET("/billing/subscriptions", platformHandler.GetSubscriptions)
+
+			// Logs
+			platform.GET("/logs", platformHandler.GetSystemLogs)
+			platform.GET("/logs/stats", platformHandler.GetLogStats)
 		}
 	}
 }
