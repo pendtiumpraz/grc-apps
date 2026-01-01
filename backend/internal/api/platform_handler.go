@@ -430,6 +430,118 @@ func (h *PlatformHandler) DeleteTenant(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "Tenant deleted successfully"})
 }
 
+// ===== USER MANAGEMENT =====
+
+// GetTenantUsers returns all users for a tenant
+func (h *PlatformHandler) GetTenantUsers(c *gin.Context) {
+	tenantID := c.Param("tenantId")
+
+	var users []models.User
+	h.db.Where("tenant_id = ? AND deleted_at IS NULL", tenantID).Order("created_at DESC").Find(&users)
+
+	// Map to response without password hash
+	var result []UserSummary
+	for _, u := range users {
+		var lastLogin *string
+		if u.LastLogin != nil {
+			formatted := u.LastLogin.Format("2006-01-02 15:04")
+			lastLogin = &formatted
+		}
+		result = append(result, UserSummary{
+			ID:        u.ID,
+			Email:     u.Email,
+			FirstName: u.FirstName,
+			LastName:  u.LastName,
+			Role:      u.Role,
+			Status:    u.Status,
+			LastLogin: lastLogin,
+		})
+	}
+
+	c.JSON(http.StatusOK, result)
+}
+
+// UpdateUser updates a user's info
+func (h *PlatformHandler) UpdateUser(c *gin.Context) {
+	userID := c.Param("userId")
+
+	var user models.User
+	if err := h.db.Where("id = ? AND deleted_at IS NULL", userID).First(&user).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "User not found"})
+		return
+	}
+
+	var input struct {
+		Email     string `json:"email"`
+		FirstName string `json:"first_name"`
+		LastName  string `json:"last_name"`
+		Role      string `json:"role"`
+		Status    string `json:"status"`
+	}
+
+	if err := c.ShouldBindJSON(&input); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	if input.Email != "" {
+		user.Email = input.Email
+	}
+	if input.FirstName != "" {
+		user.FirstName = input.FirstName
+	}
+	if input.LastName != "" {
+		user.LastName = input.LastName
+	}
+	if input.Role != "" {
+		user.Role = input.Role
+	}
+	if input.Status != "" {
+		user.Status = input.Status
+	}
+
+	h.db.Save(&user)
+	c.JSON(http.StatusOK, gin.H{
+		"id":         user.ID,
+		"email":      user.Email,
+		"first_name": user.FirstName,
+		"last_name":  user.LastName,
+		"role":       user.Role,
+		"status":     user.Status,
+	})
+}
+
+// ResetUserPassword resets a user's password
+func (h *PlatformHandler) ResetUserPassword(c *gin.Context) {
+	userID := c.Param("userId")
+
+	var user models.User
+	if err := h.db.Where("id = ? AND deleted_at IS NULL", userID).First(&user).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "User not found"})
+		return
+	}
+
+	var input struct {
+		NewPassword string `json:"new_password" binding:"required,min=8"`
+	}
+
+	if err := c.ShouldBindJSON(&input); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Password must be at least 8 characters"})
+		return
+	}
+
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(input.NewPassword), bcrypt.DefaultCost)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to hash password"})
+		return
+	}
+
+	user.PasswordHash = string(hashedPassword)
+	h.db.Save(&user)
+
+	c.JSON(http.StatusOK, gin.H{"message": "Password updated successfully"})
+}
+
 // ===== ANALYTICS =====
 
 type AnalyticsData struct {

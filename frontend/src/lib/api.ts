@@ -760,6 +760,12 @@ export const platformAPI = {
   updateTenant: async (id: string, data: any) => authenticatedRequest(`/platform/tenants/${id}`, 'PUT', data),
   deleteTenant: async (id: string) => authenticatedRequest(`/platform/tenants/${id}`, 'DELETE'),
 
+  // User management
+  getTenantUsers: async (tenantId: string) => authenticatedRequest(`/platform/users/tenant/${tenantId}`, 'GET'),
+  updateUser: async (userId: string, data: any) => authenticatedRequest(`/platform/users/${userId}`, 'PUT', data),
+  resetUserPassword: async (userId: string, newPassword: string) =>
+    authenticatedRequest(`/platform/users/${userId}/reset-password`, 'POST', { new_password: newPassword }),
+
   // Analytics
   getAnalytics: async () => authenticatedRequest('/platform/analytics', 'GET'),
 

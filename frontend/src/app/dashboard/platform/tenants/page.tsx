@@ -306,13 +306,10 @@ export default function TenantsPage() {
                           <td className="p-4">
                             <div className="flex items-center justify-end gap-2">
                               <Link href={`/dashboard/platform/tenants/${tenant.id}`}>
-                                <Button variant="ghost" size="sm" className="text-gray-400 hover:text-white">
+                                <Button variant="ghost" size="sm" className="text-gray-400 hover:text-white" title="View Details">
                                   <Eye className="w-4 h-4" />
                                 </Button>
                               </Link>
-                              <Button variant="ghost" size="sm" className="text-gray-400 hover:text-white">
-                                <Edit className="w-4 h-4" />
-                              </Button>
                               <Button
                                 variant="ghost"
                                 size="sm"

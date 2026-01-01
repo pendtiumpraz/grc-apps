@@ -373,6 +373,11 @@ func setupRoutes(r *gin.Engine, regopsGapAnalysisHandler *api.RegOpsGapAnalysisH
 			platform.PUT("/tenants/:id", platformHandler.UpdateTenant)
 			platform.DELETE("/tenants/:id", platformHandler.DeleteTenant)
 
+			// User management (separate path to avoid conflict with tenants/:id)
+			platform.GET("/users/tenant/:tenantId", platformHandler.GetTenantUsers)
+			platform.PUT("/users/:userId", platformHandler.UpdateUser)
+			platform.POST("/users/:userId/reset-password", platformHandler.ResetUserPassword)
+
 			// Analytics
 			platform.GET("/analytics", platformHandler.GetAnalytics)
 
