@@ -21,97 +21,118 @@ const superAdminMenuItems: MenuItem[] = [
     { icon: BarChart3, label: 'Analytics', href: '/dashboard/platform/analytics' },
     { icon: Database, label: 'Billing', href: '/dashboard/platform/billing' },
     { icon: Settings, label: 'Logs', href: '/dashboard/platform/logs' },
+    { icon: Sparkles, label: 'AI Settings', href: '/dashboard/settings/ai' },
 ]
 
 // Menu items for Tenant Admin
 const tenantAdminMenuItems: MenuItem[] = [
     { icon: Home, label: 'Dashboard', href: '/dashboard' },
-    { icon: FileText, label: 'Documents', href: '/dashboard/documents', subItems: [
-        { label: 'All Documents', href: '/dashboard/documents' },
-        { label: 'AI Generator', href: '/dashboard/documents/generator' },
-        { label: 'AI Analyzer', href: '/dashboard/documents/analyzer' },
-    ]},
+    {
+        icon: FileText, label: 'Documents', href: '/dashboard/documents', subItems: [
+            { label: 'All Documents', href: '/dashboard/documents' },
+            { label: 'AI Generator', href: '/dashboard/documents/generator' },
+            { label: 'AI Analyzer', href: '/dashboard/documents/analyzer' },
+        ]
+    },
     { icon: Users, label: 'Users', href: '/dashboard/platform/tenants' },
-    { icon: Shield, label: 'RegOps', href: '/dashboard/regops', subItems: [
-        { label: 'Regulations', href: '/dashboard/regops' },
-        { label: 'Obligation Mapping', href: '/dashboard/regops/obligations' },
-        { label: 'Gap Analysis', href: '/dashboard/regops/gap-analysis' },
-        { label: 'Controls', href: '/dashboard/regops/controls' },
-        { label: 'Policies', href: '/dashboard/regops/policies' },
-        { label: 'Monitoring', href: '/dashboard/regops/monitoring' },
-    ]},
-    { icon: Lock, label: 'PrivacyOps', href: '/dashboard/privacyops', subItems: [
-        { label: 'Overview', href: '/dashboard/privacyops' },
-        { label: 'Data Inventory', href: '/dashboard/privacyops/data-inventory' },
-        { label: 'RoPA', href: '/dashboard/privacyops/ropa' },
-        { label: 'DPIA', href: '/dashboard/privacyops/dpia' },
-        { label: 'DSR', href: '/dashboard/privacyops/dsr' },
-        { label: 'Controls', href: '/dashboard/privacyops/controls' },
-        { label: 'Incidents', href: '/dashboard/privacyops/incidents' },
-        { label: 'Monitoring', href: '/dashboard/privacyops/monitoring' },
-    ]},
-    { icon: TrendingUp, label: 'RiskOps', href: '/dashboard/riskops', subItems: [
-        { label: 'Overview', href: '/dashboard/riskops' },
-        { label: 'Risk Register', href: '/dashboard/riskops' },
-        { label: 'Vulnerabilities', href: '/dashboard/riskops/vulnerabilities' },
-        { label: 'Vendors', href: '/dashboard/riskops/vendors' },
-        { label: 'Continuity', href: '/dashboard/riskops/continuity' },
-        { label: 'Monitoring', href: '/dashboard/riskops/monitoring' },
-    ]},
-    { icon: FileCheck, label: 'AuditOps', href: '/dashboard/auditops', subItems: [
-        { label: 'Overview', href: '/dashboard/auditops' },
-        { label: 'Internal Audits', href: '/dashboard/auditops/internal-audits' },
-        { label: 'Governance (KRI)', href: '/dashboard/auditops/governance' },
-        { label: 'Continuous Audit', href: '/dashboard/auditops/continuous-audit' },
-        { label: 'Evidence', href: '/dashboard/auditops/evidence' },
-        { label: 'Reports', href: '/dashboard/auditops/reports' },
-    ]},
+    {
+        icon: Shield, label: 'RegOps', href: '/dashboard/regops', subItems: [
+            { label: 'Regulations', href: '/dashboard/regops' },
+            { label: 'Obligation Mapping', href: '/dashboard/regops/obligations' },
+            { label: 'Gap Analysis', href: '/dashboard/regops/gap-analysis' },
+            { label: 'Controls', href: '/dashboard/regops/controls' },
+            { label: 'Policies', href: '/dashboard/regops/policies' },
+            { label: 'Monitoring', href: '/dashboard/regops/monitoring' },
+        ]
+    },
+    {
+        icon: Lock, label: 'PrivacyOps', href: '/dashboard/privacyops', subItems: [
+            { label: 'Overview', href: '/dashboard/privacyops' },
+            { label: 'Data Inventory', href: '/dashboard/privacyops/data-inventory' },
+            { label: 'RoPA', href: '/dashboard/privacyops/ropa' },
+            { label: 'DPIA', href: '/dashboard/privacyops/dpia' },
+            { label: 'DSR', href: '/dashboard/privacyops/dsr' },
+            { label: 'Controls', href: '/dashboard/privacyops/controls' },
+            { label: 'Incidents', href: '/dashboard/privacyops/incidents' },
+            { label: 'Monitoring', href: '/dashboard/privacyops/monitoring' },
+        ]
+    },
+    {
+        icon: TrendingUp, label: 'RiskOps', href: '/dashboard/riskops', subItems: [
+            { label: 'Overview', href: '/dashboard/riskops' },
+            { label: 'Risk Register', href: '/dashboard/riskops' },
+            { label: 'Vulnerabilities', href: '/dashboard/riskops/vulnerabilities' },
+            { label: 'Vendors', href: '/dashboard/riskops/vendors' },
+            { label: 'Continuity', href: '/dashboard/riskops/continuity' },
+            { label: 'Monitoring', href: '/dashboard/riskops/monitoring' },
+        ]
+    },
+    {
+        icon: FileCheck, label: 'AuditOps', href: '/dashboard/auditops', subItems: [
+            { label: 'Overview', href: '/dashboard/auditops' },
+            { label: 'Internal Audits', href: '/dashboard/auditops/internal-audits' },
+            { label: 'Governance (KRI)', href: '/dashboard/auditops/governance' },
+            { label: 'Continuous Audit', href: '/dashboard/auditops/continuous-audit' },
+            { label: 'Evidence', href: '/dashboard/auditops/evidence' },
+            { label: 'Reports', href: '/dashboard/auditops/reports' },
+        ]
+    },
     { icon: Sparkles, label: 'AI Settings', href: '/dashboard/settings/ai' },
 ]
 
 // Menu items for Regular User/Auditor
 const regularUserMenuItems: MenuItem[] = [
     { icon: Home, label: 'Dashboard', href: '/dashboard' },
-    { icon: FileText, label: 'Documents', href: '/dashboard/documents', subItems: [
-        { label: 'All Documents', href: '/dashboard/documents' },
-        { label: 'AI Generator', href: '/dashboard/documents/generator' },
-        { label: 'AI Analyzer', href: '/dashboard/documents/analyzer' },
-    ]},
-    { icon: Shield, label: 'RegOps', href: '/dashboard/regops', subItems: [
-        { label: 'Regulations', href: '/dashboard/regops' },
-        { label: 'Obligation Mapping', href: '/dashboard/regops/obligations' },
-        { label: 'Gap Analysis', href: '/dashboard/regops/gap-analysis' },
-        { label: 'Controls', href: '/dashboard/regops/controls' },
-        { label: 'Policies', href: '/dashboard/regops/policies' },
-        { label: 'Monitoring', href: '/dashboard/regops/monitoring' },
-    ]},
-    { icon: Lock, label: 'PrivacyOps', href: '/dashboard/privacyops', subItems: [
-        { label: 'Overview', href: '/dashboard/privacyops' },
-        { label: 'Data Inventory', href: '/dashboard/privacyops/data-inventory' },
-        { label: 'RoPA', href: '/dashboard/privacyops/ropa' },
-        { label: 'DPIA', href: '/dashboard/privacyops/dpia' },
-        { label: 'DSR', href: '/dashboard/privacyops/dsr' },
-        { label: 'Controls', href: '/dashboard/privacyops/controls' },
-        { label: 'Incidents', href: '/dashboard/privacyops/incidents' },
-        { label: 'Monitoring', href: '/dashboard/privacyops/monitoring' },
-    ]},
-    { icon: TrendingUp, label: 'RiskOps', href: '/dashboard/riskops', subItems: [
-        { label: 'Overview', href: '/dashboard/riskops' },
-        { label: 'Risk Register', href: '/dashboard/riskops' },
-        { label: 'Vulnerabilities', href: '/dashboard/riskops/vulnerabilities' },
-        { label: 'Vendors', href: '/dashboard/riskops/vendors' },
-        { label: 'Continuity', href: '/dashboard/riskops/continuity' },
-        { label: 'Monitoring', href: '/dashboard/riskops/monitoring' },
-    ]},
-    { icon: FileCheck, label: 'AuditOps', href: '/dashboard/auditops', subItems: [
-        { label: 'Overview', href: '/dashboard/auditops' },
-        { label: 'Internal Audits', href: '/dashboard/auditops/internal-audits' },
-        { label: 'Governance (KRI)', href: '/dashboard/auditops/governance' },
-        { label: 'Continuous Audit', href: '/dashboard/auditops/continuous-audit' },
-        { label: 'Evidence', href: '/dashboard/auditops/evidence' },
-        { label: 'Monitoring', href: '/dashboard/auditops/monitoring' },
-        { label: 'Reports', href: '/dashboard/auditops/reports' },
-    ]},
+    {
+        icon: FileText, label: 'Documents', href: '/dashboard/documents', subItems: [
+            { label: 'All Documents', href: '/dashboard/documents' },
+            { label: 'AI Generator', href: '/dashboard/documents/generator' },
+            { label: 'AI Analyzer', href: '/dashboard/documents/analyzer' },
+        ]
+    },
+    {
+        icon: Shield, label: 'RegOps', href: '/dashboard/regops', subItems: [
+            { label: 'Regulations', href: '/dashboard/regops' },
+            { label: 'Obligation Mapping', href: '/dashboard/regops/obligations' },
+            { label: 'Gap Analysis', href: '/dashboard/regops/gap-analysis' },
+            { label: 'Controls', href: '/dashboard/regops/controls' },
+            { label: 'Policies', href: '/dashboard/regops/policies' },
+            { label: 'Monitoring', href: '/dashboard/regops/monitoring' },
+        ]
+    },
+    {
+        icon: Lock, label: 'PrivacyOps', href: '/dashboard/privacyops', subItems: [
+            { label: 'Overview', href: '/dashboard/privacyops' },
+            { label: 'Data Inventory', href: '/dashboard/privacyops/data-inventory' },
+            { label: 'RoPA', href: '/dashboard/privacyops/ropa' },
+            { label: 'DPIA', href: '/dashboard/privacyops/dpia' },
+            { label: 'DSR', href: '/dashboard/privacyops/dsr' },
+            { label: 'Controls', href: '/dashboard/privacyops/controls' },
+            { label: 'Incidents', href: '/dashboard/privacyops/incidents' },
+            { label: 'Monitoring', href: '/dashboard/privacyops/monitoring' },
+        ]
+    },
+    {
+        icon: TrendingUp, label: 'RiskOps', href: '/dashboard/riskops', subItems: [
+            { label: 'Overview', href: '/dashboard/riskops' },
+            { label: 'Risk Register', href: '/dashboard/riskops' },
+            { label: 'Vulnerabilities', href: '/dashboard/riskops/vulnerabilities' },
+            { label: 'Vendors', href: '/dashboard/riskops/vendors' },
+            { label: 'Continuity', href: '/dashboard/riskops/continuity' },
+            { label: 'Monitoring', href: '/dashboard/riskops/monitoring' },
+        ]
+    },
+    {
+        icon: FileCheck, label: 'AuditOps', href: '/dashboard/auditops', subItems: [
+            { label: 'Overview', href: '/dashboard/auditops' },
+            { label: 'Internal Audits', href: '/dashboard/auditops/internal-audits' },
+            { label: 'Governance (KRI)', href: '/dashboard/auditops/governance' },
+            { label: 'Continuous Audit', href: '/dashboard/auditops/continuous-audit' },
+            { label: 'Evidence', href: '/dashboard/auditops/evidence' },
+            { label: 'Monitoring', href: '/dashboard/auditops/monitoring' },
+            { label: 'Reports', href: '/dashboard/auditops/reports' },
+        ]
+    },
 ]
 
 export default function Sidebar() {
@@ -123,12 +144,12 @@ export default function Sidebar() {
     // Get menu items based on user role
     const getMenuItems = (): MenuItem[] => {
         if (!user) return regularUserMenuItems
-        
+
         const role = user.role.toLowerCase()
-        
-        if (role === 'superadmin') {
+
+        if (role === 'super_admin') {
             return superAdminMenuItems
-        } else if (role === 'admin') {
+        } else if (role === 'tenant_admin') {
             return tenantAdminMenuItems
         } else {
             return regularUserMenuItems
@@ -138,8 +159,8 @@ export default function Sidebar() {
     const menuItems = getMenuItems()
 
     const toggleExpand = (label: string) => {
-        setExpandedItems(prev => 
-            prev.includes(label) 
+        setExpandedItems(prev =>
+            prev.includes(label)
                 ? prev.filter(item => item !== label)
                 : [...prev, label]
         )
@@ -177,38 +198,60 @@ export default function Sidebar() {
             <nav className="flex-1 p-4 space-y-2 overflow-y-auto">
                 {menuItems.map((item) => {
                     const Icon = item.icon
-                    const isActive = pathname === item.href || pathname?.startsWith(item.href + '/')
-                    const isExpanded = expandedItems.includes(item.label)
                     const hasSubItems = item.subItems && item.subItems.length > 0
+                    // Fix: Dashboard should only be active on exact match, not all sub-paths
+                    const isActive = item.href === '/dashboard'
+                        ? pathname === '/dashboard'
+                        : pathname === item.href || pathname?.startsWith(item.href + '/')
+                    const isExpanded = expandedItems.includes(item.label)
+
+                    const buttonClasses = `w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all group ${isActive
+                            ? 'bg-gradient-to-r from-cyan-500/20 to-blue-600/20 border border-cyan-500/50 shadow-lg shadow-cyan-500/20'
+                            : 'hover:bg-cyan-500/10 border border-transparent'
+                        }`
+
+                    const iconElement = (
+                        <Icon className={`h-5 w-5 ${isActive ? 'text-cyan-400' : 'text-gray-400 group-hover:text-cyan-400'} transition-colors`} />
+                    )
+
+                    const labelElement = !collapsed && (
+                        <>
+                            <span className={`font-medium ${isActive ? 'text-white' : 'text-gray-400 group-hover:text-white'} transition-colors flex-1 text-left`}>
+                                {item.label}
+                            </span>
+                            {hasSubItems && (
+                                <ChevronRight
+                                    className={`h-4 w-4 text-gray-400 transition-transform ${isExpanded ? 'rotate-90' : ''}`}
+                                />
+                            )}
+                            {isActive && !hasSubItems && (
+                                <div className="w-2 h-2 bg-cyan-400 rounded-full animate-pulse"></div>
+                            )}
+                        </>
+                    )
 
                     return (
                         <div key={item.href}>
-                            <button
-                                onClick={() => hasSubItems ? toggleExpand(item.label) : null}
-                                className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all group ${
-                                    isActive
-                                        ? 'bg-gradient-to-r from-cyan-500/20 to-blue-600/20 border border-cyan-500/50 shadow-lg shadow-cyan-500/20'
-                                        : 'hover:bg-cyan-500/10 border border-transparent'
-                                }`}
-                            >
-                                <Icon className={`h-5 w-5 ${isActive ? 'text-cyan-400' : 'text-gray-400 group-hover:text-cyan-400'} transition-colors`} />
-                                {!collapsed && (
-                                    <>
-                                        <span className={`font-medium ${isActive ? 'text-white' : 'text-gray-400 group-hover:text-white'} transition-colors flex-1 text-left`}>
-                                            {item.label}
-                                        </span>
-                                        {hasSubItems && (
-                                            <ChevronRight 
-                                                className={`h-4 w-4 text-gray-400 transition-transform ${isExpanded ? 'rotate-90' : ''}`} 
-                                            />
-                                        )}
-                                        {isActive && !hasSubItems && (
-                                            <div className="w-2 h-2 bg-cyan-400 rounded-full animate-pulse"></div>
-                                        )}
-                                    </>
-                                )}
-                            </button>
-                            
+                            {/* If has subItems, render as button for expand/collapse */}
+                            {/* If no subItems, render as Link for navigation */}
+                            {hasSubItems ? (
+                                <button
+                                    onClick={() => toggleExpand(item.label)}
+                                    className={buttonClasses}
+                                >
+                                    {iconElement}
+                                    {labelElement}
+                                </button>
+                            ) : (
+                                <Link
+                                    href={item.href}
+                                    className={buttonClasses}
+                                >
+                                    {iconElement}
+                                    {labelElement}
+                                </Link>
+                            )}
+
                             {/* Sub Items */}
                             {!collapsed && hasSubItems && isExpanded && (
                                 <div className="ml-4 mt-1 space-y-1">
@@ -218,11 +261,10 @@ export default function Sidebar() {
                                             <Link
                                                 key={subItem.href}
                                                 href={subItem.href}
-                                                className={`flex items-center gap-3 px-4 py-2 rounded-lg transition-all group ${
-                                                    isSubActive
+                                                className={`flex items-center gap-3 px-4 py-2 rounded-lg transition-all group ${isSubActive
                                                         ? 'bg-gradient-to-r from-cyan-500/20 to-blue-600/20 border border-cyan-500/50'
                                                         : 'hover:bg-cyan-500/10 border border-transparent'
-                                                }`}
+                                                    }`}
                                             >
                                                 <div className={`w-2 h-2 rounded-full ${isSubActive ? 'bg-cyan-400' : 'bg-gray-600'}`} />
                                                 <span className={`text-sm ${isSubActive ? 'text-white' : 'text-gray-400 group-hover:text-white'} transition-colors`}>

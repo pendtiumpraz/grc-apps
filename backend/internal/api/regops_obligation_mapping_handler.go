@@ -4,123 +4,26 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/cyber/backend/internal/db"
+	"github.com/cyber/backend/internal/models"
 	"github.com/gin-gonic/gin"
+	"gorm.io/gorm"
 )
 
-type Obligation struct {
-	ID               int       `json:"id"`
-	Regulation       string    `json:"regulation"`
-	RegulationType   string    `json:"regulationType"`
-	Article          string    `json:"article"`
-	Requirement      string    `json:"requirement"`
-	Category         string    `json:"category"`
-	Status           string    `json:"status"`
-	Control          string    `json:"control"`
-	LastReviewed     string    `json:"lastReviewed"`
-	NextReview       string    `json:"nextReview"`
-	Owner            string    `json:"owner"`
-	CreatedAt        time.Time `json:"createdAt"`
-}
-
 type RegOpsObligationMappingHandler struct {
-	db *db.Database
+	db *gorm.DB
 }
 
-func NewRegOpsObligationMappingHandler(db *db.Database) *RegOpsObligationMappingHandler {
+func NewRegOpsObligationMappingHandler(db *gorm.DB) *RegOpsObligationMappingHandler {
 	return &RegOpsObligationMappingHandler{db: db}
 }
 
 func (h *RegOpsObligationMappingHandler) GetObligations(c *gin.Context) {
-	var obligations []Obligation
-	
-	// In production, fetch from database with tenant filtering
-	// For now, return sample data
-	obligations = []Obligation{
-		{
-			ID:             1,
-			Regulation:     "GDPR",
-			RegulationType: "EU Regulation",
-			Article:        "Article 32",
-			Requirement:    "Security of processing",
-			Category:       "Technical and Organizational Measures",
-			Status:         "compliant",
-			Control:        "SEC-001",
-			LastReviewed:   "2024-12-20",
-			NextReview:     "2025-03-20",
-			Owner:         "Security Team",
-			CreatedAt:      time.Now().AddDate(2024, 12, 20),
-		},
-		{
-			ID:             2,
-			Regulation:     "GDPR",
-			RegulationType: "EU Regulation",
-			Article:        "Article 33",
-			Requirement:    "Notification of a personal data breach",
-			Category:       "Incident Response",
-			Status:         "compliant",
-			Control:        "INC-001",
-			LastReviewed:   "2024-12-18",
-			NextReview:     "2025-03-18",
-			Owner:         "Privacy Team",
-			CreatedAt:      time.Now().AddDate(2024, 12, 18),
-		},
-		{
-			ID:             3,
-			Regulation:     "ISO 27001",
-			RegulationType: "International Standard",
-			Article:        "A.9.2.1",
-			Requirement:    "User access management",
-			Category:       "Access Control",
-			Status:         "partial",
-			Control:        "ACC-001",
-			LastReviewed:   "2024-12-15",
-			NextReview:     "2025-03-15",
-			Owner:         "IT Team",
-			CreatedAt:      time.Now().AddDate(2024, 12, 15),
-		},
-		{
-			ID:             4,
-			Regulation:     "HIPAA",
-			RegulationType: "US Regulation",
-			Article:        "164.312(a)(1)",
-			Requirement:    "Access control",
-			Category:       "Technical Safeguards",
-			Status:         "compliant",
-			Control:        "ACC-002",
-			LastReviewed:   "2024-12-22",
-			NextReview:     "2025-03-22",
-			Owner:         "Security Team",
-			CreatedAt:      time.Now().AddDate(2024, 12, 22),
-		},
-		{
-			ID:             5,
-			Regulation:     "SOC 2",
-			RegulationType: "Audit Framework",
-			Article:        "CC6.1",
-			Requirement:    "Logical and Physical Access Controls",
-			Category:       "Access Control",
-			Status:         "compliant",
-			Control:        "ACC-003",
-			LastReviewed:   "2024-12-10",
-			NextReview:     "2025-03-10",
-			Owner:         "Compliance Team",
-			CreatedAt:      time.Now().AddDate(2024, 12, 10),
-		},
-		{
-			ID:             6,
-			Regulation:     "PDPA",
-			RegulationType: "Singapore Regulation",
-			Article:        "Protection Obligation",
-			Requirement:    "Protection of personal data",
-			Category:       "Data Protection",
-			Status:         "non-compliant",
-			Control:        "SEC-002",
-			LastReviewed:   "2024-12-12",
-			NextReview:     "2025-01-12",
-			Owner:         "Privacy Team",
-			CreatedAt:      time.Now().AddDate(2024, 12, 12),
-		},
+	var obligations []models.ObligationMapping
+	tenantID := c.GetString("tenant_id")
+
+	if err := h.db.Where("tenant_id = ? AND is_deleted = ?", tenantID, false).Find(&obligations).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch obligation mappings"})
+		return
 	}
 
 	c.JSON(http.StatusOK, gin.H{
@@ -131,13 +34,17 @@ func (h *RegOpsObligationMappingHandler) GetObligations(c *gin.Context) {
 
 func (h *RegOpsObligationMappingHandler) CreateObligation(c *gin.Context) {
 	var req struct {
-		Regulation     string `json:"regulation" binding:"required"`
-		RegulationType string `json:"regulationType" binding:"required"`
-		Article        string `json:"article" binding:"required"`
-		Requirement    string `json:"requirement" binding:"required"`
-		Category       string `json:"category" binding:"required"`
-		Control        string `json:"control" binding:"required"`
-		Owner          string `json:"owner" binding:"required"`
+		Name             string `json:"name" binding:"required"`
+		Description      string `json:"description" binding:"required"`
+		ObligationType  string `json:"obligationType" binding:"required"`
+		ControlID        string `json:"controlId"`
+		ControlName      string `json:"controlName"`
+		MappingStatus    string `json:"mappingStatus"`
+		ComplianceStatus string `json:"complianceStatus"`
+		Evidence         string `json:"evidence"`
+		Owner            string `json:"owner" binding:"required"`
+		LastReviewed      string `json:"lastReviewed"`
+		NextReview       string `json:"nextReview"`
 	}
 
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -145,27 +52,41 @@ func (h *RegOpsObligationMappingHandler) CreateObligation(c *gin.Context) {
 		return
 	}
 
-	// In production, insert into database
-	// For now, return success with generated ID
-	newObligation := Obligation{
-		ID:             len([]Obligation{}) + 10,
-		Regulation:     req.Regulation,
-		RegulationType: req.RegulationType,
-		Article:        req.Article,
-		Requirement:    req.Requirement,
-		Category:       req.Category,
-		Status:         "pending",
-		Control:        req.Control,
-		LastReviewed:   "-",
-		NextReview:     "-",
-		Owner:         req.Owner,
-		CreatedAt:      time.Now(),
+	tenantID := c.GetString("tenant_id")
+	
+	obligation := models.ObligationMapping{
+		TenantID:         tenantID,
+		Name:              req.Name,
+		Description:       req.Description,
+		ObligationType:   req.ObligationType,
+		ControlID:         req.ControlID,
+		ControlName:       req.ControlName,
+		MappingStatus:     req.MappingStatus,
+		ComplianceStatus: req.ComplianceStatus,
+		Evidence:          req.Evidence,
+	}
+
+	if req.LastReviewed != "" {
+		if t, err := time.Parse("2006-01-02", req.LastReviewed); err == nil {
+			obligation.LastReviewed = &t
+		}
+	}
+
+	if req.NextReview != "" {
+		if t, err := time.Parse("2006-01-02", req.NextReview); err == nil {
+			obligation.NextReview = &t
+		}
+	}
+
+	if err := h.db.Create(&obligation).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create obligation mapping"})
+		return
 	}
 
 	c.JSON(http.StatusCreated, gin.H{
 		"success": true,
-		"message": "Obligation created successfully",
-		"data":    newObligation,
+		"message": "Obligation mapping created successfully",
+		"data":    obligation,
 	})
 }
 
@@ -173,15 +94,17 @@ func (h *RegOpsObligationMappingHandler) UpdateObligation(c *gin.Context) {
 	id := c.Param("id")
 	
 	var req struct {
-		Regulation     string `json:"regulation"`
-		RegulationType string `json:"regulationType"`
-		Article        string `json:"article"`
-		Requirement    string `json:"requirement"`
-		Category       string `json:"category"`
-		Status         string `json:"status"`
-		Control        string `json:"control"`
-		NextReview     string `json:"nextReview"`
-		Owner          string `json:"owner"`
+		Name             string `json:"name"`
+		Description      string `json:"description"`
+		ObligationType  string `json:"obligationType"`
+		ControlID        string `json:"controlId"`
+		ControlName      string `json:"controlName"`
+		MappingStatus    string `json:"mappingStatus"`
+		ComplianceStatus string `json:"complianceStatus"`
+		Evidence         string `json:"evidence"`
+		Owner            string `json:"owner"`
+		LastReviewed      string `json:"lastReviewed"`
+		NextReview       string `json:"nextReview"`
 	}
 
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -189,33 +112,115 @@ func (h *RegOpsObligationMappingHandler) UpdateObligation(c *gin.Context) {
 		return
 	}
 
-	// In production, update in database
+	tenantID := c.GetString("tenant_id")
+	var obligation models.ObligationMapping
+	
+	if err := h.db.Where("id = ? AND tenant_id = ? AND is_deleted = ?", id, tenantID, false).First(&obligation).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Obligation mapping not found"})
+		return
+	}
+
+	updates := map[string]interface{}{
+		"updated_at": time.Now(),
+	}
+
+	if req.Name != "" {
+		updates["name"] = req.Name
+	}
+	if req.Description != "" {
+		updates["description"] = req.Description
+	}
+	if req.ObligationType != "" {
+		updates["obligation_type"] = req.ObligationType
+	}
+	if req.ControlID != "" {
+		updates["control_id"] = req.ControlID
+	}
+	if req.ControlName != "" {
+		updates["control_name"] = req.ControlName
+	}
+	if req.MappingStatus != "" {
+		updates["mapping_status"] = req.MappingStatus
+	}
+	if req.ComplianceStatus != "" {
+		updates["compliance_status"] = req.ComplianceStatus
+	}
+	if req.Evidence != "" {
+		updates["evidence"] = req.Evidence
+	}
+	if req.LastReviewed != "" {
+		if t, err := time.Parse("2006-01-02", req.LastReviewed); err == nil {
+			updates["last_reviewed"] = &t
+		}
+	}
+	if req.NextReview != "" {
+		if t, err := time.Parse("2006-01-02", req.NextReview); err == nil {
+			updates["next_review"] = &t
+		}
+	}
+
+	if err := h.db.Model(&obligation).Updates(updates).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update obligation mapping"})
+		return
+	}
+
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
-		"message": "Obligation updated successfully",
+		"message": "Obligation mapping updated successfully",
 	})
 }
 
 func (h *RegOpsObligationMappingHandler) DeleteObligation(c *gin.Context) {
 	id := c.Param("id")
-	
-	// In production, delete from database
+	tenantID := c.GetString("tenant_id")
+
+	if err := h.db.Model(&models.ObligationMapping{}).
+		Where("id = ? AND tenant_id = ?", id, tenantID).
+		Updates(map[string]interface{}{
+			"is_deleted": true,
+			"deleted_at": time.Now(),
+		}).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete obligation mapping"})
+		return
+	}
+
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
-		"message": "Obligation deleted successfully",
+		"message": "Obligation mapping deleted successfully",
 	})
 }
 
 func (h *RegOpsObligationMappingHandler) GetObligationStats(c *gin.Context) {
-	// In production, calculate from database
+	tenantID := c.GetString("tenant_id")
+	
+	var total int64
+	var compliant int64
+	var partial int64
+	var nonCompliant int64
+
+	h.db.Model(&models.ObligationMapping{}).
+		Where("tenant_id = ? AND is_deleted = ?", tenantID, false).
+		Count(&total)
+
+	h.db.Model(&models.ObligationMapping{}).
+		Where("tenant_id = ? AND is_deleted = ? AND compliance_status = ?", tenantID, false, "compliant").
+		Count(&compliant)
+
+	h.db.Model(&models.ObligationMapping{}).
+		Where("tenant_id = ? AND is_deleted = ? AND compliance_status = ?", tenantID, false, "partial").
+		Count(&partial)
+
+	h.db.Model(&models.ObligationMapping{}).
+		Where("tenant_id = ? AND is_deleted = ? AND compliance_status = ?", tenantID, false, "non_compliant").
+		Count(&nonCompliant)
+
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
 		"data": gin.H{
-			"total":         6,
-			"compliant":     4,
-			"partial":       1,
-			"nonCompliant":  1,
-			"pendingReview": 0,
+			"total":         total,
+			"compliant":     compliant,
+			"partial":       partial,
+			"nonCompliant":  nonCompliant,
 		},
 	})
 }

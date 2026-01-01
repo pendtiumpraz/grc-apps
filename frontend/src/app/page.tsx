@@ -1,12 +1,23 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { ArrowRight, Shield, CheckCircle, Zap, Lock, Globe, Users, Activity, Star, ChevronDown, ChevronUp, Clock, Award, TrendingUp, BarChart3, FileText, Search, MessageSquare, Database, Globe2, Check } from 'lucide-react';
 import AnimatedGridBackground from '@/components/AnimatedGridBackground';
+import { useAuth } from '@/contexts/AuthContext';
+import { useRouter } from 'next/navigation';
 
 export default function PublicHome() {
+  const { user, isLoading } = useAuth();
+  const router = useRouter();
   const [openFaq, setOpenFaq] = useState<number | null>(null);
+
+  // Redirect logged-in users to dashboard
+  useEffect(() => {
+    if (!isLoading && user) {
+      router.push('/dashboard');
+    }
+  }, [user, isLoading, router]);
 
   const scrollToSection = (sectionId: string) => {
     const element = document.getElementById(sectionId);

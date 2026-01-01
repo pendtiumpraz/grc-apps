@@ -22,9 +22,9 @@ func NewAIHandler(database *db.Database) *AIHandler {
 // GetAISettings returns the AI settings for current tenant
 func (h *AIHandler) GetAISettings(c *gin.Context) {
 	tenantID := c.GetString("tenant_id")
+	// For super admin or platform users without tenant_id, use "platform" as default
 	if tenantID == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Tenant ID required"})
-		return
+		tenantID = "platform"
 	}
 
 	var settings models.AISettings
@@ -33,14 +33,14 @@ func (h *AIHandler) GetAISettings(c *gin.Context) {
 	if result.Error != nil {
 		// Return default settings if not found
 		settings = models.AISettings{
-		    TenantID:         tenantID,
-		    Provider:         "gemini",
-		    ModelName:        "gemini-2.5-flash",
-		    IsEnabled:        true,
-		    MaxTokens:        4096,
-		    Temperature:      0.7,
-		    WebSearchEnabled: true,
-		    AutoFillEnabled:  true,
+			TenantID:         tenantID,
+			Provider:         "gemini",
+			ModelName:        "gemini-2.5-flash",
+			IsEnabled:        true,
+			MaxTokens:        4096,
+			Temperature:      0.7,
+			WebSearchEnabled: true,
+			AutoFillEnabled:  true,
 		}
 	}
 
@@ -54,9 +54,9 @@ func (h *AIHandler) GetAISettings(c *gin.Context) {
 // UpdateAISettings updates AI settings for tenant
 func (h *AIHandler) UpdateAISettings(c *gin.Context) {
 	tenantID := c.GetString("tenant_id")
+	// For super admin or platform users without tenant_id, use "platform" as default
 	if tenantID == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Tenant ID required"})
-		return
+		tenantID = "platform"
 	}
 
 	var input struct {
@@ -153,6 +153,10 @@ func (h *AIHandler) GetAvailableModels(c *gin.Context) {
 // TestAIConnection tests if the AI API key is valid
 func (h *AIHandler) TestAIConnection(c *gin.Context) {
 	tenantID := c.GetString("tenant_id")
+	// For super admin or platform users without tenant_id, use "platform" as default
+	if tenantID == "" {
+		tenantID = "platform"
+	}
 
 	var settings models.AISettings
 	result := h.db.Where("tenant_id = ?", tenantID).First(&settings)

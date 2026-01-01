@@ -2,167 +2,51 @@ package api
 
 import (
 	"net/http"
-	"time"
 
-	"github.com/cyber/backend/internal/db"
+	"github.com/cyber/backend/internal/models"
 	"github.com/gin-gonic/gin"
+	"gorm.io/gorm"
 )
 
-type ProcessingActivity struct {
-	ID               int       `json:"id"`
-	Name             string    `json:"name"`
-	DataType         string    `json:"dataType"`
-	Category         string    `json:"category"`
-	Purpose          string    `json:"purpose"`
-	LegalBasis       string    `json:"legalBasis"`
-	DataSubject      string    `json:"dataSubject"`
-	ThirdParty       string    `json:"thirdParty"`
-	TransferCountry  string    `json:"transferCountry"`
-	SecurityMeasures string    `json:"securityMeasures"`
-	RetentionPeriod  string    `json:"retentionPeriod"`
-	Status           string    `json:"status"`
-	LastUpdated      string    `json:"lastUpdated"`
-	Owner            string    `json:"owner"`
-	CreatedAt        time.Time `json:"createdAt"`
-}
-
 type PrivacyOpsRoPAHandler struct {
-	db *db.Database
+	db *gorm.DB
 }
 
-func NewPrivacyOpsRoPAHandler(db *db.Database) *PrivacyOpsRoPAHandler {
+func NewPrivacyOpsRoPAHandler(db *gorm.DB) *PrivacyOpsRoPAHandler {
 	return &PrivacyOpsRoPAHandler{db: db}
 }
 
 func (h *PrivacyOpsRoPAHandler) GetProcessingActivities(c *gin.Context) {
-	var activities []ProcessingActivity
+	tenantID := c.GetString("tenant_id")
 	
-	// In production, fetch from database with tenant filtering
-	// For now, return sample data
-	activities = []ProcessingActivity{
-		{
-			ID:              1,
-			Name:            "Customer Data Collection",
-			DataType:        "Personal Data",
-			Category:        "Customer Relationship Management",
-			Purpose:         "Service delivery and customer support",
-			LegalBasis:      "Contractual Necessity",
-			DataSubject:     "Customers",
-			ThirdParty:      "None",
-			TransferCountry: "N/A",
-			SecurityMeasures: "Encryption, Access Controls",
-			RetentionPeriod: "5 years after contract termination",
-			Status:          "active",
-			LastUpdated:     "2024-12-20",
-			Owner:          "CRM Team",
-			CreatedAt:       time.Now().AddDate(2024, 12, 20),
-		},
-		{
-			ID:              2,
-			Name:            "Employee Data Management",
-			DataType:        "Personal Data, Sensitive Data",
-			Category:        "Human Resources",
-			Purpose:         "Payroll, benefits, and HR management",
-			LegalBasis:      "Legal Obligation",
-			DataSubject:     "Employees",
-			ThirdParty:      "Payroll Provider",
-			TransferCountry: "Singapore",
-			SecurityMeasures: "Encryption, Role-based Access, Audit Logging",
-			RetentionPeriod: "7 years after employment ends",
-			Status:          "active",
-			LastUpdated:     "2024-12-18",
-			Owner:          "HR Team",
-			CreatedAt:       time.Now().AddDate(2024, 12, 18),
-		},
-		{
-			ID:              3,
-			Name:            "Marketing Campaign Data",
-			DataType:        "Personal Data",
-			Category:        "Marketing",
-			Purpose:         "Marketing communications and analytics",
-			LegalBasis:      "Legitimate Interest",
-			DataSubject:     "Prospects, Customers",
-			ThirdParty:      "Email Marketing Platform",
-			TransferCountry: "USA",
-			SecurityMeasures: "Data Masking, Access Controls",
-			RetentionPeriod: "2 years",
-			Status:          "active",
-			LastUpdated:     "2024-12-22",
-			Owner:          "Marketing Team",
-			CreatedAt:       time.Now().AddDate(2024, 12, 22),
-		},
-		{
-			ID:              4,
-			Name:            "Website Analytics",
-			DataType:        "Technical Data",
-			Category:        "Analytics",
-			Purpose:         "Website optimization and user experience",
-			LegalBasis:      "Legitimate Interest",
-			DataSubject:     "Website Visitors",
-			ThirdParty:      "Analytics Provider",
-			TransferCountry: "USA",
-			SecurityMeasures: "Anonymization, IP Masking",
-			RetentionPeriod: "26 months",
-			Status:          "active",
-			LastUpdated:     "2024-12-15",
-			Owner:          "Web Team",
-			CreatedAt:       time.Now().AddDate(2024, 12, 15),
-		},
-		{
-			ID:              5,
-			Name:            "Customer Support Tickets",
-			DataType:        "Personal Data",
-			Category:        "Customer Support",
-			Purpose:         "Issue resolution and customer service",
-			LegalBasis:      "Contractual Necessity",
-			DataSubject:     "Customers",
-			ThirdParty:      "Support Platform",
-			TransferCountry: "Singapore",
-			SecurityMeasures: "Encryption, Access Controls",
-			RetentionPeriod: "3 years",
-			Status:          "active",
-			LastUpdated:     "2024-12-10",
-			Owner:          "Support Team",
-			CreatedAt:       time.Now().AddDate(2024, 12, 10),
-		},
-		{
-			ID:              6,
-			Name:            "Vendor Data Processing",
-			DataType:        "Business Data",
-			Category:        "Procurement",
-			Purpose:         "Vendor management and procurement",
-			LegalBasis:      "Contractual Necessity",
-			DataSubject:     "Vendors",
-			ThirdParty:      "Procurement Platform",
-			TransferCountry: "N/A",
-			SecurityMeasures: "Access Controls, Audit Logging",
-			RetentionPeriod: "7 years",
-			Status:          "active",
-			LastUpdated:     "2024-12-12",
-			Owner:          "Procurement Team",
-			CreatedAt:       time.Now().AddDate(2024, 12, 12),
-		},
+	var items []models.DataInventory
+	query := h.db
+	
+	if tenantID != "" {
+		query = query.Where("tenant_id = ?", tenantID)
 	}
-
+	
+	if err := query.Find(&items).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
-		"data":    activities,
+		"data":    items,
 	})
 }
 
 func (h *PrivacyOpsRoPAHandler) CreateProcessingActivity(c *gin.Context) {
 	var req struct {
-		Name             string `json:"name" binding:"required"`
-		DataType         string `json:"dataType" binding:"required"`
-		Category         string `json:"category" binding:"required"`
-		Purpose          string `json:"purpose" binding:"required"`
-		LegalBasis       string `json:"legalBasis" binding:"required"`
-		DataSubject      string `json:"dataSubject" binding:"required"`
-		ThirdParty       string `json:"thirdParty"`
-		TransferCountry  string `json:"transferCountry"`
-		SecurityMeasures string `json:"securityMeasures" binding:"required"`
-		RetentionPeriod  string `json:"retentionPeriod" binding:"required"`
-		Owner            string `json:"owner" binding:"required"`
+		DataType          string `json:"data_type" binding:"required"`
+		DataSource        string `json:"data_source" binding:"required"`
+		DataCategory      string `json:"data_category" binding:"required"`
+		SensitivityLevel  string `json:"sensitivity_level" binding:"required"`
+		ProcessingPurpose string `json:"processing_purpose" binding:"required"`
+		DataSubjects      string `json:"data_subjects" binding:"required"`
+		StorageLocation   string `json:"storage_location" binding:"required"`
+		RetentionPeriod   int    `json:"retention_period" binding:"required"`
 	}
 
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -170,30 +54,31 @@ func (h *PrivacyOpsRoPAHandler) CreateProcessingActivity(c *gin.Context) {
 		return
 	}
 
-	// In production, insert into database
-	// For now, return success with generated ID
-	newActivity := ProcessingActivity{
-		ID:              len([]ProcessingActivity{}) + 10,
-		Name:            req.Name,
-		DataType:        req.DataType,
-		Category:        req.Category,
-		Purpose:         req.Purpose,
-		LegalBasis:      req.LegalBasis,
-		DataSubject:     req.DataSubject,
-		ThirdParty:      req.ThirdParty,
-		TransferCountry: req.TransferCountry,
-		SecurityMeasures: req.SecurityMeasures,
-		RetentionPeriod: req.RetentionPeriod,
-		Status:          "active",
-		LastUpdated:     time.Now().Format("2006-01-02"),
-		Owner:          req.Owner,
-		CreatedAt:       time.Now(),
+	tenantID := c.GetString("tenant_id")
+	userID := c.GetString("user_id")
+
+	item := models.DataInventory{
+		TenantID:          tenantID,
+		DataType:          req.DataType,
+		DataSource:        req.DataSource,
+		DataCategory:      req.DataCategory,
+		SensitivityLevel:  req.SensitivityLevel,
+		ProcessingPurpose: req.ProcessingPurpose,
+		DataSubjects:      req.DataSubjects,
+		StorageLocation:   req.StorageLocation,
+		RetentionPeriod:   req.RetentionPeriod,
+		CreatedBy:         userID,
+	}
+
+	if err := h.db.Create(&item).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
 	}
 
 	c.JSON(http.StatusCreated, gin.H{
 		"success": true,
 		"message": "Processing activity created successfully",
-		"data":    newActivity,
+		"data":    item,
 	})
 }
 
@@ -201,18 +86,14 @@ func (h *PrivacyOpsRoPAHandler) UpdateProcessingActivity(c *gin.Context) {
 	id := c.Param("id")
 	
 	var req struct {
-		Name             string `json:"name"`
-		DataType         string `json:"dataType"`
-		Category         string `json:"category"`
-		Purpose          string `json:"purpose"`
-		LegalBasis       string `json:"legalBasis"`
-		DataSubject      string `json:"dataSubject"`
-		ThirdParty       string `json:"thirdParty"`
-		TransferCountry  string `json:"transferCountry"`
-		SecurityMeasures string `json:"securityMeasures"`
-		RetentionPeriod  string `json:"retentionPeriod"`
-		Status           string `json:"status"`
-		Owner            string `json:"owner"`
+		DataType          string `json:"data_type"`
+		DataSource        string `json:"data_source"`
+		DataCategory      string `json:"data_category"`
+		SensitivityLevel  string `json:"sensitivity_level"`
+		ProcessingPurpose string `json:"processing_purpose"`
+		DataSubjects      string `json:"data_subjects"`
+		StorageLocation   string `json:"storage_location"`
+		RetentionPeriod   int    `json:"retention_period"`
 	}
 
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -220,17 +101,57 @@ func (h *PrivacyOpsRoPAHandler) UpdateProcessingActivity(c *gin.Context) {
 		return
 	}
 
-	// In production, update in database
+	var item models.DataInventory
+	if err := h.db.Where("id = ?", id).First(&item).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Processing activity not found"})
+		return
+	}
+
+	if req.DataType != "" {
+		item.DataType = req.DataType
+	}
+	if req.DataSource != "" {
+		item.DataSource = req.DataSource
+	}
+	if req.DataCategory != "" {
+		item.DataCategory = req.DataCategory
+	}
+	if req.SensitivityLevel != "" {
+		item.SensitivityLevel = req.SensitivityLevel
+	}
+	if req.ProcessingPurpose != "" {
+		item.ProcessingPurpose = req.ProcessingPurpose
+	}
+	if req.DataSubjects != "" {
+		item.DataSubjects = req.DataSubjects
+	}
+	if req.StorageLocation != "" {
+		item.StorageLocation = req.StorageLocation
+	}
+	if req.RetentionPeriod != 0 {
+		item.RetentionPeriod = req.RetentionPeriod
+	}
+
+	if err := h.db.Save(&item).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
 		"message": "Processing activity updated successfully",
+		"data":    item,
 	})
 }
 
 func (h *PrivacyOpsRoPAHandler) DeleteProcessingActivity(c *gin.Context) {
 	id := c.Param("id")
-	
-	// In production, delete from database
+
+	if err := h.db.Where("id = ?", id).Delete(&models.DataInventory{}).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
 		"message": "Processing activity deleted successfully",
@@ -238,13 +159,33 @@ func (h *PrivacyOpsRoPAHandler) DeleteProcessingActivity(c *gin.Context) {
 }
 
 func (h *PrivacyOpsRoPAHandler) GetRoPAStats(c *gin.Context) {
-	// In production, calculate from database
+	tenantID := c.GetString("tenant_id")
+	
+	var stats struct {
+		Total     int64 `json:"total"`
+		ByType    map[string]int64 `json:"byType"`
+	}
+	
+	query := h.db.Model(&models.DataInventory{})
+	if tenantID != "" {
+		query = query.Where("tenant_id = ?", tenantID)
+	}
+	
+	query.Count(&stats.Total)
+	
+	// Count by type
+	var types []string
+	h.db.Model(&models.DataInventory{}).Distinct("data_type").Pluck("data_type", &types)
+	
+	stats.ByType = make(map[string]int64)
+	for _, t := range types {
+		var count int64
+		h.db.Model(&models.DataInventory{}).Where("data_type = ?", t).Count(&count)
+		stats.ByType[t] = count
+	}
+	
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
-		"data": gin.H{
-			"total":   6,
-			"active":  6,
-			"archived": 0,
-		},
+		"data":    stats,
 	})
 }

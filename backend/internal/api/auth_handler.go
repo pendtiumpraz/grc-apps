@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/cyber/backend/internal/config"
 	"github.com/cyber/backend/internal/db"
 	"github.com/cyber/backend/internal/models"
 	"github.com/gin-gonic/gin"
@@ -65,6 +66,13 @@ func (h *AuthHandler) Login(c *gin.Context) {
 	// Update last login using raw SQL to avoid JSONB issues
 	h.db.Exec("UPDATE users SET last_login = NOW() WHERE id = ?", user.ID)
 
+	// Get config for JWT secret
+	cfg, err := config.Load()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to load config"})
+		return
+	}
+
 	// Generate JWT token
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
 		"user_id":        user.ID,
@@ -76,7 +84,7 @@ func (h *AuthHandler) Login(c *gin.Context) {
 		"iss":            "komplai",
 	})
 
-	tokenString, err := token.SignedString([]byte("your-secret-key"))
+	tokenString, err := token.SignedString([]byte(cfg.JWT.SecretKey))
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate token"})
 		return

@@ -3,12 +3,17 @@
 import Link from 'next/link'
 import { useState } from 'react'
 import { Menu, X, Shield } from 'lucide-react'
+import { useAuth } from '@/contexts/AuthContext'
 
 export default function Navbar() {
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+    const { user } = useAuth()
+    
+    // Check if user is logged in
+    const isLoggedIn = !!user
 
     return (
-        <nav className="fixed top-0 left-0 right-0 bg-[#0a0e1a]/95 backdrop-blur-md border-b border-cyan-500/20 z-50 shadow-lg shadow-cyan-500/5">
+        <nav className="fixed top-0 left-0 right-0 z-50 bg-[#0a0e1a]/95 backdrop-blur-md border-b border-cyan-500/20 shadow-lg shadow-cyan-500/5">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div className="flex justify-between items-center h-16">
                     <Link href="/" className="flex items-center gap-2 group">
@@ -19,7 +24,7 @@ export default function Navbar() {
                             KOMPL.AI
                         </span>
                     </Link>
-
+ 
                     {/* Desktop Menu */}
                     <div className="hidden md:flex space-x-8">
                         {['Features', 'Pricing', 'About', 'Contact'].map((item) => (
@@ -33,24 +38,43 @@ export default function Navbar() {
                             </Link>
                         ))}
                     </div>
-
+ 
                     <div className="hidden md:flex items-center space-x-4">
-                        <Link
-                            href="/auth"
-                            className="text-gray-300 hover:text-cyan-400 transition-colors"
-                        >
-                            Login
-                        </Link>
-                        <Link
-                            href="/auth"
-                            className="relative px-6 py-2 bg-gradient-to-r from-cyan-500 to-blue-600 text-white rounded-lg font-semibold overflow-hidden group"
-                        >
-                            <span className="relative z-10">Get Started</span>
-                            <div className="absolute inset-0 bg-gradient-to-r from-cyan-400 to-blue-500 opacity-0 group-hover:opacity-100 transition-opacity"></div>
-                            <div className="absolute inset-0 shadow-lg shadow-cyan-500/50 group-hover:shadow-cyan-500/80 transition-all"></div>
-                        </Link>
+                        {!isLoggedIn ? (
+                            <Link
+                                href="/dashboard"
+                                className="text-gray-300 hover:text-cyan-400 transition-colors"
+                            >
+                                Dashboard
+                            </Link>
+                        ) : (
+                            <Link
+                                href="/auth"
+                                className="text-gray-300 hover:text-cyan-400 transition-colors"
+                            >
+                                Login
+                            </Link>
+                        )}
+                        {!isLoggedIn && (
+                            <Link
+                                href="/auth"
+                                className="relative px-6 py-2 bg-gradient-to-r from-cyan-500 to-blue-600 text-white rounded-lg font-semibold overflow-hidden group"
+                            >
+                                <span className="relative z-10">Get Started</span>
+                                <div className="absolute inset-0 bg-gradient-to-r from-cyan-400 to-blue-500 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                                <div className="absolute inset-0 shadow-lg shadow-cyan-500/50 group-hover:shadow-cyan-500/80 transition-all"></div>
+                            </Link>
+                        )}
+                        {isLoggedIn && (
+                            <Link
+                                href="/dashboard"
+                                className="text-gray-300 hover:text-cyan-400 transition-colors"
+                            >
+                                Dashboard
+                            </Link>
+                        )}
                     </div>
-
+ 
                     {/* Mobile menu button */}
                     <button
                         onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
@@ -60,7 +84,7 @@ export default function Navbar() {
                     </button>
                 </div>
             </div>
-
+ 
             {/* Mobile Menu */}
             {mobileMenuOpen && (
                 <div className="md:hidden bg-[#111827]/98 backdrop-blur-md border-t border-cyan-500/20">
@@ -74,7 +98,11 @@ export default function Navbar() {
                                 {item}
                             </Link>
                         ))}
-                        <Link href="/auth" className="block text-cyan-400 font-semibold py-2">Get Started</Link>
+                        {!isLoggedIn ? (
+                            <Link href="/dashboard" className="block text-cyan-400 font-semibold py-2">Dashboard</Link>
+                        ) : (
+                            <Link href="/auth" className="block text-cyan-400 font-semibold py-2">Get Started</Link>
+                        )}
                     </div>
                 </div>
             )}

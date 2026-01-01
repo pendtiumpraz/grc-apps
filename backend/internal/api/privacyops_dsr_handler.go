@@ -4,130 +4,26 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/cyber/backend/internal/db"
+	"github.com/cyber/backend/internal/models"
 	"github.com/gin-gonic/gin"
+	"gorm.io/gorm"
 )
 
-type DSR struct {
-	ID               int       `json:"id"`
-	RequestType      string    `json:"requestType"`
-	DataSubject      string    `json:"dataSubject"`
-	Email            string    `json:"email"`
-	Phone            string    `json:"phone"`
-	Status           string    `json:"status"`
-	Priority         string    `json:"priority"`
-	SubmittedDate    string    `json:"submittedDate"`
-	Deadline         string    `json:"deadline"`
-	CompletedDate    string    `json:"completedDate"`
-	AssignedTo       string    `json:"assignedTo"`
-	Notes            string    `json:"notes"`
-	CreatedAt        time.Time `json:"createdAt"`
-}
-
 type PrivacyOpsDSRHandler struct {
-	db *db.Database
+	db *gorm.DB
 }
 
-func NewPrivacyOpsDSRHandler(db *db.Database) *PrivacyOpsDSRHandler {
+func NewPrivacyOpsDSRHandler(db *gorm.DB) *PrivacyOpsDSRHandler {
 	return &PrivacyOpsDSRHandler{db: db}
 }
 
 func (h *PrivacyOpsDSRHandler) GetDSRs(c *gin.Context) {
-	var dsrs []DSR
-	
-	// In production, fetch from database with tenant filtering
-	// For now, return sample data
-	dsrs = []DSR{
-		{
-			ID:            1,
-			RequestType:   "Access Request",
-			DataSubject:   "John Doe",
-			Email:         "john.doe@example.com",
-			Phone:         "+6281234567890",
-			Status:        "completed",
-			Priority:      "normal",
-			SubmittedDate: "2024-12-15",
-			Deadline:      "2024-12-29",
-			CompletedDate: "2024-12-20",
-			AssignedTo:    "Privacy Team",
-			Notes:         "Customer requested all personal data",
-			CreatedAt:     time.Now().AddDate(2024, 12, 15),
-		},
-		{
-			ID:            2,
-			RequestType:   "Deletion Request",
-			DataSubject:   "Jane Smith",
-			Email:         "jane.smith@example.com",
-			Phone:         "+6281234567891",
-			Status:        "in_progress",
-			Priority:      "high",
-			SubmittedDate: "2024-12-20",
-			Deadline:      "2025-01-03",
-			CompletedDate: "-",
-			AssignedTo:    "Privacy Team",
-			Notes:         "Customer requested account deletion",
-			CreatedAt:     time.Now().AddDate(2024, 12, 20),
-		},
-		{
-			ID:            3,
-			RequestType:   "Rectification Request",
-			DataSubject:   "Bob Johnson",
-			Email:         "bob.johnson@example.com",
-			Phone:         "+6281234567892",
-			Status:        "pending",
-			Priority:      "normal",
-			SubmittedDate: "2024-12-22",
-			Deadline:      "2025-01-05",
-			CompletedDate: "-",
-			AssignedTo:    "Privacy Team",
-			Notes:         "Customer requested to update address",
-			CreatedAt:     time.Now().AddDate(2024, 12, 22),
-		},
-		{
-			ID:            4,
-			RequestType:   "Portability Request",
-			DataSubject:   "Alice Williams",
-			Email:         "alice.williams@example.com",
-			Phone:         "+6281234567893",
-			Status:        "completed",
-			Priority:      "normal",
-			SubmittedDate: "2024-12-10",
-			Deadline:      "2024-12-24",
-			CompletedDate: "2024-12-18",
-			AssignedTo:    "Privacy Team",
-			Notes:         "Customer requested data export",
-			CreatedAt:     time.Now().AddDate(2024, 12, 10),
-		},
-		{
-			ID:            5,
-			RequestType:   "Objection Request",
-			DataSubject:   "Charlie Brown",
-			Email:         "charlie.brown@example.com",
-			Phone:         "+6281234567894",
-			Status:        "in_progress",
-			Priority:      "high",
-			SubmittedDate: "2024-12-18",
-			Deadline:      "2025-01-01",
-			CompletedDate: "-",
-			AssignedTo:    "Privacy Team",
-			Notes:         "Customer objected to marketing communications",
-			CreatedAt:     time.Now().AddDate(2024, 12, 18),
-		},
-		{
-			ID:            6,
-			RequestType:   "Access Request",
-			DataSubject:   "Diana Prince",
-			Email:         "diana.prince@example.com",
-			Phone:         "+6281234567895",
-			Status:        "pending",
-			Priority:      "normal",
-			SubmittedDate: "2024-12-25",
-			Deadline:      "2025-01-08",
-			CompletedDate: "-",
-			AssignedTo:    "Privacy Team",
-			Notes:         "Customer requested all personal data",
-			CreatedAt:     time.Now().AddDate(2024, 12, 25),
-		},
+	var dsrs []models.DSRRequest
+	tenantID := c.GetString("tenant_id")
+
+	if err := h.db.Where("tenant_id = ? AND is_deleted = ?", tenantID, false).Find(&dsrs).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch DSR requests"})
+		return
 	}
 
 	c.JSON(http.StatusOK, gin.H{
@@ -138,13 +34,15 @@ func (h *PrivacyOpsDSRHandler) GetDSRs(c *gin.Context) {
 
 func (h *PrivacyOpsDSRHandler) CreateDSR(c *gin.Context) {
 	var req struct {
-		RequestType string `json:"requestType" binding:"required"`
-		DataSubject string `json:"dataSubject" binding:"required"`
-		Email       string `json:"email" binding:"required"`
-		Phone       string `json:"phone"`
-		Priority    string `json:"priority" binding:"required"`
-		AssignedTo  string `json:"assignedTo" binding:"required"`
-		Notes       string `json:"notes"`
+		RequestType       string `json:"requestType" binding:"required"`
+		DataSubjectName   string `json:"dataSubjectName" binding:"required"`
+		DataSubjectEmail  string `json:"dataSubjectEmail"`
+		DataSubjectType   string `json:"dataSubjectType"`
+		Priority          string `json:"priority" binding:"required"`
+		Description       string `json:"description"`
+		DataCategories    string `json:"dataCategories"`
+		ProcessingActivities string `json:"processingActivities"`
+		Handler           string `json:"handler" binding:"required"`
 	}
 
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -152,32 +50,35 @@ func (h *PrivacyOpsDSRHandler) CreateDSR(c *gin.Context) {
 		return
 	}
 
-	// Calculate deadline (30 days from submission)
-	submittedDate := time.Now()
-	deadline := submittedDate.AddDate(0, 0, 30)
+	tenantID := c.GetString("tenant_id")
+	requestDate := time.Now()
+	dueDate := requestDate.AddDate(0, 0, 30) // 30 days deadline
 
-	// In production, insert into database
-	// For now, return success with generated ID
-	newDSR := DSR{
-		ID:            len([]DSR{}) + 10,
-		RequestType:   req.RequestType,
-		DataSubject:   req.DataSubject,
-		Email:         req.Email,
-		Phone:         req.Phone,
-		Status:        "pending",
-		Priority:      req.Priority,
-		SubmittedDate: submittedDate.Format("2006-01-02"),
-		Deadline:      deadline.Format("2006-01-02"),
-		CompletedDate: "-",
-		AssignedTo:    req.AssignedTo,
-		Notes:         req.Notes,
-		CreatedAt:     time.Now(),
+	dsr := models.DSRRequest{
+		TenantID:            tenantID,
+		RequestType:         req.RequestType,
+		DataSubjectName:     req.DataSubjectName,
+		DataSubjectEmail:     req.DataSubjectEmail,
+		DataSubjectType:     req.DataSubjectType,
+		RequestDate:         requestDate,
+		DueDate:             &dueDate,
+		Status:              "pending",
+		Priority:            req.Priority,
+		Description:         req.Description,
+		DataCategories:      req.DataCategories,
+		ProcessingActivities: req.ProcessingActivities,
+		Handler:             req.Handler,
+	}
+
+	if err := h.db.Create(&dsr).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create DSR request"})
+		return
 	}
 
 	c.JSON(http.StatusCreated, gin.H{
 		"success": true,
 		"message": "DSR created successfully",
-		"data":    newDSR,
+		"data":    dsr,
 	})
 }
 
@@ -185,15 +86,18 @@ func (h *PrivacyOpsDSRHandler) UpdateDSR(c *gin.Context) {
 	id := c.Param("id")
 	
 	var req struct {
-		RequestType   string `json:"requestType"`
-		DataSubject   string `json:"dataSubject"`
-		Email         string `json:"email"`
-		Phone         string `json:"phone"`
-		Status        string `json:"status"`
-		Priority      string `json:"priority"`
-		CompletedDate string `json:"completedDate"`
-		AssignedTo    string `json:"assignedTo"`
-		Notes         string `json:"notes"`
+		RequestType       string `json:"requestType"`
+		DataSubjectName   string `json:"dataSubjectName"`
+		DataSubjectEmail  string `json:"dataSubjectEmail"`
+		DataSubjectType   string `json:"dataSubjectType"`
+		Status            string `json:"status"`
+		Priority          string `json:"priority"`
+		Description       string `json:"description"`
+		DataCategories    string `json:"dataCategories"`
+		ProcessingActivities string `json:"processingActivities"`
+		Response          string `json:"response"`
+		Handler           string `json:"handler"`
+		CompletedDate     string `json:"completedDate"`
 	}
 
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -201,7 +105,62 @@ func (h *PrivacyOpsDSRHandler) UpdateDSR(c *gin.Context) {
 		return
 	}
 
-	// In production, update in database
+	tenantID := c.GetString("tenant_id")
+	var dsr models.DSRRequest
+	
+	if err := h.db.Where("id = ? AND tenant_id = ? AND is_deleted = ?", id, tenantID, false).First(&dsr).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "DSR request not found"})
+		return
+	}
+
+	updates := map[string]interface{}{
+		"updated_at": time.Now(),
+	}
+
+	if req.RequestType != "" {
+		updates["request_type"] = req.RequestType
+	}
+	if req.DataSubjectName != "" {
+		updates["data_subject_name"] = req.DataSubjectName
+	}
+	if req.DataSubjectEmail != "" {
+		updates["data_subject_email"] = req.DataSubjectEmail
+	}
+	if req.DataSubjectType != "" {
+		updates["data_subject_type"] = req.DataSubjectType
+	}
+	if req.Status != "" {
+		updates["status"] = req.Status
+	}
+	if req.Priority != "" {
+		updates["priority"] = req.Priority
+	}
+	if req.Description != "" {
+		updates["description"] = req.Description
+	}
+	if req.DataCategories != "" {
+		updates["data_categories"] = req.DataCategories
+	}
+	if req.ProcessingActivities != "" {
+		updates["processing_activities"] = req.ProcessingActivities
+	}
+	if req.Response != "" {
+		updates["response"] = req.Response
+	}
+	if req.Handler != "" {
+		updates["handler"] = req.Handler
+	}
+	if req.CompletedDate != "" {
+		if t, err := time.Parse("2006-01-02", req.CompletedDate); err == nil {
+			updates["completed_date"] = &t
+		}
+	}
+
+	if err := h.db.Model(&dsr).Updates(updates).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update DSR request"})
+		return
+	}
+
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
 		"message": "DSR updated successfully",
@@ -210,8 +169,18 @@ func (h *PrivacyOpsDSRHandler) UpdateDSR(c *gin.Context) {
 
 func (h *PrivacyOpsDSRHandler) DeleteDSR(c *gin.Context) {
 	id := c.Param("id")
-	
-	// In production, delete from database
+	tenantID := c.GetString("tenant_id")
+
+	if err := h.db.Model(&models.DSRRequest{}).
+		Where("id = ? AND tenant_id = ?", id, tenantID).
+		Updates(map[string]interface{}{
+			"is_deleted": true,
+			"deleted_at": time.Now(),
+		}).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete DSR request"})
+		return
+	}
+
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
 		"message": "DSR deleted successfully",
@@ -220,8 +189,18 @@ func (h *PrivacyOpsDSRHandler) DeleteDSR(c *gin.Context) {
 
 func (h *PrivacyOpsDSRHandler) ApproveDSR(c *gin.Context) {
 	id := c.Param("id")
-	
-	// In production, update status in database
+	tenantID := c.GetString("tenant_id")
+
+	if err := h.db.Model(&models.DSRRequest{}).
+		Where("id = ? AND tenant_id = ?", id, tenantID).
+		Updates(map[string]interface{}{
+			"status":     "approved",
+			"updated_at": time.Now(),
+		}).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to approve DSR request"})
+		return
+	}
+
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
 		"message": "DSR approved successfully",
@@ -230,8 +209,18 @@ func (h *PrivacyOpsDSRHandler) ApproveDSR(c *gin.Context) {
 
 func (h *PrivacyOpsDSRHandler) RejectDSR(c *gin.Context) {
 	id := c.Param("id")
-	
-	// In production, update status in database
+	tenantID := c.GetString("tenant_id")
+
+	if err := h.db.Model(&models.DSRRequest{}).
+		Where("id = ? AND tenant_id = ?", id, tenantID).
+		Updates(map[string]interface{}{
+			"status":     "rejected",
+			"updated_at": time.Now(),
+		}).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to reject DSR request"})
+		return
+	}
+
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
 		"message": "DSR rejected successfully",
@@ -239,15 +228,43 @@ func (h *PrivacyOpsDSRHandler) RejectDSR(c *gin.Context) {
 }
 
 func (h *PrivacyOpsDSRHandler) GetDSRStats(c *gin.Context) {
-	// In production, calculate from database
+	tenantID := c.GetString("tenant_id")
+	
+	var total int64
+	var pending int64
+	var inProgress int64
+	var completed int64
+	var overdue int64
+
+	h.db.Model(&models.DSRRequest{}).
+		Where("tenant_id = ? AND is_deleted = ?", tenantID, false).
+		Count(&total)
+
+	h.db.Model(&models.DSRRequest{}).
+		Where("tenant_id = ? AND is_deleted = ? AND status = ?", tenantID, false, "pending").
+		Count(&pending)
+
+	h.db.Model(&models.DSRRequest{}).
+		Where("tenant_id = ? AND is_deleted = ? AND status = ?", tenantID, false, "in_progress").
+		Count(&inProgress)
+
+	h.db.Model(&models.DSRRequest{}).
+		Where("tenant_id = ? AND is_deleted = ? AND status = ?", tenantID, false, "completed").
+		Count(&completed)
+
+	h.db.Model(&models.DSRRequest{}).
+		Where("tenant_id = ? AND is_deleted = ? AND due_date < ? AND status NOT IN (?)", 
+			tenantID, false, time.Now(), []string{"completed", "rejected"}).
+		Count(&overdue)
+
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
 		"data": gin.H{
-			"total":        6,
-			"pending":      2,
-			"inProgress":   2,
-			"completed":    2,
-			"overdue":      0,
+			"total":      total,
+			"pending":    pending,
+			"inProgress": inProgress,
+			"completed":  completed,
+			"overdue":    overdue,
 		},
 	})
 }

@@ -86,6 +86,13 @@ func AuthMiddleware() gin.HandlerFunc {
 			return
 		}
 
+		// Extract user role from JWT claims and set in context
+		if claims, ok := token.Claims.(jwt.MapClaims); ok {
+			if userRole, exists := claims["user_role"]; exists {
+				c.Set("user_role", userRole)
+			}
+		}
+
 		c.Next()
 	}
 }

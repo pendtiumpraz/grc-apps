@@ -30,9 +30,9 @@ export default function DashboardPage() {
   }
 
   const role = user.role.toLowerCase()
-
+  
   // Super Admin - Platform Dashboard
-  if (role === 'superadmin') {
+  if (role === 'super_admin') {
     return (
       <div className="min-h-screen bg-[#0a0e1a] flex">
         <Sidebar />
@@ -159,7 +159,7 @@ export default function DashboardPage() {
   }
 
   // Tenant Admin - Tenant Dashboard with Document & User Management
-  if (role === 'admin') {
+  if (role === 'tenant_admin') {
     return (
       <div className="min-h-screen bg-[#0a0e1a] flex">
         <Sidebar />

@@ -2,120 +2,35 @@ package api
 
 import (
 	"net/http"
-	"time"
 
-	"github.com/cyber/backend/internal/db"
+	"github.com/cyber/backend/internal/models"
 	"github.com/gin-gonic/gin"
+	"gorm.io/gorm"
 )
 
-type DataItem struct {
-	ID               int       `json:"id"`
-	Name              string    `json:"name"`
-	Type              string    `json:"type"`
-	Category          string    `json:"category"`
-	Owner             string    `json:"owner"`
-	Location          string    `json:"location"`
-	Retention         string    `json:"retention"`
-	Classification    string    `json:"classification"`
-	ConsentRequired   bool      `json:"consentRequired"`
-	LastUpdated       string    `json:"lastUpdated"`
-	CreatedAt        time.Time `json:"createdAt"`
-}
-
 type PrivacyOpsDataInventoryHandler struct {
-	db *db.Database
+	db *gorm.DB
 }
 
-func NewPrivacyOpsDataInventoryHandler(db *db.Database) *PrivacyOpsDataInventoryHandler {
+func NewPrivacyOpsDataInventoryHandler(db *gorm.DB) *PrivacyOpsDataInventoryHandler {
 	return &PrivacyOpsDataInventoryHandler{db: db}
 }
 
 func (h *PrivacyOpsDataInventoryHandler) GetDataInventory(c *gin.Context) {
-	var items []DataItem
+	tenantID := c.GetString("tenant_id")
 	
-	// In production, fetch from database with tenant filtering
-	// For now, return sample data
-	items = []DataItem{
-		{
-			ID:             1,
-			Name:           "Customer Personal Data",
-			Type:           "personal",
-			Category:       "Customer Data",
-			Owner:          "Marketing Team",
-			Location:       "Production DB",
-			Retention:      "5 years",
-			Classification:  "confidential",
-			ConsentRequired: true,
-			LastUpdated:    "2024-12-20",
-			CreatedAt:       time.Now().AddDate(2024, 12, 20, 0, 0, 0),
-		},
-		{
-			ID:             2,
-			Name:           "Employee Records",
-			Type:           "sensitive",
-			Category:       "HR Data",
-			Owner:          "HR Department",
-			Location:       "HR System",
-			Retention:      "7 years",
-			Classification:  "confidential",
-			ConsentRequired: false,
-			LastUpdated:    "2024-12-18",
-			CreatedAt:       time.Now().AddDate(2024, 12, 18, 0, 0, 0),
-		},
-		{
-			ID:             3,
-			Name:           "Financial Transactions",
-			Type:           "special",
-			Category:       "Financial Data",
-			Owner:          "Finance Team",
-			Location:       "Payment Gateway",
-			Retention:      "7 years",
-			Classification:  "confidential",
-			ConsentRequired: true,
-			LastUpdated:    "2024-12-22",
-			CreatedAt:       time.Now().AddDate(2024, 12, 22, 0, 0, 0),
-		},
-		{
-			ID:             4,
-			Name:           "Website Analytics",
-			Type:           "personal",
-			Category:       "Analytics Data",
-			Owner:          "IT Team",
-			Location:       "Analytics Platform",
-			Retention:      "2 years",
-			Classification:  "internal",
-			ConsentRequired: true,
-			LastUpdated:    "2024-12-15",
-			CreatedAt:       time.Now().AddDate(2024, 12, 15, 0, 0, 0),
-		},
-		{
-			ID:             5,
-			Name:           "Health Records",
-			Type:           "special",
-			Category:       "Medical Data",
-			Owner:          "Health Department",
-			Location:       "Medical Records System",
-			Retention:      "10 years",
-			Classification:  "confidential",
-			ConsentRequired: true,
-			LastUpdated:    "2024-12-19",
-			CreatedAt:       time.Now().AddDate(2024, 12, 19, 0, 0, 0),
-		},
-		{
-			ID:             6,
-			Name:           "Marketing Materials",
-			Type:           "public",
-			Category:       "Marketing Data",
-			Owner:          "Marketing Team",
-			Location:       "CDN",
-			Retention:      "Indefinite",
-			Classification:  "public",
-			ConsentRequired: false,
-			LastUpdated:    "2024-12-10",
-			CreatedAt:       time.Now().AddDate(2024, 12, 10, 0, 0, 0),
-		},
+	var items []models.DataInventory
+	query := h.db
+	
+	if tenantID != "" {
+		query = query.Where("tenant_id = ?", tenantID)
 	}
-
+	
+	if err := query.Find(&items).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
 		"data":    items,
@@ -124,14 +39,14 @@ func (h *PrivacyOpsDataInventoryHandler) GetDataInventory(c *gin.Context) {
 
 func (h *PrivacyOpsDataInventoryHandler) CreateDataItem(c *gin.Context) {
 	var req struct {
-		Name            string `json:"name" binding:"required"`
-		Type            string `json:"type" binding:"required"`
-		Category        string `json:"category" binding:"required"`
-		Owner           string `json:"owner" binding:"required"`
-		Location        string `json:"location" binding:"required"`
-		Retention       string `json:"retention"`
-		Classification  string `json:"classification" binding:"required"`
-		ConsentRequired bool   `json:"consentRequired"`
+		DataType          string `json:"data_type" binding:"required"`
+		DataSource        string `json:"data_source" binding:"required"`
+		DataCategory      string `json:"data_category" binding:"required"`
+		SensitivityLevel  string `json:"sensitivity_level" binding:"required"`
+		ProcessingPurpose string `json:"processing_purpose" binding:"required"`
+		DataSubjects      string `json:"data_subjects" binding:"required"`
+		StorageLocation   string `json:"storage_location" binding:"required"`
+		RetentionPeriod   int    `json:"retention_period" binding:"required"`
 	}
 
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -139,26 +54,31 @@ func (h *PrivacyOpsDataInventoryHandler) CreateDataItem(c *gin.Context) {
 		return
 	}
 
-	// In production, insert into database
-	// For now, return success with generated ID
-	newItem := DataItem{
-		ID:             len([]DataItem{}) + 10,
-		Name:           req.Name,
-		Type:           req.Type,
-		Category:       req.Category,
-		Owner:          req.Owner,
-		Location:       req.Location,
-		Retention:      req.Retention,
-		Classification:  req.Classification,
-		ConsentRequired: req.ConsentRequired,
-		LastUpdated:    time.Now().Format("2006-01-02"),
-		CreatedAt:       time.Now(),
+	tenantID := c.GetString("tenant_id")
+	userID := c.GetString("user_id")
+
+	item := models.DataInventory{
+		TenantID:          tenantID,
+		DataType:          req.DataType,
+		DataSource:        req.DataSource,
+		DataCategory:      req.DataCategory,
+		SensitivityLevel:  req.SensitivityLevel,
+		ProcessingPurpose: req.ProcessingPurpose,
+		DataSubjects:      req.DataSubjects,
+		StorageLocation:   req.StorageLocation,
+		RetentionPeriod:   req.RetentionPeriod,
+		CreatedBy:         userID,
+	}
+
+	if err := h.db.Create(&item).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
 	}
 
 	c.JSON(http.StatusCreated, gin.H{
 		"success": true,
 		"message": "Data item created successfully",
-		"data":    newItem,
+		"data":    item,
 	})
 }
 
@@ -166,14 +86,14 @@ func (h *PrivacyOpsDataInventoryHandler) UpdateDataItem(c *gin.Context) {
 	id := c.Param("id")
 	
 	var req struct {
-		Name            string `json:"name"`
-		Type            string `json:"type"`
-		Category        string `json:"category"`
-		Owner           string `json:"owner"`
-		Location        string `json:"location"`
-		Retention       string `json:"retention"`
-		Classification  string `json:"classification"`
-		ConsentRequired bool   `json:"consentRequired"`
+		DataType          string `json:"data_type"`
+		DataSource        string `json:"data_source"`
+		DataCategory      string `json:"data_category"`
+		SensitivityLevel  string `json:"sensitivity_level"`
+		ProcessingPurpose string `json:"processing_purpose"`
+		DataSubjects      string `json:"data_subjects"`
+		StorageLocation   string `json:"storage_location"`
+		RetentionPeriod   int    `json:"retention_period"`
 	}
 
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -181,17 +101,57 @@ func (h *PrivacyOpsDataInventoryHandler) UpdateDataItem(c *gin.Context) {
 		return
 	}
 
-	// In production, update in database
+	var item models.DataInventory
+	if err := h.db.Where("id = ?", id).First(&item).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Data item not found"})
+		return
+	}
+
+	if req.DataType != "" {
+		item.DataType = req.DataType
+	}
+	if req.DataSource != "" {
+		item.DataSource = req.DataSource
+	}
+	if req.DataCategory != "" {
+		item.DataCategory = req.DataCategory
+	}
+	if req.SensitivityLevel != "" {
+		item.SensitivityLevel = req.SensitivityLevel
+	}
+	if req.ProcessingPurpose != "" {
+		item.ProcessingPurpose = req.ProcessingPurpose
+	}
+	if req.DataSubjects != "" {
+		item.DataSubjects = req.DataSubjects
+	}
+	if req.StorageLocation != "" {
+		item.StorageLocation = req.StorageLocation
+	}
+	if req.RetentionPeriod != 0 {
+		item.RetentionPeriod = req.RetentionPeriod
+	}
+
+	if err := h.db.Save(&item).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
 		"message": "Data item updated successfully",
+		"data":    item,
 	})
 }
 
 func (h *PrivacyOpsDataInventoryHandler) DeleteDataItem(c *gin.Context) {
 	id := c.Param("id")
-	
-	// In production, delete from database
+
+	if err := h.db.Where("id = ?", id).Delete(&models.DataInventory{}).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
 		"message": "Data item deleted successfully",
@@ -199,16 +159,31 @@ func (h *PrivacyOpsDataInventoryHandler) DeleteDataItem(c *gin.Context) {
 }
 
 func (h *PrivacyOpsDataInventoryHandler) GetDataInventoryStats(c *gin.Context) {
-	// In production, calculate from database
+	tenantID := c.GetString("tenant_id")
+	
+	var stats struct {
+		Total              int64 `json:"total"`
+		SpecialCategory    int64 `json:"specialCategory"`
+		ConsentRequired    int64 `json:"consentRequired"`
+		Confidential        int64 `json:"confidential"`
+		Internal           int64 `json:"internal"`
+		Public             int64 `json:"public"`
+	}
+	
+	query := h.db.Model(&models.DataInventory{})
+	if tenantID != "" {
+		query = query.Where("tenant_id = ?", tenantID)
+	}
+	
+	query.Count(&stats.Total)
+	query.Where("data_category = ?", "Special Category Data").Count(&stats.SpecialCategory)
+	query.Where("consent_required = ?", true).Count(&stats.ConsentRequired)
+	query.Where("sensitivity_level = ?", "confidential").Count(&stats.Confidential)
+	query.Where("sensitivity_level = ?", "internal").Count(&stats.Internal)
+	query.Where("sensitivity_level = ?", "public").Count(&stats.Public)
+	
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
-		"data": gin.H{
-			"total":           6,
-			"specialCategory": 2,
-			"consentRequired":  4,
-			"confidential":     4,
-			"internal":        1,
-			"public":          1,
-		},
+		"data":    stats,
 	})
 }

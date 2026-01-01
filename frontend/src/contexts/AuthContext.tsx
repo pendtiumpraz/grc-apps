@@ -45,9 +45,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         // Redirect based on role
         if (typeof window !== 'undefined') {
           const role = response.user.role.toLowerCase()
-          if (role === 'superadmin') {
+          if (role === 'super_admin') {
             window.location.href = '/dashboard/platform'
-          } else if (role === 'admin') {
+          } else if (role === 'tenant_admin') {
             window.location.href = '/dashboard'
           } else {
             window.location.href = '/dashboard'

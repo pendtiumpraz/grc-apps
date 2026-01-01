@@ -4,130 +4,26 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/cyber/backend/internal/db"
+	"github.com/cyber/backend/internal/models"
 	"github.com/gin-gonic/gin"
+	"gorm.io/gorm"
 )
 
-type ControlTest struct {
-	ID               int       `json:"id"`
-	Name             string    `json:"name"`
-	Control          string    `json:"control"`
-	Type             string    `json:"type"`
-	Frequency        string    `json:"frequency"`
-	Status           string    `json:"status"`
-	LastTested       string    `json:"lastTested"`
-	NextTest         string    `json:"nextTest"`
-	Effectiveness    int       `json:"effectiveness"`
-	Alerts           int       `json:"alerts"`
-	Owner            string    `json:"owner"`
-	Description      string    `json:"description"`
-	CreatedAt        time.Time `json:"createdAt"`
-}
-
 type AuditOpsContinuousAuditHandler struct {
-	db *db.Database
+	db *gorm.DB
 }
 
-func NewAuditOpsContinuousAuditHandler(db *db.Database) *AuditOpsContinuousAuditHandler {
+func NewAuditOpsContinuousAuditHandler(db *gorm.DB) *AuditOpsContinuousAuditHandler {
 	return &AuditOpsContinuousAuditHandler{db: db}
 }
 
 func (h *AuditOpsContinuousAuditHandler) GetControlTests(c *gin.Context) {
-	var tests []ControlTest
-	
-	// In production, fetch from database with tenant filtering
-	// For now, return sample data
-	tests = []ControlTest{
-		{
-			ID:            1,
-			Name:          "Access Control Review",
-			Control:       "ACC-001",
-			Type:          "Automated",
-			Frequency:     "Daily",
-			Status:        "passing",
-			LastTested:    "2024-12-20",
-			NextTest:      "2024-12-21",
-			Effectiveness: 95,
-			Alerts:        0,
-			Owner:        "Security Team",
-			Description:   "Automated review of access control configurations",
-			CreatedAt:     time.Now().AddDate(2024, 12, 20),
-		},
-		{
-			ID:            2,
-			Name:          "Encryption Verification",
-			Control:       "ENC-001",
-			Type:          "Automated",
-			Frequency:     "Weekly",
-			Status:        "passing",
-			LastTested:    "2024-12-18",
-			NextTest:      "2024-12-25",
-			Effectiveness: 90,
-			Alerts:        0,
-			Owner:        "Infrastructure Team",
-			Description:   "Verification of encryption status across systems",
-			CreatedAt:     time.Now().AddDate(2024, 12, 18),
-		},
-		{
-			ID:            3,
-			Name:          "Privileged Access Monitoring",
-			Control:       "ACC-002",
-			Type:          "Automated",
-			Frequency:     "Real-time",
-			Status:        "warning",
-			LastTested:    "2024-12-22",
-			NextTest:      "2024-12-22",
-			Effectiveness: 75,
-			Alerts:        3,
-			Owner:        "Security Team",
-			Description:   "Real-time monitoring of privileged access",
-			CreatedAt:     time.Now().AddDate(2024, 12, 22),
-		},
-		{
-			ID:            4,
-			Name:          "Data Retention Compliance",
-			Control:       "DAT-001",
-			Type:          "Automated",
-			Frequency:     "Monthly",
-			Status:        "passing",
-			LastTested:    "2024-12-15",
-			NextTest:      "2025-01-15",
-			Effectiveness: 88,
-			Alerts:        0,
-			Owner:        "Compliance Team",
-			Description:   "Automated check of data retention policies",
-			CreatedAt:     time.Now().AddDate(2024, 12, 15),
-		},
-		{
-			ID:            5,
-			Name:          "Change Management Review",
-			Control:       "CHG-001",
-			Type:          "Automated",
-			Frequency:     "Daily",
-			Status:        "passing",
-			LastTested:    "2024-12-20",
-			NextTest:      "2024-12-21",
-			Effectiveness: 92,
-			Alerts:        0,
-			Owner:        "IT Operations",
-			Description:   "Automated review of change management processes",
-			CreatedAt:     time.Now().AddDate(2024, 12, 20),
-		},
-		{
-			ID:            6,
-			Name:          "Vendor Compliance Check",
-			Control:       "VEN-001",
-			Type:          "Automated",
-			Frequency:     "Weekly",
-			Status:        "failing",
-			LastTested:    "2024-12-19",
-			NextTest:      "2024-12-26",
-			Effectiveness: 65,
-			Alerts:        5,
-			Owner:        "Vendor Management",
-			Description:   "Automated check of vendor compliance status",
-			CreatedAt:     time.Now().AddDate(2024, 12, 19),
-		},
+	var tests []models.ControlTest
+	tenantID := c.GetString("tenant_id")
+
+	if err := h.db.Where("tenant_id = ? AND is_deleted = ?", tenantID, false).Find(&tests).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch control tests"})
+		return
 	}
 
 	c.JSON(http.StatusOK, gin.H{
@@ -138,12 +34,14 @@ func (h *AuditOpsContinuousAuditHandler) GetControlTests(c *gin.Context) {
 
 func (h *AuditOpsContinuousAuditHandler) CreateControlTest(c *gin.Context) {
 	var req struct {
-		Name        string `json:"name" binding:"required"`
-		Control     string `json:"control" binding:"required"`
-		Type        string `json:"type" binding:"required"`
-		Frequency   string `json:"frequency" binding:"required"`
-		Owner       string `json:"owner" binding:"required"`
-		Description string `json:"description" binding:"required"`
+		Name          string `json:"name" binding:"required"`
+		Description   string `json:"description" binding:"required"`
+		ControlID     string `json:"controlId"`
+		ControlName   string `json:"controlName" binding:"required"`
+		TestType      string `json:"testType" binding:"required"`
+		TestProcedure string `json:"testProcedure"`
+		Tester        string `json:"tester" binding:"required"`
+		TestDate      string `json:"testDate"`
 	}
 
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -151,28 +49,34 @@ func (h *AuditOpsContinuousAuditHandler) CreateControlTest(c *gin.Context) {
 		return
 	}
 
-	// In production, insert into database
-	// For now, return success with generated ID
-	newTest := ControlTest{
-		ID:            len([]ControlTest{}) + 10,
-		Name:          req.Name,
-		Control:       req.Control,
-		Type:          req.Type,
-		Frequency:     req.Frequency,
-		Status:        "pending",
-		LastTested:    "-",
-		NextTest:      "-",
-		Effectiveness: 0,
-		Alerts:        0,
-		Owner:        req.Owner,
+	tenantID := c.GetString("tenant_id")
+	
+	test := models.ControlTest{
+		TenantID:     tenantID,
+		ControlID:     req.ControlID,
+		ControlName:   req.ControlName,
 		Description:   req.Description,
-		CreatedAt:     time.Now(),
+		TestType:      req.TestType,
+		TestProcedure: req.TestProcedure,
+		Tester:        req.Tester,
+		TestResult:    "pending",
+	}
+
+	if req.TestDate != "" {
+		if t, err := time.Parse("2006-01-02", req.TestDate); err == nil {
+			test.TestDate = t
+		}
+	}
+
+	if err := h.db.Create(&test).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create control test"})
+		return
 	}
 
 	c.JSON(http.StatusCreated, gin.H{
 		"success": true,
 		"message": "Control test created successfully",
-		"data":    newTest,
+		"data":    test,
 	})
 }
 
@@ -180,17 +84,20 @@ func (h *AuditOpsContinuousAuditHandler) UpdateControlTest(c *gin.Context) {
 	id := c.Param("id")
 	
 	var req struct {
-		Name         string `json:"name"`
-		Control      string `json:"control"`
-		Type         string `json:"type"`
-		Frequency    string `json:"frequency"`
-		Status       string `json:"status"`
-		LastTested   string `json:"lastTested"`
-		NextTest     string `json:"nextTest"`
-		Effectiveness int    `json:"effectiveness"`
-		Alerts       int    `json:"alerts"`
-		Owner        string `json:"owner"`
-		Description  string `json:"description"`
+		Name          string `json:"name"`
+		Description   string `json:"description"`
+		ControlID     string `json:"controlId"`
+		ControlName   string `json:"controlName"`
+		TestType      string `json:"testType"`
+		TestProcedure string `json:"testProcedure"`
+		TestResult    string `json:"testResult"`
+		Tester        string `json:"tester"`
+		TestDate      string `json:"testDate"`
+		Findings      string `json:"findings"`
+		Recommendations string `json:"recommendations"`
+		Evidence      string `json:"evidence"`
+		FollowUpRequired bool   `json:"followUpRequired"`
+		FollowUpDate    string `json:"followUpDate"`
 	}
 
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -198,7 +105,68 @@ func (h *AuditOpsContinuousAuditHandler) UpdateControlTest(c *gin.Context) {
 		return
 	}
 
-	// In production, update in database
+	tenantID := c.GetString("tenant_id")
+	var test models.ControlTest
+	
+	if err := h.db.Where("id = ? AND tenant_id = ? AND is_deleted = ?", id, tenantID, false).First(&test).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Control test not found"})
+		return
+	}
+
+	updates := map[string]interface{}{
+		"updated_at": time.Now(),
+	}
+
+	if req.Name != "" {
+		updates["name"] = req.Name
+	}
+	if req.Description != "" {
+		updates["description"] = req.Description
+	}
+	if req.ControlID != "" {
+		updates["control_id"] = req.ControlID
+	}
+	if req.ControlName != "" {
+		updates["control_name"] = req.ControlName
+	}
+	if req.TestType != "" {
+		updates["test_type"] = req.TestType
+	}
+	if req.TestProcedure != "" {
+		updates["test_procedure"] = req.TestProcedure
+	}
+	if req.TestResult != "" {
+		updates["test_result"] = req.TestResult
+	}
+	if req.Tester != "" {
+		updates["tester"] = req.Tester
+	}
+	if req.Findings != "" {
+		updates["findings"] = req.Findings
+	}
+	if req.Recommendations != "" {
+		updates["recommendations"] = req.Recommendations
+	}
+	if req.Evidence != "" {
+		updates["evidence"] = req.Evidence
+	}
+	updates["follow_up_required"] = req.FollowUpRequired
+	if req.FollowUpDate != "" {
+		if t, err := time.Parse("2006-01-02", req.FollowUpDate); err == nil {
+			updates["follow_up_date"] = &t
+		}
+	}
+	if req.TestDate != "" {
+		if t, err := time.Parse("2006-01-02", req.TestDate); err == nil {
+			updates["test_date"] = &t
+		}
+	}
+
+	if err := h.db.Model(&test).Updates(updates).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update control test"})
+		return
+	}
+
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
 		"message": "Control test updated successfully",
@@ -207,8 +175,18 @@ func (h *AuditOpsContinuousAuditHandler) UpdateControlTest(c *gin.Context) {
 
 func (h *AuditOpsContinuousAuditHandler) DeleteControlTest(c *gin.Context) {
 	id := c.Param("id")
-	
-	// In production, delete from database
+	tenantID := c.GetString("tenant_id")
+
+	if err := h.db.Model(&models.ControlTest{}).
+		Where("id = ? AND tenant_id = ?", id, tenantID).
+		Updates(map[string]interface{}{
+			"is_deleted": true,
+			"deleted_at": time.Now(),
+		}).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete control test"})
+		return
+	}
+
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
 		"message": "Control test deleted successfully",
@@ -217,8 +195,18 @@ func (h *AuditOpsContinuousAuditHandler) DeleteControlTest(c *gin.Context) {
 
 func (h *AuditOpsContinuousAuditHandler) RunControlTest(c *gin.Context) {
 	id := c.Param("id")
-	
-	// In production, trigger test execution and update results
+	tenantID := c.GetString("tenant_id")
+
+	if err := h.db.Model(&models.ControlTest{}).
+		Where("id = ? AND tenant_id = ?", id, tenantID).
+		Updates(map[string]interface{}{
+			"test_result": "in_progress",
+			"updated_at":  time.Now(),
+		}).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to initiate control test"})
+		return
+	}
+
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
 		"message": "Control test initiated successfully",
@@ -226,15 +214,42 @@ func (h *AuditOpsContinuousAuditHandler) RunControlTest(c *gin.Context) {
 }
 
 func (h *AuditOpsContinuousAuditHandler) GetControlTestStats(c *gin.Context) {
-	// In production, calculate from database
+	tenantID := c.GetString("tenant_id")
+	
+	var total int64
+	var passing int64
+	var warning int64
+	var failing int64
+	var pending int64
+
+	h.db.Model(&models.ControlTest{}).
+		Where("tenant_id = ? AND is_deleted = ?", tenantID, false).
+		Count(&total)
+
+	h.db.Model(&models.ControlTest{}).
+		Where("tenant_id = ? AND is_deleted = ? AND test_result = ?", tenantID, false, "pass").
+		Count(&passing)
+
+	h.db.Model(&models.ControlTest{}).
+		Where("tenant_id = ? AND is_deleted = ? AND test_result = ?", tenantID, false, "warning").
+		Count(&warning)
+
+	h.db.Model(&models.ControlTest{}).
+		Where("tenant_id = ? AND is_deleted = ? AND test_result = ?", tenantID, false, "fail").
+		Count(&failing)
+
+	h.db.Model(&models.ControlTest{}).
+		Where("tenant_id = ? AND is_deleted = ? AND test_result = ?", tenantID, false, "pending").
+		Count(&pending)
+
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
 		"data": gin.H{
-			"total":    6,
-			"passing":  4,
-			"warning":  1,
-			"failing":  1,
-			"pending":  0,
+			"total":    total,
+			"passing":  passing,
+			"warning":  warning,
+			"failing":  failing,
+			"pending":  pending,
 		},
 	})
 }

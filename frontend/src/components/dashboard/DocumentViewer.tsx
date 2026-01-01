@@ -36,11 +36,20 @@ export interface DocumentAnalysis {
   id: string
   document_id: string
   analysis_type: string
-  score?: number
-  findings?: any[]
-  recommendations?: string[]
-  chart_data?: any
+  analysis_result?: string
+  summary?: string
+  key_points?: string
+  recommendations?: string
+  confidence_score?: number
+  ai_model?: string
   created_at?: string
+}
+
+export interface AnalysisMetadata {
+  sections_found?: string[]
+  compliance_issues?: string[]
+  strengths?: string[]
+  weaknesses?: string[]
 }
 
 interface DocumentViewerProps {
@@ -59,7 +68,7 @@ export const DocumentViewer: React.FC<DocumentViewerProps> = ({
   const [loading, setLoading] = useState(false)
   const [downloading, setDownloading] = useState<'pdf' | 'docx' | 'html' | null>(null)
   const [viewMode, setViewMode] = useState<'styled' | 'raw' | 'infographic'>('styled')
-  const [infographicHTML, setInfographicHTML] = useState<string>('')
+  const [analysisMetadata, setAnalysisMetadata] = useState<AnalysisMetadata | null>(null)
   const [loadingInfographic, setLoadingInfographic] = useState(false)
 
   useEffect(() => {
@@ -70,12 +79,18 @@ export const DocumentViewer: React.FC<DocumentViewerProps> = ({
   }, [showInfographic, analyses])
 
   const loadInfographic = async () => {
-    if (!document.id) return
+    if (analyses.length === 0) return
     setLoadingInfographic(true)
     try {
-      const response = await documentAPI.getInfographicHTML(document.id)
-      if (response.success && response.data?.html) {
-        setInfographicHTML(response.data.html)
+      // Parse the recommendations JSON from the first analysis
+      const analysis = analyses[0]
+      if (analysis.recommendations) {
+        try {
+          const metadata = JSON.parse(analysis.recommendations) as AnalysisMetadata
+          setAnalysisMetadata(metadata)
+        } catch (error) {
+          console.error('Error parsing analysis metadata:', error)
+        }
       }
     } catch (error) {
       console.error('Error loading infographic:', error)
@@ -242,8 +257,106 @@ export const DocumentViewer: React.FC<DocumentViewerProps> = ({
               <div className="flex items-center justify-center h-96">
                 <Loader2 className="w-8 h-8 animate-spin text-cyan-400" />
               </div>
-            ) : infographicHTML ? (
-              <div dangerouslySetInnerHTML={{ __html: infographicHTML }} />
+            ) : analysisMetadata ? (
+              <div className="space-y-6">
+                {/* Analysis Summary */}
+                {analyses[0]?.summary && (
+                  <div className="bg-gray-700/50 rounded-lg p-4 border border-gray-600">
+                    <h4 className="text-cyan-400 font-semibold mb-2">Ringkasan Analisis</h4>
+                    <p className="text-gray-300 text-sm">{analyses[0].summary}</p>
+                  </div>
+                )}
+
+                {/* Confidence Score */}
+                {analyses[0]?.confidence_score !== undefined && (
+                  <div className="bg-gray-700/50 rounded-lg p-4 border border-gray-600">
+                    <h4 className="text-cyan-400 font-semibold mb-2">Skor Keyakinan</h4>
+                    <div className="flex items-center gap-3">
+                      <div className="flex-1 bg-gray-600 rounded-full h-3 overflow-hidden">
+                        <div
+                          className="h-full bg-gradient-to-r from-cyan-500 to-blue-500 transition-all duration-500"
+                          style={{ width: `${analyses[0].confidence_score}%` }}
+                        />
+                      </div>
+                      <span className="text-white font-bold text-lg">{analyses[0].confidence_score.toFixed(1)}%</span>
+                    </div>
+                  </div>
+                )}
+
+                {/* Sections Found */}
+                {analysisMetadata.sections_found && analysisMetadata.sections_found.length > 0 && (
+                  <div className="bg-gray-700/50 rounded-lg p-4 border border-gray-600">
+                    <h4 className="text-cyan-400 font-semibold mb-3">Bagian yang Ditemukan</h4>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                      {analysisMetadata.sections_found.map((section, index) => (
+                        <div key={index} className="bg-green-500/20 text-green-400 px-3 py-2 rounded text-sm text-center">
+                          {section}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Compliance Issues */}
+                {analysisMetadata.compliance_issues && analysisMetadata.compliance_issues.length > 0 && (
+                  <div className="bg-gray-700/50 rounded-lg p-4 border border-red-500/30">
+                    <h4 className="text-red-400 font-semibold mb-3">Isu Kepatuhan</h4>
+                    <ul className="space-y-2">
+                      {analysisMetadata.compliance_issues.map((issue, index) => (
+                        <li key={index} className="flex items-start gap-2 text-gray-300 text-sm">
+                          <span className="text-red-400 mt-1">•</span>
+                          {issue}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
+                {/* Strengths */}
+                {analysisMetadata.strengths && analysisMetadata.strengths.length > 0 && (
+                  <div className="bg-gray-700/50 rounded-lg p-4 border border-green-500/30">
+                    <h4 className="text-green-400 font-semibold mb-3">Kelebihan</h4>
+                    <ul className="space-y-2">
+                      {analysisMetadata.strengths.map((strength, index) => (
+                        <li key={index} className="flex items-start gap-2 text-gray-300 text-sm">
+                          <span className="text-green-400 mt-1">✓</span>
+                          {strength}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
+                {/* Weaknesses */}
+                {analysisMetadata.weaknesses && analysisMetadata.weaknesses.length > 0 && (
+                  <div className="bg-gray-700/50 rounded-lg p-4 border border-yellow-500/30">
+                    <h4 className="text-yellow-400 font-semibold mb-3">Kelemahan</h4>
+                    <ul className="space-y-2">
+                      {analysisMetadata.weaknesses.map((weakness, index) => (
+                        <li key={index} className="flex items-start gap-2 text-gray-300 text-sm">
+                          <span className="text-yellow-400 mt-1">!</span>
+                          {weakness}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
+                {/* Key Points */}
+                {analyses[0]?.key_points && (
+                  <div className="bg-gray-700/50 rounded-lg p-4 border border-gray-600">
+                    <h4 className="text-cyan-400 font-semibold mb-3">Poin Kunci</h4>
+                    <p className="text-gray-300 text-sm">{analyses[0].key_points}</p>
+                  </div>
+                )}
+
+                {/* AI Model Info */}
+                {analyses[0]?.ai_model && (
+                  <div className="text-center text-gray-500 text-xs pt-2">
+                    Analisis menggunakan AI Model: {analyses[0].ai_model}
+                  </div>
+                )}
+              </div>
             ) : (
               <div className="text-center text-gray-400 py-12">
                 <FileJson className="w-12 h-12 mx-auto mb-4 opacity-50" />

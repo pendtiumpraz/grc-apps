@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { aiAPI } from '@/lib/api'
+import { useAuth } from '@/contexts/AuthContext'
 
 const GEMINI_MODELS = [
     { id: 'gemini-2.0-flash', name: 'Gemini 2.0 Flash', description: 'Fast and efficient' },
@@ -24,6 +25,7 @@ const OPENROUTER_MODELS = [
 ]
 
 export default function AISettingsPage() {
+    const { isAuthenticated, isLoading: authLoading } = useAuth()
     const [isLoading, setIsLoading] = useState(true)
     const [provider, setProvider] = useState('gemini')
     const [modelName, setModelName] = useState('gemini-2.5-flash')
@@ -42,10 +44,17 @@ export default function AISettingsPage() {
 
     // Load existing settings on mount
     useEffect(() => {
-        loadSettings()
-    }, [])
+        // Wait for auth to finish loading
+        if (authLoading) return
+
+        if (isAuthenticated) {
+            loadSettings()
+        }
+        // Don't redirect - let the layout handle auth redirects
+    }, [authLoading, isAuthenticated])
 
     const loadSettings = async () => {
+
         try {
             const response = await aiAPI.getSettings()
             if (response && !response.error) {
@@ -64,6 +73,8 @@ export default function AISettingsPage() {
                 if (settings.openrouter_api_key && settings.openrouter_api_key !== '') {
                     setOpenRouterKey('••••••••')
                 }
+            } else if (response?.error) {
+                console.error('Failed to load AI settings:', response.error)
             }
         } catch (error) {
             console.error('Failed to load AI settings:', error)
@@ -123,7 +134,7 @@ export default function AISettingsPage() {
         }
     }
 
-    if (isLoading) {
+    if (isLoading || authLoading) {
         return (
             <div className="min-h-screen bg-[#0a0e1a] flex">
                 <Sidebar />

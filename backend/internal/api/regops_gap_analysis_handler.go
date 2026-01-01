@@ -4,97 +4,26 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/cyber/backend/internal/db"
+	"github.com/cyber/backend/internal/models"
 	"github.com/gin-gonic/gin"
+	"gorm.io/gorm"
 )
 
-type ComplianceGap struct {
-	ID               int       `json:"id"`
-	Regulation       string    `json:"regulation"`
-	Requirement      string    `json:"requirement"`
-	CurrentStatus    string    `json:"currentStatus"`
-	GapStatus        string    `json:"gapStatus"`
-	RiskLevel        int       `json:"riskLevel"`
-	Recommendation   string    `json:"recommendation"`
-	Priority         int       `json:"priority"`
-	LastAssessed     string    `json:"lastAssessed"`
-	CreatedAt        time.Time `json:"createdAt"`
-}
-
 type RegOpsGapAnalysisHandler struct {
-	db *db.Database
+	db *gorm.DB
 }
 
-func NewRegOpsGapAnalysisHandler(db *db.Database) *RegOpsGapAnalysisHandler {
+func NewRegOpsGapAnalysisHandler(db *gorm.DB) *RegOpsGapAnalysisHandler {
 	return &RegOpsGapAnalysisHandler{db: db}
 }
 
 func (h *RegOpsGapAnalysisHandler) GetComplianceGaps(c *gin.Context) {
-	var gaps []ComplianceGap
-	
-	// In production, fetch from database with tenant filtering
-	// For now, return sample data
-	gaps = []ComplianceGap{
-		{
-			ID:             1,
-			Regulation:     "GDPR Article 32",
-			Requirement:    "Security of processing",
-			CurrentStatus: "Partially Compliant",
-			GapStatus:     "high",
-			RiskLevel:     8,
-			Recommendation: "Implement multi-factor authentication for all admin accounts",
-			Priority:       1,
-			LastAssessed:  "2024-12-20",
-			CreatedAt:      time.Now().AddDate(2024, 12, 20, 0, 0, 0, 0),
-		},
-		{
-			ID:             2,
-			Regulation:     "ISO 27001 A.9.4",
-			Requirement:    "User access management",
-			CurrentStatus: "Non-Compliant",
-			GapStatus:     "critical",
-			RiskLevel:     9,
-			Recommendation: "Establish formal access review process with quarterly reviews",
-			Priority:       1,
-			LastAssessed:  "2024-12-18",
-			CreatedAt:      time.Now().AddDate(2024, 12, 18, 0, 0, 0, 0),
-		},
-		{
-			ID:             3,
-			Regulation:     "HIPAA Security Rule",
-			Requirement:    "Risk analysis",
-			CurrentStatus: "Compliant",
-			GapStatus:     "low",
-			RiskLevel:     2,
-			Recommendation: "Continue annual risk assessment schedule",
-			Priority:       3,
-			LastAssessed:  "2024-12-15",
-			CreatedAt:      time.Now().AddDate(2024, 12, 15, 0, 0, 0, 0),
-		},
-		{
-			ID:             4,
-			Regulation:     "SOX Section 404",
-			Requirement:    "Internal control documentation",
-			CurrentStatus: "Partially Compliant",
-			GapStatus:     "medium",
-			RiskLevel:     5,
-			Recommendation: "Update control documentation with latest process changes",
-			Priority:       2,
-			LastAssessed:  "2024-12-22",
-			CreatedAt:      time.Now().AddDate(2024, 12, 22, 0, 0, 0, 0),
-		},
-		{
-			ID:             5,
-			Regulation:     "GDPR Article 25",
-			Requirement:    "Data protection by design",
-			CurrentStatus: "Non-Compliant",
-			GapStatus:     "high",
-			RiskLevel:     7,
-			Recommendation: "Integrate DPIA into all new project workflows",
-			Priority:       1,
-			LastAssessed:  "2024-12-19",
-			CreatedAt:      time.Now().AddDate(2024, 12, 19, 0, 0, 0, 0),
-		},
+	var gaps []models.GapAnalysis
+	tenantID := c.GetString("tenant_id")
+
+	if err := h.db.Where("tenant_id = ? AND is_deleted = ?", tenantID, false).Find(&gaps).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch gap analysis records"})
+		return
 	}
 
 	c.JSON(http.StatusOK, gin.H{
@@ -105,13 +34,16 @@ func (h *RegOpsGapAnalysisHandler) GetComplianceGaps(c *gin.Context) {
 
 func (h *RegOpsGapAnalysisHandler) CreateComplianceGap(c *gin.Context) {
 	var req struct {
-		Regulation     string `json:"regulation" binding:"required"`
-		Requirement    string `json:"requirement" binding:"required"`
-		CurrentStatus string    `json:"currentStatus"`
-		GapStatus     string `json:"gapStatus"`
-		RiskLevel     int    `json:"riskLevel"`
-		Recommendation string    `json:"recommendation"`
-		Priority      int    `json:"priority"`
+		Name              string `json:"name" binding:"required"`
+		Description       string `json:"description" binding:"required"`
+		Framework         string `json:"framework"`
+		RegulationID     string `json:"regulationId"`
+		GapScore         int    `json:"gapScore"`
+		Findings         string `json:"findings"`
+		Recommendations  string `json:"recommendations"`
+		RemediationPlan  string `json:"remediationPlan"`
+		Owner             string `json:"owner" binding:"required"`
+		DueDate          string `json:"dueDate"`
 	}
 
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -119,25 +51,37 @@ func (h *RegOpsGapAnalysisHandler) CreateComplianceGap(c *gin.Context) {
 		return
 	}
 
-	// In production, insert into database
-	// For now, return success with generated ID
-	newGap := ComplianceGap{
-		ID:             len([]ComplianceGap{}) + 10,
-		Regulation:     req.Regulation,
-		Requirement:    req.Requirement,
-		CurrentStatus: req.CurrentStatus,
-		GapStatus:     req.GapStatus,
-		RiskLevel:     req.RiskLevel,
-		Recommendation: req.Recommendation,
-		Priority:       req.Priority,
-		LastAssessed:  time.Now().Format("2006-01-02"),
-		CreatedAt:      time.Now(),
+	tenantID := c.GetString("tenant_id")
+	
+	gap := models.GapAnalysis{
+		TenantID:         tenantID,
+		RegulationID:     req.RegulationID,
+		Name:              req.Name,
+		Description:       req.Description,
+		Framework:         req.Framework,
+		Status:            "pending",
+		GapScore:          req.GapScore,
+		Findings:          req.Findings,
+		Recommendations:   req.Recommendations,
+		RemediationPlan:  req.RemediationPlan,
+		Owner:             req.Owner,
+	}
+
+	if req.DueDate != "" {
+		if t, err := time.Parse("2006-01-02", req.DueDate); err == nil {
+			gap.DueDate = &t
+		}
+	}
+
+	if err := h.db.Create(&gap).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create gap analysis"})
+		return
 	}
 
 	c.JSON(http.StatusCreated, gin.H{
 		"success": true,
 		"message": "Compliance gap created successfully",
-		"data":    newGap,
+		"data":    gap,
 	})
 }
 
@@ -145,13 +89,17 @@ func (h *RegOpsGapAnalysisHandler) UpdateComplianceGap(c *gin.Context) {
 	id := c.Param("id")
 	
 	var req struct {
-		Regulation     string `json:"regulation"`
-		Requirement    string `json:"requirement"`
-		CurrentStatus string    `json:"currentStatus"`
-		GapStatus     string `json:"gapStatus"`
-		RiskLevel     int    `json:"riskLevel"`
-		Recommendation string    `json:"recommendation"`
-		Priority      int    `json:"priority"`
+		Name              string `json:"name"`
+		Description       string `json:"description"`
+		Framework         string `json:"framework"`
+		RegulationID     string `json:"regulationId"`
+		Status            string `json:"status"`
+		GapScore         int    `json:"gapScore"`
+		Findings         string `json:"findings"`
+		Recommendations  string `json:"recommendations"`
+		RemediationPlan  string `json:"remediationPlan"`
+		Owner             string `json:"owner"`
+		DueDate          string `json:"dueDate"`
 	}
 
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -159,7 +107,59 @@ func (h *RegOpsGapAnalysisHandler) UpdateComplianceGap(c *gin.Context) {
 		return
 	}
 
-	// In production, update in database
+	tenantID := c.GetString("tenant_id")
+	var gap models.GapAnalysis
+	
+	if err := h.db.Where("id = ? AND tenant_id = ? AND is_deleted = ?", id, tenantID, false).First(&gap).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Gap analysis not found"})
+		return
+	}
+
+	updates := map[string]interface{}{
+		"updated_at": time.Now(),
+	}
+
+	if req.Name != "" {
+		updates["name"] = req.Name
+	}
+	if req.Description != "" {
+		updates["description"] = req.Description
+	}
+	if req.Framework != "" {
+		updates["framework"] = req.Framework
+	}
+	if req.RegulationID != "" {
+		updates["regulation_id"] = req.RegulationID
+	}
+	if req.Status != "" {
+		updates["status"] = req.Status
+	}
+	if req.GapScore > 0 {
+		updates["gap_score"] = req.GapScore
+	}
+	if req.Findings != "" {
+		updates["findings"] = req.Findings
+	}
+	if req.Recommendations != "" {
+		updates["recommendations"] = req.Recommendations
+	}
+	if req.RemediationPlan != "" {
+		updates["remediation_plan"] = req.RemediationPlan
+	}
+	if req.Owner != "" {
+		updates["owner"] = req.Owner
+	}
+	if req.DueDate != "" {
+		if t, err := time.Parse("2006-01-02", req.DueDate); err == nil {
+			updates["due_date"] = &t
+		}
+	}
+
+	if err := h.db.Model(&gap).Updates(updates).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update gap analysis"})
+		return
+	}
+
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
 		"message": "Compliance gap updated successfully",
@@ -168,8 +168,18 @@ func (h *RegOpsGapAnalysisHandler) UpdateComplianceGap(c *gin.Context) {
 
 func (h *RegOpsGapAnalysisHandler) DeleteComplianceGap(c *gin.Context) {
 	id := c.Param("id")
-	
-	// In production, delete from database
+	tenantID := c.GetString("tenant_id")
+
+	if err := h.db.Model(&models.GapAnalysis{}).
+		Where("id = ? AND tenant_id = ?", id, tenantID).
+		Updates(map[string]interface{}{
+			"is_deleted": true,
+			"deleted_at": time.Now(),
+		}).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete gap analysis"})
+		return
+	}
+
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
 		"message": "Compliance gap deleted successfully",
@@ -177,16 +187,42 @@ func (h *RegOpsGapAnalysisHandler) DeleteComplianceGap(c *gin.Context) {
 }
 
 func (h *RegOpsGapAnalysisHandler) GetGapStats(c *gin.Context) {
-	// In production, calculate from database
+	tenantID := c.GetString("tenant_id")
+	
+	var total int64
+	var critical int64
+	var high int64
+	var medium int64
+	var low int64
+
+	h.db.Model(&models.GapAnalysis{}).
+		Where("tenant_id = ? AND is_deleted = ?", tenantID, false).
+		Count(&total)
+
+	h.db.Model(&models.GapAnalysis{}).
+		Where("tenant_id = ? AND is_deleted = ? AND gap_score >= ?", tenantID, false, 80).
+		Count(&critical)
+
+	h.db.Model(&models.GapAnalysis{}).
+		Where("tenant_id = ? AND is_deleted = ? AND gap_score >= ? AND gap_score < ?", tenantID, false, 60, 80).
+		Count(&high)
+
+	h.db.Model(&models.GapAnalysis{}).
+		Where("tenant_id = ? AND is_deleted = ? AND gap_score >= ? AND gap_score < ?", tenantID, false, 40, 60).
+		Count(&medium)
+
+	h.db.Model(&models.GapAnalysis{}).
+		Where("tenant_id = ? AND is_deleted = ? AND gap_score < ?", tenantID, false, 40).
+		Count(&low)
+
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
 		"data": gin.H{
-			"total":        5,
-			"critical":     1,
-			"high":         1,
-			"medium":       1,
-			"low":          2,
-			"avgRiskScore": 6.2,
+			"total":        total,
+			"critical":     critical,
+			"high":         high,
+			"medium":       medium,
+			"low":          low,
 		},
 	})
 }

@@ -247,7 +247,7 @@ export const SinglePageCrud: React.FC<SinglePageCrudProps> = ({
 
   const handleAiSuggest = async () => {
     if (!aiContext) return
-
+    
     setLoadingAi(true)
     try {
       const prompt = `Suggest values for a ${title} form with the following fields: ${fields.map(f => f.label).join(', ')}. Provide JSON output with field names as keys.`
@@ -255,15 +255,38 @@ export const SinglePageCrud: React.FC<SinglePageCrudProps> = ({
       const response = await aiAPI.chat(prompt, { module: aiContext }, 'autofill')
       if (response.success && response.data?.response) {
         try {
-          const parsed = JSON.parse(response.data.response)
-          setAiSuggestion(parsed)
-          setFormData(prev => ({ ...prev, ...parsed }))
+          // Try to parse as JSON first
+          const trimmedResponse = response.data.response.trim()
+          
+          // Check if response starts with { or [
+          if (trimmedResponse.startsWith('{') || trimmedResponse.startsWith('[')) {
+            const parsed = JSON.parse(trimmedResponse)
+            setAiSuggestion(parsed)
+            setFormData(prev => ({ ...prev, ...parsed }))
+          } else {
+            // If not JSON, try to extract JSON from markdown code blocks
+            const jsonMatch = trimmedResponse.match(/```(?:json)?\s*([\s\S]*?)\s*```/i)
+            if (jsonMatch && jsonMatch[1]) {
+              const parsed = JSON.parse(jsonMatch[1])
+              setAiSuggestion(parsed)
+              setFormData(prev => ({ ...prev, ...parsed }))
+            } else {
+              console.error('AI response is not valid JSON:', trimmedResponse)
+              alert('AI response is not in valid JSON format. Please try again.')
+            }
+          }
         } catch (e) {
           console.error('Failed to parse AI response:', e)
+          console.error('Response was:', response.data.response)
+          alert('Failed to parse AI response. Please try again.')
         }
+      } else {
+        console.error('Invalid response format:', response)
+        alert('AI service returned an invalid response. Please try again.')
       }
     } catch (error) {
       console.error('AI suggestion error:', error)
+      alert('AI suggestion failed. Please try again.')
     } finally {
       setLoadingAi(false)
     }

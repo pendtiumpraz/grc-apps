@@ -130,18 +130,16 @@ func (h *DocumentHandler) AnalyzeDocument(c *gin.Context) {
 
 	// Save analysis to database
 	documentAnalysis := models.DocumentAnalysis{
-		TenantID:       tenantID,
-		DocumentID:     document.ID,
-		AnalysisType:   analysisType,
-		Summary:        analysisData["summary"].(string),
-		AnalysisData:   resp.Message,
-		Score:          int(analysisData["score"].(float64)),
-		Findings:       toJSONString(analysisData["findings"]),
-		Recommendations: toJSONString(analysisData["recommendations"]),
-		Charts:         toJSONString(analysisData["charts"]),
-		InfographicData: toJSONString(analysisData),
-		AIModel:        settings.ModelName,
-		CreatedBy:      userID,
+		TenantID:         tenantID,
+		DocumentID:       document.ID,
+		AnalysisType:     analysisType,
+		Summary:          analysisData["summary"].(string),
+		AnalysisResult:   resp.Message,
+		ConfidenceScore:  analysisData["score"].(float64),
+		KeyPoints:        toJSONString(analysisData["findings"]),
+		Recommendations:  toJSONString(analysisData["recommendations"]),
+		AnalysisMetadata: toJSONString(analysisData),
+		AIModel:          settings.ModelName,
 	}
 
 	if err := h.db.Create(&documentAnalysis).Error; err != nil {
@@ -577,7 +575,7 @@ func (h *DocumentHandler) GetInfographicHTML(c *gin.Context) {
 	}
 
 	// Generate infographic HTML
-	infographicHTML := h.htmlGenerator.GenerateInfographicHTML(analysis.InfographicData)
+	infographicHTML := h.htmlGenerator.GenerateInfographicHTML(analysis.AnalysisMetadata)
 
 	c.Header("Content-Type", "text/html")
 	c.String(http.StatusOK, infographicHTML)

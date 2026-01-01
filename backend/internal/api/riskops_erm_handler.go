@@ -4,116 +4,26 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/cyber/backend/internal/db"
+	"github.com/cyber/backend/internal/models"
 	"github.com/gin-gonic/gin"
+	"gorm.io/gorm"
 )
 
-type Risk struct {
-	ID           int       `json:"id"`
-	Name         string    `json:"name"`
-	Category     string    `json:"category"`
-	Likelihood   int       `json:"likelihood"`
-	Impact      int       `json:"impact"`
-	RiskScore    int       `json:"riskScore"`
-	Status       string    `json:"status"`
-	Owner        string    `json:"owner"`
-	LastUpdated  string    `json:"lastUpdated"`
-	Mitigation   string    `json:"mitigation"`
-	CreatedAt    time.Time `json:"createdAt"`
-}
-
 type RiskOpsERMHandler struct {
-	db *db.Database
+	db *gorm.DB
 }
 
-func NewRiskOpsERMHandler(db *db.Database) *RiskOpsERMHandler {
+func NewRiskOpsERMHandler(db *gorm.DB) *RiskOpsERMHandler {
 	return &RiskOpsERMHandler{db: db}
 }
 
 func (h *RiskOpsERMHandler) GetRiskRegister(c *gin.Context) {
-	var risks []Risk
-	
-	// In production, fetch from database with tenant filtering
-	// For now, return sample data
-	risks = []Risk{
-		{
-			ID:          1,
-			Name:        "Data Breach",
-			Category:    "security",
-			Likelihood: 7,
-			Impact:     9,
-			RiskScore:   63,
-			Status:      "open",
-			Owner:       "Security Team",
-			LastUpdated: "2024-12-20",
-			Mitigation:  "Implement encryption and access controls",
-			CreatedAt:   time.Now().AddDate(2024, 12, 20, 0, 0, 0),
-		},
-		{
-			ID:          2,
-			Name:        "Third-Party Vendor Failure",
-			Category:    "operational",
-			Likelihood: 6,
-			Impact:     8,
-			RiskScore:   48,
-			Status:      "mitigating",
-			Owner:       "Vendor Management",
-			LastUpdated: "2024-12-18",
-			Mitigation:  "Establish backup vendors and SLAs",
-			CreatedAt:   time.Now().AddDate(2024, 12, 18, 0, 0, 0),
-		},
-		{
-			ID:          3,
-			Name:        "Non-Compliance with GDPR",
-			Category:    "compliance",
-			Likelihood: 5,
-			Impact:     9,
-			RiskScore:   45,
-			Status:      "open",
-			Owner:       "Compliance Team",
-			LastUpdated: "2024-12-22",
-			Mitigation:  "Update privacy policies and procedures",
-			CreatedAt:   time.Now().AddDate(2024, 12, 22, 0, 0, 0),
-		},
-		{
-			ID:          4,
-			Name:        "System Downtime",
-			Category:    "operational",
-			Likelihood: 4,
-			Impact:     7,
-			RiskScore:   28,
-			Status:      "closed",
-			Owner:       "IT Operations",
-			LastUpdated: "2024-12-15",
-			Mitigation:  "Implemented redundant systems",
-			CreatedAt:   time.Now().AddDate(2024, 12, 15, 0, 0, 0),
-		},
-		{
-			ID:          5,
-			Name:        "Financial Fraud",
-			Category:    "financial",
-			Likelihood: 3,
-			Impact:     9,
-			RiskScore:   27,
-			Status:      "mitigating",
-			Owner:       "Finance Team",
-			LastUpdated: "2024-12-19",
-			Mitigation:  "Enhanced transaction monitoring",
-			CreatedAt:   time.Now().AddDate(2024, 12, 19, 0, 0, 0),
-		},
-		{
-			ID:          6,
-			Name:        "Insider Threat",
-			Category:    "security",
-			Likelihood: 4,
-			Impact:     8,
-			RiskScore:   32,
-			Status:      "open",
-			Owner:       "Security Team",
-			LastUpdated: "2024-12-10",
-			Mitigation:  "Implement user behavior analytics",
-			CreatedAt:   time.Now().AddDate(2024, 12, 10, 0, 0, 0),
-		},
+	var risks []models.RiskRegister
+	tenantID := c.GetString("tenant_id")
+
+	if err := h.db.Where("tenant_id = ? AND is_deleted = ?", tenantID, false).Find(&risks).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch risk register"})
+		return
 	}
 
 	c.JSON(http.StatusOK, gin.H{
@@ -124,12 +34,16 @@ func (h *RiskOpsERMHandler) GetRiskRegister(c *gin.Context) {
 
 func (h *RiskOpsERMHandler) CreateRisk(c *gin.Context) {
 	var req struct {
-		Name        string `json:"name" binding:"required"`
-		Category    string `json:"category" binding:"required"`
-		Likelihood int    `json:"likelihood" binding:"required"`
-		Impact     int    `json:"impact" binding:"required"`
-		Mitigation string `json:"mitigation" binding:"required"`
-		Owner      string `json:"owner" binding:"required"`
+		Name             string `json:"name" binding:"required"`
+		Description      string `json:"description" binding:"required"`
+		RiskCategory     string `json:"riskCategory" binding:"required"`
+		RiskType         string `json:"riskType" binding:"required"`
+		Likelihood       string `json:"likelihood" binding:"required"`
+		Impact           string `json:"impact" binding:"required"`
+		Owner            string `json:"owner" binding:"required"`
+		MitigationStrategy string `json:"mitigationStrategy"`
+		MitigationActions string `json:"mitigationActions"`
+		ReviewDate       string `json:"reviewDate"`
 	}
 
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -137,29 +51,43 @@ func (h *RiskOpsERMHandler) CreateRisk(c *gin.Context) {
 		return
 	}
 
-	// Calculate risk score
-	riskScore := req.Likelihood * req.Impact
+	tenantID := c.GetString("tenant_id")
+	
+	// Calculate risk score based on likelihood and impact
+	riskScore := calculateRiskScore(req.Likelihood, req.Impact)
+	riskLevel := calculateRiskLevel(riskScore)
+	
+	risk := models.RiskRegister{
+		TenantID:           tenantID,
+		Name:                req.Name,
+		Description:         req.Description,
+		RiskCategory:        req.RiskCategory,
+		RiskType:            req.RiskType,
+		Likelihood:          req.Likelihood,
+		Impact:              req.Impact,
+		RiskScore:           riskScore,
+		RiskLevel:           riskLevel,
+		Owner:               req.Owner,
+		Status:              "open",
+		MitigationStrategy:  req.MitigationStrategy,
+		MitigationActions:  req.MitigationActions,
+	}
 
-	// In production, insert into database
-	// For now, return success with generated ID
-	newRisk := Risk{
-		ID:          len([]Risk{}) + 10,
-		Name:        req.Name,
-		Category:    req.Category,
-		Likelihood:  req.Likelihood,
-		Impact:     req.Impact,
-		RiskScore:   riskScore,
-		Status:      "open",
-		Owner:       req.Owner,
-		LastUpdated: time.Now().Format("2006-01-02"),
-		Mitigation:  req.Mitigation,
-		CreatedAt:   time.Now(),
+	if req.ReviewDate != "" {
+		if t, err := time.Parse("2006-01-02", req.ReviewDate); err == nil {
+			risk.ReviewDate = &t
+		}
+	}
+
+	if err := h.db.Create(&risk).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create risk"})
+		return
 	}
 
 	c.JSON(http.StatusCreated, gin.H{
 		"success": true,
 		"message": "Risk created successfully",
-		"data":    newRisk,
+		"data":    risk,
 	})
 }
 
@@ -167,12 +95,19 @@ func (h *RiskOpsERMHandler) UpdateRisk(c *gin.Context) {
 	id := c.Param("id")
 	
 	var req struct {
-		Name        string `json:"name"`
-		Category    string `json:"category"`
-		Likelihood int    `json:"likelihood"`
-		Impact     int    `json:"impact"`
-		Status      string `json:"status"`
-		Mitigation string `json:"mitigation"`
+		Name             string `json:"name"`
+		Description      string `json:"description"`
+		RiskCategory     string `json:"riskCategory"`
+		RiskType         string `json:"riskType"`
+		Likelihood       string `json:"likelihood"`
+		Impact           string `json:"impact"`
+		Status           string `json:"status"`
+		Owner            string `json:"owner"`
+		MitigationStrategy string `json:"mitigationStrategy"`
+		MitigationActions string `json:"mitigationActions"`
+		ResidualRiskScore int    `json:"residualRiskScore"`
+		ResidualRiskLevel string `json:"residualRiskLevel"`
+		ReviewDate       string `json:"reviewDate"`
 	}
 
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -180,23 +115,101 @@ func (h *RiskOpsERMHandler) UpdateRisk(c *gin.Context) {
 		return
 	}
 
-	// Calculate risk score
-	riskScore := req.Likelihood * req.Impact
+	tenantID := c.GetString("tenant_id")
+	var risk models.RiskRegister
+	
+	if err := h.db.Where("id = ? AND tenant_id = ? AND is_deleted = ?", id, tenantID, false).First(&risk).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Risk not found"})
+		return
+	}
 
-	// In production, update in database
+	updates := map[string]interface{}{
+		"updated_at": time.Now(),
+	}
+
+	if req.Name != "" {
+		updates["name"] = req.Name
+	}
+	if req.Description != "" {
+		updates["description"] = req.Description
+	}
+	if req.RiskCategory != "" {
+		updates["risk_category"] = req.RiskCategory
+	}
+	if req.RiskType != "" {
+		updates["risk_type"] = req.RiskType
+	}
+	if req.Likelihood != "" {
+		updates["likelihood"] = req.Likelihood
+	}
+	if req.Impact != "" {
+		updates["impact"] = req.Impact
+	}
+	if req.Status != "" {
+		updates["status"] = req.Status
+	}
+	if req.Owner != "" {
+		updates["owner"] = req.Owner
+	}
+	if req.MitigationStrategy != "" {
+		updates["mitigation_strategy"] = req.MitigationStrategy
+	}
+	if req.MitigationActions != "" {
+		updates["mitigation_actions"] = req.MitigationActions
+	}
+	if req.ResidualRiskScore > 0 {
+		updates["residual_risk_score"] = req.ResidualRiskScore
+	}
+	if req.ResidualRiskLevel != "" {
+		updates["residual_risk_level"] = req.ResidualRiskLevel
+	}
+	if req.ReviewDate != "" {
+		if t, err := time.Parse("2006-01-02", req.ReviewDate); err == nil {
+			updates["review_date"] = &t
+		}
+	}
+
+	// Recalculate risk score if likelihood or impact changed
+	if req.Likelihood != "" || req.Impact != "" {
+		likelihood := req.Likelihood
+		if likelihood == "" {
+			likelihood = risk.Likelihood
+		}
+		impact := req.Impact
+		if impact == "" {
+			impact = risk.Impact
+		}
+		riskScore := calculateRiskScore(likelihood, impact)
+		riskLevel := calculateRiskLevel(riskScore)
+		updates["risk_score"] = riskScore
+		updates["risk_level"] = riskLevel
+	}
+
+	if err := h.db.Model(&risk).Updates(updates).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update risk"})
+		return
+	}
+
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
 		"message": "Risk updated successfully",
-		"data": gin.H{
-			"riskScore": riskScore,
-		},
 	})
 }
 
 func (h *RiskOpsERMHandler) CloseRisk(c *gin.Context) {
 	id := c.Param("id")
-	
-	// In production, update status in database
+	tenantID := c.GetString("tenant_id")
+
+	if err := h.db.Model(&models.RiskRegister{}).
+		Where("id = ? AND tenant_id = ?", id, tenantID).
+		Updates(map[string]interface{}{
+			"status":     "closed",
+			"updated_at": time.Now(),
+		}).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to close risk"})
+		return
+	}
+
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
 		"message": "Risk closed successfully",
@@ -204,15 +217,77 @@ func (h *RiskOpsERMHandler) CloseRisk(c *gin.Context) {
 }
 
 func (h *RiskOpsERMHandler) GetRiskStats(c *gin.Context) {
-	// In production, calculate from database
+	tenantID := c.GetString("tenant_id")
+	
+	var total int64
+	var highRisk int64
+	var inMitigation int64
+	var closed int64
+
+	h.db.Model(&models.RiskRegister{}).
+		Where("tenant_id = ? AND is_deleted = ?", tenantID, false).
+		Count(&total)
+
+	h.db.Model(&models.RiskRegister{}).
+		Where("tenant_id = ? AND is_deleted = ? AND risk_level = ?", tenantID, false, "high").
+		Count(&highRisk)
+
+	h.db.Model(&models.RiskRegister{}).
+		Where("tenant_id = ? AND is_deleted = ? AND status = ?", tenantID, false, "in_mitigation").
+		Count(&inMitigation)
+
+	h.db.Model(&models.RiskRegister{}).
+		Where("tenant_id = ? AND is_deleted = ? AND status = ?", tenantID, false, "closed").
+		Count(&closed)
+
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
 		"data": gin.H{
-			"total":      6,
-			"highRisk":  2,
-			"inMitigation": 2,
-			"closed":     1,
-			"avgScore":   40.5,
+			"total":        total,
+			"highRisk":     highRisk,
+			"inMitigation": inMitigation,
+			"closed":       closed,
 		},
 	})
+}
+
+// Helper functions for risk calculation
+func calculateRiskScore(likelihood, impact string) int {
+	likelihoodScore := map[string]int{
+		"very_low": 1,
+		"low":       2,
+		"medium":    3,
+		"high":      4,
+		"very_high": 5,
+	}[likelihood]
+	
+	impactScore := map[string]int{
+		"very_low": 1,
+		"low":       2,
+		"medium":    3,
+		"high":      4,
+		"very_high": 5,
+	}[impact]
+	
+	if likelihoodScore == 0 {
+		likelihoodScore = 3 // default to medium
+	}
+	if impactScore == 0 {
+		impactScore = 3 // default to medium
+	}
+	
+	return likelihoodScore * impactScore
+}
+
+func calculateRiskLevel(score int) string {
+	if score >= 20 {
+		return "critical"
+	} else if score >= 15 {
+		return "high"
+	} else if score >= 10 {
+		return "medium"
+	} else if score >= 5 {
+		return "low"
+	}
+	return "very_low"
 }

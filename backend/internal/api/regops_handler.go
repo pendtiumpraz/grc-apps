@@ -272,7 +272,7 @@ func (h *RegOpsHandler) GetControls(c *gin.Context) {
 	tenantID := c.GetString("tenant_id")
 	tenantDB := h.db.GetTenantDB(tenantID)
 
-	var controls []models.Control
+	var controls []models.RegOpsControl
 	if err := tenantDB.Where("is_deleted = ?", false).Find(&controls).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch controls"})
 		return
@@ -285,7 +285,7 @@ func (h *RegOpsHandler) CreateControl(c *gin.Context) {
 	tenantID := c.GetString("tenant_id")
 	tenantDB := h.db.GetTenantDB(tenantID)
 
-	var control models.Control
+	var control models.RegOpsControl
 	if err := c.ShouldBindJSON(&control); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
@@ -306,13 +306,13 @@ func (h *RegOpsHandler) UpdateControl(c *gin.Context) {
 	tenantDB := h.db.GetTenantDB(tenantID)
 	id := c.Param("id")
 
-	var control models.Control
+	var control models.RegOpsControl
 	if err := tenantDB.First(&control, "id = ? AND is_deleted = ?", id, false).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Control not found"})
 		return
 	}
 
-	var updateData models.Control
+	var updateData models.RegOpsControl
 	if err := c.ShouldBindJSON(&updateData); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
@@ -331,14 +331,14 @@ func (h *RegOpsHandler) DeleteControl(c *gin.Context) {
 	tenantDB := h.db.GetTenantDB(tenantID)
 	id := c.Param("id")
 
-	var control models.Control
+	var control models.RegOpsControl
 	if err := tenantDB.First(&control, "id = ?", id).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Control not found"})
 		return
 	}
 
 	control.IsDeleted = true
-	control.Status = "deleted"
+	control.ImplementationStatus = "deleted"
 	if err := tenantDB.Save(&control).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete control"})
 		return
@@ -514,7 +514,7 @@ func (h *RegOpsHandler) GetDeletedControls(c *gin.Context) {
 	tenantID := c.GetString("tenant_id")
 	tenantDB := h.db.GetTenantDB(tenantID)
 
-	var controls []models.Control
+	var controls []models.RegOpsControl
 	if err := tenantDB.Where("is_deleted = ?", true).Find(&controls).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch deleted controls"})
 		return
@@ -528,14 +528,14 @@ func (h *RegOpsHandler) RestoreControl(c *gin.Context) {
 	tenantDB := h.db.GetTenantDB(tenantID)
 	id := c.Param("id")
 
-	var control models.Control
+	var control models.RegOpsControl
 	if err := tenantDB.First(&control, "id = ?", id).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Control not found"})
 		return
 	}
 
 	control.IsDeleted = false
-	control.Status = "active"
+	control.ImplementationStatus = "not_implemented"
 	if err := tenantDB.Save(&control).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to restore control"})
 		return
@@ -549,7 +549,7 @@ func (h *RegOpsHandler) PermanentDeleteControl(c *gin.Context) {
 	tenantDB := h.db.GetTenantDB(tenantID)
 	id := c.Param("id")
 
-	var control models.Control
+	var control models.RegOpsControl
 	if err := tenantDB.First(&control, "id = ?", id).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Control not found"})
 		return

@@ -4,141 +4,48 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/cyber/backend/internal/db"
+	"github.com/cyber/backend/internal/models"
 	"github.com/gin-gonic/gin"
+	"gorm.io/gorm"
 )
 
-type KRI struct {
-	ID               int       `json:"id"`
-	Name             string    `json:"name"`
-	Category         string    `json:"category"`
-	Type             string    `json:"type"`
-	Threshold        string    `json:"threshold"`
-	CurrentValue    float64   `json:"currentValue"`
-	TargetValue     float64   `json:"targetValue"`
-	Status           string    `json:"status"`
-	LastUpdated      string    `json:"lastUpdated"`
-	Owner            string    `json:"owner"`
-	Description      string    `json:"description"`
-	CreatedAt        time.Time `json:"createdAt"`
-}
-
 type AuditOpsGovernanceHandler struct {
-	db *db.Database
+	db *gorm.DB
 }
 
-func NewAuditOpsGovernanceHandler(db *db.Database) *AuditOpsGovernanceHandler {
+func NewAuditOpsGovernanceHandler(db *gorm.DB) *AuditOpsGovernanceHandler {
 	return &AuditOpsGovernanceHandler{db: db}
 }
 
 func (h *AuditOpsGovernanceHandler) GetKRIs(c *gin.Context) {
-	var kris []KRI
-	
-	// In production, fetch from database with tenant filtering
-	// For now, return sample data
-	kris = []KRI{
-		{
-			ID:            1,
-			Name:          "Security Incident Response Time",
-			Category:      "Security",
-			Type:          "Operational",
-			Threshold:     "< 4 hours",
-			CurrentValue:  3.5,
-			TargetValue:   4.0,
-			Status:        "healthy",
-			LastUpdated:   "2024-12-20",
-			Owner:        "Security Team",
-			Description:   "Average time to respond to security incidents",
-			CreatedAt:     time.Now().AddDate(2024, 12, 20),
-		},
-		{
-			ID:            2,
-			Name:          "Compliance Gap Closure Rate",
-			Category:      "Compliance",
-			Type:          "Strategic",
-			Threshold:     "> 90%",
-			CurrentValue:  85.0,
-			TargetValue:   90.0,
-			Status:        "warning",
-			LastUpdated:   "2024-12-18",
-			Owner:        "Compliance Team",
-			Description:   "Percentage of compliance gaps closed within SLA",
-			CreatedAt:     time.Now().AddDate(2024, 12, 18),
-		},
-		{
-			ID:            3,
-			Name:          "Vendor Risk Score",
-			Category:      "Risk",
-			Type:          "Strategic",
-			Threshold:     "< 50",
-			CurrentValue:  45.0,
-			TargetValue:   50.0,
-			Status:        "healthy",
-			LastUpdated:   "2024-12-22",
-			Owner:        "Vendor Management",
-			Description:   "Average risk score across all vendors",
-			CreatedAt:     time.Now().AddDate(2024, 12, 22),
-		},
-		{
-			ID:            4,
-			Name:          "Control Effectiveness",
-			Category:      "Governance",
-			Type:          "Operational",
-			Threshold:     "> 80%",
-			CurrentValue:  82.5,
-			TargetValue:   80.0,
-			Status:        "healthy",
-			LastUpdated:   "2024-12-15",
-			Owner:        "Audit Team",
-			Description:   "Average effectiveness of all controls",
-			CreatedAt:     time.Now().AddDate(2024, 12, 15),
-		},
-		{
-			ID:            5,
-			Name:          "DSR Response Time",
-			Category:      "Privacy",
-			Type:          "Operational",
-			Threshold:     "< 30 days",
-			CurrentValue:  25.0,
-			TargetValue:   30.0,
-			Status:        "healthy",
-			LastUpdated:   "2024-12-10",
-			Owner:        "Privacy Team",
-			Description:   "Average time to respond to data subject requests",
-			CreatedAt:     time.Now().AddDate(2024, 12, 10),
-		},
-		{
-			ID:            6,
-			Name:          "Vulnerability Remediation Time",
-			Category:      "Security",
-			Type:          "Operational",
-			Threshold:     "< 30 days",
-			CurrentValue:  35.0,
-			TargetValue:   30.0,
-			Status:        "critical",
-			LastUpdated:   "2024-12-12",
-			Owner:        "Security Team",
-			Description:   "Average time to remediate vulnerabilities",
-			CreatedAt:     time.Now().AddDate(2024, 12, 12),
-		},
+	var governance []models.Governance
+	tenantID := c.GetString("tenant_id")
+
+	if err := h.db.Where("tenant_id = ? AND is_deleted = ?", tenantID, false).Find(&governance).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch governance records"})
+		return
 	}
 
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
-		"data":    kris,
+		"data":    governance,
 	})
 }
 
 func (h *AuditOpsGovernanceHandler) CreateKRI(c *gin.Context) {
 	var req struct {
-		Name         string  `json:"name" binding:"required"`
-		Category     string  `json:"category" binding:"required"`
-		Type         string  `json:"type" binding:"required"`
-		Threshold    string  `json:"threshold" binding:"required"`
-		CurrentValue float64 `json:"currentValue" binding:"required"`
-		TargetValue  float64 `json:"targetValue" binding:"required"`
-		Owner        string  `json:"owner" binding:"required"`
-		Description  string  `json:"description" binding:"required"`
+		Name                   string `json:"name" binding:"required"`
+		Description            string `json:"description" binding:"required"`
+		GovernanceType        string `json:"governanceType" binding:"required"`
+		Framework             string `json:"framework"`
+		CommitteeName         string `json:"committeeName"`
+		MeetingFrequency      string `json:"meetingFrequency"`
+		Charter               string `json:"charter"`
+		RolesResponsibilities  string `json:"rolesResponsibilities"`
+		OversightAreas        string `json:"oversightAreas"`
+		ComplianceRequirements string `json:"complianceRequirements"`
+		LastMeetingDate       string `json:"lastMeetingDate"`
+		NextMeetingDate       string `json:"nextMeetingDate"`
 	}
 
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -146,33 +53,44 @@ func (h *AuditOpsGovernanceHandler) CreateKRI(c *gin.Context) {
 		return
 	}
 
-	// Determine status based on threshold
-	status := "healthy"
-	if req.CurrentValue > req.TargetValue {
-		status = "warning"
+	tenantID := c.GetString("tenant_id")
+	
+	governance := models.Governance{
+		TenantID:              tenantID,
+		Name:                  req.Name,
+		Description:           req.Description,
+		GovernanceType:        req.GovernanceType,
+		Framework:             req.Framework,
+		CommitteeName:         req.CommitteeName,
+		MeetingFrequency:      req.MeetingFrequency,
+		Charter:               req.Charter,
+		RolesResponsibilities:  req.RolesResponsibilities,
+		OversightAreas:        req.OversightAreas,
+		ComplianceRequirements: req.ComplianceRequirements,
+		Status:                "active",
 	}
 
-	// In production, insert into database
-	// For now, return success with generated ID
-	newKRI := KRI{
-		ID:            len([]KRI{}) + 10,
-		Name:          req.Name,
-		Category:      req.Category,
-		Type:          req.Type,
-		Threshold:     req.Threshold,
-		CurrentValue:  req.CurrentValue,
-		TargetValue:   req.TargetValue,
-		Status:        status,
-		LastUpdated:   time.Now().Format("2006-01-02"),
-		Owner:        req.Owner,
-		Description:   req.Description,
-		CreatedAt:     time.Now(),
+	if req.LastMeetingDate != "" {
+		if t, err := time.Parse("2006-01-02", req.LastMeetingDate); err == nil {
+			governance.LastMeetingDate = &t
+		}
+	}
+
+	if req.NextMeetingDate != "" {
+		if t, err := time.Parse("2006-01-02", req.NextMeetingDate); err == nil {
+			governance.NextMeetingDate = &t
+		}
+	}
+
+	if err := h.db.Create(&governance).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create governance record"})
+		return
 	}
 
 	c.JSON(http.StatusCreated, gin.H{
 		"success": true,
-		"message": "KRI created successfully",
-		"data":    newKRI,
+		"message": "Governance record created successfully",
+		"data":    governance,
 	})
 }
 
@@ -180,15 +98,19 @@ func (h *AuditOpsGovernanceHandler) UpdateKRI(c *gin.Context) {
 	id := c.Param("id")
 	
 	var req struct {
-		Name         string  `json:"name"`
-		Category     string  `json:"category"`
-		Type         string  `json:"type"`
-		Threshold    string  `json:"threshold"`
-		CurrentValue float64 `json:"currentValue"`
-		TargetValue  float64 `json:"targetValue"`
-		Status       string  `json:"status"`
-		Owner        string  `json:"owner"`
-		Description  string  `json:"description"`
+		Name                   string `json:"name"`
+		Description            string `json:"description"`
+		GovernanceType        string `json:"governanceType"`
+		Framework             string `json:"framework"`
+		CommitteeName         string `json:"committeeName"`
+		MeetingFrequency      string `json:"meetingFrequency"`
+		Charter               string `json:"charter"`
+		RolesResponsibilities  string `json:"rolesResponsibilities"`
+		OversightAreas        string `json:"oversightAreas"`
+		ComplianceRequirements string `json:"complianceRequirements"`
+		Status                string `json:"status"`
+		LastMeetingDate       string `json:"lastMeetingDate"`
+		NextMeetingDate       string `json:"nextMeetingDate"`
 	}
 
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -196,32 +118,112 @@ func (h *AuditOpsGovernanceHandler) UpdateKRI(c *gin.Context) {
 		return
 	}
 
-	// In production, update in database
+	tenantID := c.GetString("tenant_id")
+	var governance models.Governance
+	
+	if err := h.db.Where("id = ? AND tenant_id = ? AND is_deleted = ?", id, tenantID, false).First(&governance).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Governance record not found"})
+		return
+	}
+
+	updates := map[string]interface{}{
+		"updated_at": time.Now(),
+	}
+
+	if req.Name != "" {
+		updates["name"] = req.Name
+	}
+	if req.Description != "" {
+		updates["description"] = req.Description
+	}
+	if req.GovernanceType != "" {
+		updates["governance_type"] = req.GovernanceType
+	}
+	if req.Framework != "" {
+		updates["framework"] = req.Framework
+	}
+	if req.CommitteeName != "" {
+		updates["committee_name"] = req.CommitteeName
+	}
+	if req.MeetingFrequency != "" {
+		updates["meeting_frequency"] = req.MeetingFrequency
+	}
+	if req.Charter != "" {
+		updates["charter"] = req.Charter
+	}
+	if req.RolesResponsibilities != "" {
+		updates["roles_responsibilities"] = req.RolesResponsibilities
+	}
+	if req.OversightAreas != "" {
+		updates["oversight_areas"] = req.OversightAreas
+	}
+	if req.ComplianceRequirements != "" {
+		updates["compliance_requirements"] = req.ComplianceRequirements
+	}
+	if req.Status != "" {
+		updates["status"] = req.Status
+	}
+	if req.LastMeetingDate != "" {
+		if t, err := time.Parse("2006-01-02", req.LastMeetingDate); err == nil {
+			updates["last_meeting_date"] = &t
+		}
+	}
+	if req.NextMeetingDate != "" {
+		if t, err := time.Parse("2006-01-02", req.NextMeetingDate); err == nil {
+			updates["next_meeting_date"] = &t
+		}
+	}
+
+	if err := h.db.Model(&governance).Updates(updates).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update governance record"})
+		return
+	}
+
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
-		"message": "KRI updated successfully",
+		"message": "Governance record updated successfully",
 	})
 }
 
 func (h *AuditOpsGovernanceHandler) DeleteKRI(c *gin.Context) {
 	id := c.Param("id")
-	
-	// In production, delete from database
+	tenantID := c.GetString("tenant_id")
+
+	if err := h.db.Model(&models.Governance{}).
+		Where("id = ? AND tenant_id = ?", id, tenantID).
+		Updates(map[string]interface{}{
+			"is_deleted": true,
+			"deleted_at": time.Now(),
+		}).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete governance record"})
+		return
+	}
+
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
-		"message": "KRI deleted successfully",
+		"message": "Governance record deleted successfully",
 	})
 }
 
 func (h *AuditOpsGovernanceHandler) GetKRIStats(c *gin.Context) {
-	// In production, calculate from database
+	tenantID := c.GetString("tenant_id")
+	
+	var total int64
+	var active int64
+
+	h.db.Model(&models.Governance{}).
+		Where("tenant_id = ? AND is_deleted = ?", tenantID, false).
+		Count(&total)
+
+	h.db.Model(&models.Governance{}).
+		Where("tenant_id = ? AND is_deleted = ? AND status = ?", tenantID, false, "active").
+		Count(&active)
+
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
 		"data": gin.H{
-			"total":    6,
-			"healthy":  4,
-			"warning":  1,
-			"critical": 1,
+			"total":  total,
+			"active": active,
 		},
 	})
 }

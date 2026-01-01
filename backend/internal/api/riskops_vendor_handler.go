@@ -4,130 +4,26 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/cyber/backend/internal/db"
+	"github.com/cyber/backend/internal/models"
 	"github.com/gin-gonic/gin"
+	"gorm.io/gorm"
 )
 
-type Vendor struct {
-	ID               int       `json:"id"`
-	Name             string    `json:"name"`
-	Category         string    `json:"category"`
-	Type             string    `json:"type"`
-	RiskLevel        string    `json:"riskLevel"`
-	RiskScore        int       `json:"riskScore"`
-	Status           string    `json:"status"`
-	ContractExpiry   string    `json:"contractExpiry"`
-	LastAssessment   string    `json:"lastAssessment"`
-	NextAssessment   string    `json:"nextAssessment"`
-	Owner            string    `json:"owner"`
-	Description      string    `json:"description"`
-	CreatedAt        time.Time `json:"createdAt"`
-}
-
 type RiskOpsVendorHandler struct {
-	db *db.Database
+	db *gorm.DB
 }
 
-func NewRiskOpsVendorHandler(db *db.Database) *RiskOpsVendorHandler {
+func NewRiskOpsVendorHandler(db *gorm.DB) *RiskOpsVendorHandler {
 	return &RiskOpsVendorHandler{db: db}
 }
 
 func (h *RiskOpsVendorHandler) GetVendors(c *gin.Context) {
-	var vendors []Vendor
-	
-	// In production, fetch from database with tenant filtering
-	// For now, return sample data
-	vendors = []Vendor{
-		{
-			ID:              1,
-			Name:            "Cloud Service Provider A",
-			Category:        "Infrastructure",
-			Type:            "Cloud Provider",
-			RiskLevel:       "medium",
-			RiskScore:       65,
-			Status:          "active",
-			ContractExpiry:  "2025-12-31",
-			LastAssessment:  "2024-12-15",
-			NextAssessment:  "2025-03-15",
-			Owner:          "IT Operations",
-			Description:     "Primary cloud infrastructure provider",
-			CreatedAt:       time.Now().AddDate(2024, 12, 15),
-		},
-		{
-			ID:              2,
-			Name:            "Email Marketing Platform",
-			Category:        "Marketing",
-			Type:            "SaaS",
-			RiskLevel:       "low",
-			RiskScore:       35,
-			Status:          "active",
-			ContractExpiry:  "2025-06-30",
-			LastAssessment:  "2024-12-10",
-			NextAssessment:  "2025-03-10",
-			Owner:          "Marketing Team",
-			Description:     "Email marketing and automation platform",
-			CreatedAt:       time.Now().AddDate(2024, 12, 10),
-		},
-		{
-			ID:              3,
-			Name:            "Payment Gateway Provider",
-			Category:        "Finance",
-			Type:            "Payment Processor",
-			RiskLevel:       "high",
-			RiskScore:       75,
-			Status:          "active",
-			ContractExpiry:  "2025-09-30",
-			LastAssessment:  "2024-12-20",
-			NextAssessment:  "2025-01-20",
-			Owner:          "Finance Team",
-			Description:     "Payment processing and gateway services",
-			CreatedAt:       time.Now().AddDate(2024, 12, 20),
-		},
-		{
-			ID:              4,
-			Name:            "HR Management System",
-			Category:        "HR",
-			Type:            "SaaS",
-			RiskLevel:       "medium",
-			RiskScore:       55,
-			Status:          "active",
-			ContractExpiry:  "2025-03-31",
-			LastAssessment:  "2024-12-05",
-			NextAssessment:  "2025-02-05",
-			Owner:          "HR Team",
-			Description:     "HR management and payroll system",
-			CreatedAt:       time.Now().AddDate(2024, 12, 5),
-		},
-		{
-			ID:              5,
-			Name:            "Analytics Platform",
-			Category:        "Analytics",
-			Type:            "SaaS",
-			RiskLevel:       "medium",
-			RiskScore:       50,
-			Status:          "active",
-			ContractExpiry:  "2025-08-31",
-			LastAssessment:  "2024-12-18",
-			NextAssessment:  "2025-03-18",
-			Owner:          "Data Team",
-			Description:     "Web and application analytics platform",
-			CreatedAt:       time.Now().AddDate(2024, 12, 18),
-		},
-		{
-			ID:              6,
-			Name:            "Security Audit Firm",
-			Category:        "Security",
-			Type:            "Service Provider",
-			RiskLevel:       "low",
-			RiskScore:       25,
-			Status:          "active",
-			ContractExpiry:  "2025-04-30",
-			LastAssessment:  "2024-12-12",
-			NextAssessment:  "2025-04-12",
-			Owner:          "Security Team",
-			Description:     "External security audit and assessment services",
-			CreatedAt:       time.Now().AddDate(2024, 12, 12),
-		},
+	var vendors []models.VendorAssessment
+	tenantID := c.GetString("tenant_id")
+
+	if err := h.db.Where("tenant_id = ? AND is_deleted = ?", tenantID, false).Find(&vendors).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch vendor assessments"})
+		return
 	}
 
 	c.JSON(http.StatusOK, gin.H{
@@ -138,16 +34,22 @@ func (h *RiskOpsVendorHandler) GetVendors(c *gin.Context) {
 
 func (h *RiskOpsVendorHandler) CreateVendor(c *gin.Context) {
 	var req struct {
-		Name           string `json:"name" binding:"required"`
-		Category       string `json:"category" binding:"required"`
-		Type           string `json:"type" binding:"required"`
-		RiskLevel      string `json:"riskLevel" binding:"required"`
-		RiskScore      int    `json:"riskScore" binding:"required"`
-		ContractExpiry string `json:"contractExpiry" binding:"required"`
-		LastAssessment string `json:"lastAssessment" binding:"required"`
-		NextAssessment string `json:"nextAssessment" binding:"required"`
-		Owner          string `json:"owner" binding:"required"`
-		Description    string `json:"description" binding:"required"`
+		VendorName        string  `json:"vendorName" binding:"required"`
+		VendorType        string  `json:"vendorType" binding:"required"`
+		Description       string  `json:"description" binding:"required"`
+		ContactPerson     string  `json:"contactPerson"`
+		ContactEmail       string  `json:"contactEmail"`
+		RiskLevel         string  `json:"riskLevel" binding:"required"`
+		AssessmentDate    string  `json:"assessmentDate"`
+		NextAssessmentDate string `json:"nextAssessmentDate"`
+		DataShared         string  `json:"dataShared"`
+		DataProcessing     string  `json:"dataProcessing"`
+		SecurityControls  string  `json:"securityControls"`
+		ComplianceStatus string  `json:"complianceStatus"`
+		SLACompliance     string  `json:"slaCompliance"`
+		Findings          string  `json:"findings"`
+		Recommendations   string  `json:"recommendations"`
+		Owner             string  `json:"owner" binding:"required"`
 	}
 
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -155,28 +57,47 @@ func (h *RiskOpsVendorHandler) CreateVendor(c *gin.Context) {
 		return
 	}
 
-	// In production, insert into database
-	// For now, return success with generated ID
-	newVendor := Vendor{
-		ID:              len([]Vendor{}) + 10,
-		Name:            req.Name,
-		Category:        req.Category,
-		Type:            req.Type,
-		RiskLevel:       req.RiskLevel,
-		RiskScore:       req.RiskScore,
-		Status:          "active",
-		ContractExpiry:  req.ContractExpiry,
-		LastAssessment:  req.LastAssessment,
-		NextAssessment:  req.NextAssessment,
-		Owner:          req.Owner,
-		Description:     req.Description,
-		CreatedAt:       time.Now(),
+	tenantID := c.GetString("tenant_id")
+	
+	vendor := models.VendorAssessment{
+		TenantID:           tenantID,
+		VendorName:         req.VendorName,
+		VendorType:         req.VendorType,
+		Description:        req.Description,
+		ContactPerson:      req.ContactPerson,
+		ContactEmail:        req.ContactEmail,
+		RiskLevel:          req.RiskLevel,
+		DataShared:          req.DataShared,
+		DataProcessing:      req.DataProcessing,
+		SecurityControls:    req.SecurityControls,
+		ComplianceStatus:   req.ComplianceStatus,
+		SLACompliance:      req.SLACompliance,
+		Findings:           req.Findings,
+		Recommendations:    req.Recommendations,
+		Owner:              req.Owner,
+	}
+
+	if req.AssessmentDate != "" {
+		if t, err := time.Parse("2006-01-02", req.AssessmentDate); err == nil {
+			vendor.AssessmentDate = &t
+		}
+	}
+
+	if req.NextAssessmentDate != "" {
+		if t, err := time.Parse("2006-01-02", req.NextAssessmentDate); err == nil {
+			vendor.NextAssessmentDate = &t
+		}
+	}
+
+	if err := h.db.Create(&vendor).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create vendor assessment"})
+		return
 	}
 
 	c.JSON(http.StatusCreated, gin.H{
 		"success": true,
-		"message": "Vendor created successfully",
-		"data":    newVendor,
+		"message": "Vendor assessment created successfully",
+		"data":    vendor,
 	})
 }
 
@@ -184,17 +105,22 @@ func (h *RiskOpsVendorHandler) UpdateVendor(c *gin.Context) {
 	id := c.Param("id")
 	
 	var req struct {
-		Name           string `json:"name"`
-		Category       string `json:"category"`
-		Type           string `json:"type"`
-		RiskLevel      string `json:"riskLevel"`
-		RiskScore      int    `json:"riskScore"`
-		Status         string `json:"status"`
-		ContractExpiry string `json:"contractExpiry"`
-		LastAssessment string `json:"lastAssessment"`
-		NextAssessment string `json:"nextAssessment"`
-		Owner          string `json:"owner"`
-		Description    string `json:"description"`
+		VendorName        string  `json:"vendorName"`
+		Description       string  `json:"description"`
+		VendorType        string  `json:"vendorType"`
+		ContactPerson     string  `json:"contactPerson"`
+		ContactEmail       string  `json:"contactEmail"`
+		RiskLevel         string  `json:"riskLevel"`
+		AssessmentDate    string  `json:"assessmentDate"`
+		NextAssessmentDate string  `json:"nextAssessmentDate"`
+		DataShared         string  `json:"dataShared"`
+		DataProcessing     string  `json:"dataProcessing"`
+		SecurityControls  string  `json:"securityControls"`
+		ComplianceStatus string  `json:"complianceStatus"`
+		SLACompliance     string  `json:"slaCompliance"`
+		Findings          string  `json:"findings"`
+		Recommendations   string  `json:"recommendations"`
+		Owner             string  `json:"owner"`
 	}
 
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -202,34 +128,133 @@ func (h *RiskOpsVendorHandler) UpdateVendor(c *gin.Context) {
 		return
 	}
 
-	// In production, update in database
+	tenantID := c.GetString("tenant_id")
+	var vendor models.VendorAssessment
+	
+	if err := h.db.Where("id = ? AND tenant_id = ? AND is_deleted = ?", id, tenantID, false).First(&vendor).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Vendor assessment not found"})
+		return
+	}
+
+	updates := map[string]interface{}{
+		"updated_at": time.Now(),
+	}
+
+	if req.VendorName != "" {
+		updates["vendor_name"] = req.VendorName
+	}
+	if req.Description != "" {
+		updates["description"] = req.Description
+	}
+	if req.VendorType != "" {
+		updates["vendor_type"] = req.VendorType
+	}
+	if req.ContactPerson != "" {
+		updates["contact_person"] = req.ContactPerson
+	}
+	if req.ContactEmail != "" {
+		updates["contact_email"] = req.ContactEmail
+	}
+	if req.RiskLevel != "" {
+		updates["risk_level"] = req.RiskLevel
+	}
+	if req.DataShared != "" {
+		updates["data_shared"] = req.DataShared
+	}
+	if req.DataProcessing != "" {
+		updates["data_processing"] = req.DataProcessing
+	}
+	if req.SecurityControls != "" {
+		updates["security_controls"] = req.SecurityControls
+	}
+	if req.ComplianceStatus != "" {
+		updates["compliance_status"] = req.ComplianceStatus
+	}
+	if req.SLACompliance != "" {
+		updates["sla_compliance"] = req.SLACompliance
+	}
+	if req.Findings != "" {
+		updates["findings"] = req.Findings
+	}
+	if req.Recommendations != "" {
+		updates["recommendations"] = req.Recommendations
+	}
+	if req.Owner != "" {
+		updates["owner"] = req.Owner
+	}
+	if req.AssessmentDate != "" {
+		if t, err := time.Parse("2006-01-02", req.AssessmentDate); err == nil {
+			updates["assessment_date"] = &t
+		}
+	}
+	if req.NextAssessmentDate != "" {
+		if t, err := time.Parse("2006-01-02", req.NextAssessmentDate); err == nil {
+			updates["next_assessment_date"] = &t
+		}
+	}
+
+	if err := h.db.Model(&vendor).Updates(updates).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update vendor assessment"})
+		return
+	}
+
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
-		"message": "Vendor updated successfully",
+		"message": "Vendor assessment updated successfully",
 	})
 }
 
 func (h *RiskOpsVendorHandler) DeleteVendor(c *gin.Context) {
 	id := c.Param("id")
-	
-	// In production, delete from database
+	tenantID := c.GetString("tenant_id")
+
+	if err := h.db.Model(&models.VendorAssessment{}).
+		Where("id = ? AND tenant_id = ?", id, tenantID).
+		Updates(map[string]interface{}{
+			"is_deleted": true,
+			"deleted_at": time.Now(),
+		}).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete vendor assessment"})
+		return
+	}
+
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
-		"message": "Vendor deleted successfully",
+		"message": "Vendor assessment deleted successfully",
 	})
 }
 
 func (h *RiskOpsVendorHandler) GetVendorStats(c *gin.Context) {
-	// In production, calculate from database
+	tenantID := c.GetString("tenant_id")
+	
+	var total int64
+	var highRisk int64
+	var mediumRisk int64
+	var lowRisk int64
+
+	h.db.Model(&models.VendorAssessment{}).
+		Where("tenant_id = ? AND is_deleted = ?", tenantID, false).
+		Count(&total)
+
+	h.db.Model(&models.VendorAssessment{}).
+		Where("tenant_id = ? AND is_deleted = ? AND risk_level = ?", tenantID, false, "high").
+		Count(&highRisk)
+
+	h.db.Model(&models.VendorAssessment{}).
+		Where("tenant_id = ? AND is_deleted = ? AND risk_level = ?", tenantID, false, "medium").
+		Count(&mediumRisk)
+
+	h.db.Model(&models.VendorAssessment{}).
+		Where("tenant_id = ? AND is_deleted = ? AND risk_level = ?", tenantID, false, "low").
+		Count(&lowRisk)
+
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
 		"data": gin.H{
-			"total":   6,
-			"high":    1,
-			"medium":  3,
-			"low":     2,
-			"active":  6,
-			"inactive": 0,
+			"total":      total,
+			"highRisk":  highRisk,
+			"mediumRisk": mediumRisk,
+			"lowRisk":   lowRisk,
 		},
 	})
 }

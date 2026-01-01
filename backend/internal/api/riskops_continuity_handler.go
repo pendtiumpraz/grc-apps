@@ -4,123 +4,26 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/cyber/backend/internal/db"
+	"github.com/cyber/backend/internal/models"
 	"github.com/gin-gonic/gin"
+	"gorm.io/gorm"
 )
 
-type ContinuityPlan struct {
-	ID               int       `json:"id"`
-	Name             string    `json:"name"`
-	Type             string    `json:"type"`
-	Severity         string    `json:"severity"`
-	Status           string    `json:"status"`
-	RTO              string    `json:"rto"`
-	RPO              string    `json:"rpo"`
-	LastTested       string    `json:"lastTested"`
-	NextTest         string    `json:"nextTest"`
-	Owner            string    `json:"owner"`
-	Description      string    `json:"description"`
-	CreatedAt        time.Time `json:"createdAt"`
-}
-
 type RiskOpsContinuityHandler struct {
-	db *db.Database
+	db *gorm.DB
 }
 
-func NewRiskOpsContinuityHandler(db *db.Database) *RiskOpsContinuityHandler {
+func NewRiskOpsContinuityHandler(db *gorm.DB) *RiskOpsContinuityHandler {
 	return &RiskOpsContinuityHandler{db: db}
 }
 
 func (h *RiskOpsContinuityHandler) GetContinuityPlans(c *gin.Context) {
-	var plans []ContinuityPlan
-	
-	// In production, fetch from database with tenant filtering
-	// For now, return sample data
-	plans = []ContinuityPlan{
-		{
-			ID:          1,
-			Name:        "Data Center Disaster Recovery",
-			Type:        "IT Disaster Recovery",
-			Severity:    "critical",
-			Status:      "active",
-			RTO:         "4 hours",
-			RPO:         "1 hour",
-			LastTested:  "2024-12-15",
-			NextTest:    "2025-03-15",
-			Owner:      "IT Operations",
-			Description: "Disaster recovery plan for primary data center",
-			CreatedAt:   time.Now().AddDate(2024, 12, 15),
-		},
-		{
-			ID:          2,
-			Name:        "Application High Availability",
-			Type:        "IT Continuity",
-			Severity:    "high",
-			Status:      "active",
-			RTO:         "1 hour",
-			RPO:         "15 minutes",
-			LastTested:  "2024-12-10",
-			NextTest:    "2025-02-10",
-			Owner:      "Development Team",
-			Description: "High availability plan for critical applications",
-			CreatedAt:   time.Now().AddDate(2024, 12, 10),
-		},
-		{
-			ID:          3,
-			Name:        "Network Infrastructure Recovery",
-			Type:        "IT Disaster Recovery",
-			Severity:    "high",
-			Status:      "active",
-			RTO:         "2 hours",
-			RPO:         "30 minutes",
-			LastTested:  "2024-12-20",
-			NextTest:    "2025-03-20",
-			Owner:      "Network Team",
-			Description: "Network infrastructure disaster recovery plan",
-			CreatedAt:   time.Now().AddDate(2024, 12, 20),
-		},
-		{
-			ID:          4,
-			Name:        "Business Process Continuity",
-			Type:        "Business Continuity",
-			Severity:    "critical",
-			Status:      "active",
-			RTO:         "8 hours",
-			RPO:         "4 hours",
-			LastTested:  "2024-12-05",
-			NextTest:    "2025-04-05",
-			Owner:      "Operations",
-			Description: "Business process continuity plan for critical operations",
-			CreatedAt:   time.Now().AddDate(2024, 12, 5),
-		},
-		{
-			ID:          5,
-			Name:        "Data Backup and Recovery",
-			Type:        "Data Recovery",
-			Severity:    "high",
-			Status:      "active",
-			RTO:         "2 hours",
-			RPO:         "1 hour",
-			LastTested:  "2024-12-18",
-			NextTest:    "2025-02-18",
-			Owner:      "IT Operations",
-			Description: "Data backup and recovery procedures",
-			CreatedAt:   time.Now().AddDate(2024, 12, 18),
-		},
-		{
-			ID:          6,
-			Name:        "Cloud Service Continuity",
-			Type:        "IT Continuity",
-			Severity:    "medium",
-			Status:      "active",
-			RTO:         "1 hour",
-			RPO:         "30 minutes",
-			LastTested:  "2024-12-12",
-			NextTest:    "2025-03-12",
-			Owner:      "Cloud Team",
-			Description: "Cloud service continuity and failover plan",
-			CreatedAt:   time.Now().AddDate(2024, 12, 12),
-		},
+	var plans []models.BusinessContinuity
+	tenantID := c.GetString("tenant_id")
+
+	if err := h.db.Where("tenant_id = ? AND is_deleted = ?", tenantID, false).Find(&plans).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch continuity plans"})
+		return
 	}
 
 	c.JSON(http.StatusOK, gin.H{
@@ -131,15 +34,19 @@ func (h *RiskOpsContinuityHandler) GetContinuityPlans(c *gin.Context) {
 
 func (h *RiskOpsContinuityHandler) CreateContinuityPlan(c *gin.Context) {
 	var req struct {
-		Name        string `json:"name" binding:"required"`
-		Type        string `json:"type" binding:"required"`
-		Severity    string `json:"severity" binding:"required"`
-		RTO         string `json:"rto" binding:"required"`
-		RPO         string `json:"rpo" binding:"required"`
-		LastTested  string `json:"lastTested" binding:"required"`
-		NextTest    string `json:"nextTest" binding:"required"`
-		Owner       string `json:"owner" binding:"required"`
-		Description string `json:"description" binding:"required"`
+		Name              string  `json:"name" binding:"required"`
+		Description       string  `json:"description" binding:"required"`
+		BusinessFunction string  `json:"businessFunction" binding:"required"`
+		Criticality       string  `json:"criticality" binding:"required"`
+		RTOHours          int     `json:"rtoHours" binding:"required"`
+		RPOHours          int     `json:"rpoHours" binding:"required"`
+		RecoveryStrategy string  `json:"recoveryStrategy" binding:"required"`
+		BackupProcedures  string  `json:"backupProcedures"`
+		TestDate         string  `json:"testDate"`
+		TestResult       string  `json:"testResult"`
+		TestFindings     string  `json:"testFindings"`
+		ImprovementActions string `json:"improvementActions"`
+		Owner             string  `json:"owner" binding:"required"`
 	}
 
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -147,27 +54,36 @@ func (h *RiskOpsContinuityHandler) CreateContinuityPlan(c *gin.Context) {
 		return
 	}
 
-	// In production, insert into database
-	// For now, return success with generated ID
-	newPlan := ContinuityPlan{
-		ID:          len([]ContinuityPlan{}) + 10,
-		Name:        req.Name,
-		Type:        req.Type,
-		Severity:    req.Severity,
-		Status:      "draft",
-		RTO:         req.RTO,
-		RPO:         req.RPO,
-		LastTested:  req.LastTested,
-		NextTest:    req.NextTest,
-		Owner:      req.Owner,
-		Description: req.Description,
-		CreatedAt:   time.Now(),
+	tenantID := c.GetString("tenant_id")
+	
+	plan := models.BusinessContinuity{
+		TenantID:          tenantID,
+		Name:               req.Name,
+		Description:        req.Description,
+		BusinessFunction:   req.BusinessFunction,
+		Criticality:       req.Criticality,
+		RTOHours:          req.RTOHours,
+		RPOHours:          req.RPOHours,
+		RecoveryStrategy:  req.RecoveryStrategy,
+		BackupProcedures:  req.BackupProcedures,
+		Status:             "active",
+	}
+
+	if req.TestDate != "" {
+		if t, err := time.Parse("2006-01-02", req.TestDate); err == nil {
+			plan.TestDate = &t
+		}
+	}
+
+	if err := h.db.Create(&plan).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create continuity plan"})
+		return
 	}
 
 	c.JSON(http.StatusCreated, gin.H{
 		"success": true,
 		"message": "Continuity plan created successfully",
-		"data":    newPlan,
+		"data":    plan,
 	})
 }
 
@@ -175,16 +91,20 @@ func (h *RiskOpsContinuityHandler) UpdateContinuityPlan(c *gin.Context) {
 	id := c.Param("id")
 	
 	var req struct {
-		Name        string `json:"name"`
-		Type        string `json:"type"`
-		Severity    string `json:"severity"`
-		Status      string `json:"status"`
-		RTO         string `json:"rto"`
-		RPO         string `json:"rpo"`
-		LastTested  string `json:"lastTested"`
-		NextTest    string `json:"nextTest"`
-		Owner       string `json:"owner"`
-		Description string `json:"description"`
+		Name              string  `json:"name"`
+		Description       string  `json:"description"`
+		BusinessFunction string  `json:"businessFunction"`
+		Criticality       string  `json:"criticality"`
+		Status            string  `json:"status"`
+		RTOHours          int     `json:"rtoHours"`
+		RPOHours          int     `json:"rpoHours"`
+		RecoveryStrategy string  `json:"recoveryStrategy"`
+		BackupProcedures  string  `json:"backupProcedures"`
+		TestDate         string  `json:"testDate"`
+		TestResult       string  `json:"testResult"`
+		TestFindings     string  `json:"testFindings"`
+		ImprovementActions string  `json:"improvementActions"`
+		Owner             string  `json:"owner"`
 	}
 
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -192,7 +112,68 @@ func (h *RiskOpsContinuityHandler) UpdateContinuityPlan(c *gin.Context) {
 		return
 	}
 
-	// In production, update in database
+	tenantID := c.GetString("tenant_id")
+	var plan models.BusinessContinuity
+	
+	if err := h.db.Where("id = ? AND tenant_id = ? AND is_deleted = ?", id, tenantID, false).First(&plan).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Continuity plan not found"})
+		return
+	}
+
+	updates := map[string]interface{}{
+		"updated_at": time.Now(),
+	}
+
+	if req.Name != "" {
+		updates["name"] = req.Name
+	}
+	if req.Description != "" {
+		updates["description"] = req.Description
+	}
+	if req.BusinessFunction != "" {
+		updates["business_function"] = req.BusinessFunction
+	}
+	if req.Criticality != "" {
+		updates["criticality"] = req.Criticality
+	}
+	if req.Status != "" {
+		updates["status"] = req.Status
+	}
+	if req.RTOHours > 0 {
+		updates["rto_hours"] = req.RTOHours
+	}
+	if req.RPOHours > 0 {
+		updates["rpo_hours"] = req.RPOHours
+	}
+	if req.RecoveryStrategy != "" {
+		updates["recovery_strategy"] = req.RecoveryStrategy
+	}
+	if req.BackupProcedures != "" {
+		updates["backup_procedures"] = req.BackupProcedures
+	}
+	if req.TestResult != "" {
+		updates["test_result"] = req.TestResult
+	}
+	if req.TestFindings != "" {
+		updates["test_findings"] = req.TestFindings
+	}
+	if req.ImprovementActions != "" {
+		updates["improvement_actions"] = req.ImprovementActions
+	}
+	if req.Owner != "" {
+		updates["owner"] = req.Owner
+	}
+	if req.TestDate != "" {
+		if t, err := time.Parse("2006-01-02", req.TestDate); err == nil {
+			updates["test_date"] = &t
+		}
+	}
+
+	if err := h.db.Model(&plan).Updates(updates).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update continuity plan"})
+		return
+	}
+
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
 		"message": "Continuity plan updated successfully",
@@ -201,8 +182,18 @@ func (h *RiskOpsContinuityHandler) UpdateContinuityPlan(c *gin.Context) {
 
 func (h *RiskOpsContinuityHandler) DeleteContinuityPlan(c *gin.Context) {
 	id := c.Param("id")
-	
-	// In production, delete from database
+	tenantID := c.GetString("tenant_id")
+
+	if err := h.db.Model(&models.BusinessContinuity{}).
+		Where("id = ? AND tenant_id = ?", id, tenantID).
+		Updates(map[string]interface{}{
+			"is_deleted": true,
+			"deleted_at": time.Now(),
+		}).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete continuity plan"})
+		return
+	}
+
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
 		"message": "Continuity plan deleted successfully",
@@ -211,8 +202,20 @@ func (h *RiskOpsContinuityHandler) DeleteContinuityPlan(c *gin.Context) {
 
 func (h *RiskOpsContinuityHandler) TestContinuityPlan(c *gin.Context) {
 	id := c.Param("id")
-	
-	// In production, update last tested date in database
+	tenantID := c.GetString("tenant_id")
+
+	testDate := time.Now()
+
+	if err := h.db.Model(&models.BusinessContinuity{}).
+		Where("id = ? AND tenant_id = ?", id, tenantID).
+		Updates(map[string]interface{}{
+			"test_date": &testDate,
+			"updated_at": time.Now(),
+		}).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to test continuity plan"})
+		return
+	}
+
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
 		"message": "Continuity plan test initiated successfully",
@@ -220,16 +223,36 @@ func (h *RiskOpsContinuityHandler) TestContinuityPlan(c *gin.Context) {
 }
 
 func (h *RiskOpsContinuityHandler) GetContinuityStats(c *gin.Context) {
-	// In production, calculate from database
+	tenantID := c.GetString("tenant_id")
+	
+	var total int64
+	var active int64
+	var critical int64
+	var high int64
+
+	h.db.Model(&models.BusinessContinuity{}).
+		Where("tenant_id = ? AND is_deleted = ?", tenantID, false).
+		Count(&total)
+
+	h.db.Model(&models.BusinessContinuity{}).
+		Where("tenant_id = ? AND is_deleted = ? AND status = ?", tenantID, false, "active").
+		Count(&active)
+
+	h.db.Model(&models.BusinessContinuity{}).
+		Where("tenant_id = ? AND is_deleted = ? AND criticality = ?", tenantID, false, "critical").
+		Count(&critical)
+
+	h.db.Model(&models.BusinessContinuity{}).
+		Where("tenant_id = ? AND is_deleted = ? AND criticality = ?", tenantID, false, "high").
+		Count(&high)
+
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
 		"data": gin.H{
-			"total":   6,
-			"critical": 2,
-			"high":    3,
-			"medium":  1,
-			"active":  6,
-			"draft":   0,
+			"total":    total,
+			"active":   active,
+			"critical": critical,
+			"high":     high,
 		},
 	})
 }

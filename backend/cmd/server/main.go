@@ -65,26 +65,26 @@ func main() {
 	api.InitHandlers(dbConn)
 	
 	// Initialize new sub-module handlers
-	regopsGapAnalysisHandler := api.NewRegOpsGapAnalysisHandler(dbConn)
-	regopsObligationMappingHandler := api.NewRegOpsObligationMappingHandler(dbConn)
-	regopsPoliciesHandler := api.NewRegOpsPoliciesHandler(dbConn)
-	regopsControlsHandler := api.NewRegOpsControlsHandler(dbConn)
-	privacyopsDataInventoryHandler := api.NewPrivacyOpsDataInventoryHandler(dbConn)
-	privacyopsRoPAHandler := api.NewPrivacyOpsRoPAHandler(dbConn)
-	privacyopsDSRHandler := api.NewPrivacyOpsDSRHandler(dbConn)
-	privacyopsDPIAHandler := api.NewPrivacyOpsDPIAHandler(dbConn)
-	privacyopsControlsHandler := api.NewPrivacyOpsControlsHandler(dbConn)
-	privacyopsIncidentHandler := api.NewPrivacyOpsIncidentHandler(dbConn)
-	riskopsERMHandler := api.NewRiskOpsERMHandler(dbConn)
-	riskopsSecurityHandler := api.NewRiskOpsSecurityHandler(dbConn)
-	riskopsVendorHandler := api.NewRiskOpsVendorHandler(dbConn)
-	riskopsContinuityHandler := api.NewRiskOpsContinuityHandler(dbConn)
-	auditopsInternalAuditHandler := api.NewAuditOpsInternalAuditHandler(dbConn)
-	auditopsGovernanceHandler := api.NewAuditOpsGovernanceHandler(dbConn)
-	auditopsContinuousAuditHandler := api.NewAuditOpsContinuousAuditHandler(dbConn)
-	auditopsEvidenceHandler := api.NewAuditOpsEvidenceHandler(dbConn)
-	auditopsReportingHandler := api.NewAuditOpsReportingHandler(dbConn)
-	aiDocumentHandler := api.NewAIDocumentHandler(dbConn)
+	regopsGapAnalysisHandler := api.NewRegOpsGapAnalysisHandler(dbConn.DB)
+	regopsObligationMappingHandler := api.NewRegOpsObligationMappingHandler(dbConn.DB)
+	regopsPoliciesHandler := api.NewRegOpsPoliciesHandler(dbConn.DB)
+	regopsControlsHandler := api.NewRegOpsControlsHandler(dbConn.DB)
+	privacyopsDataInventoryHandler := api.NewPrivacyOpsDataInventoryHandler(dbConn.DB)
+	privacyopsRoPAHandler := api.NewPrivacyOpsRoPAHandler(dbConn.DB)
+	privacyopsDSRHandler := api.NewPrivacyOpsDSRHandler(dbConn.DB)
+	privacyopsDPIAHandler := api.NewPrivacyOpsDPIAHandler(dbConn.DB)
+	privacyopsControlsHandler := api.NewPrivacyOpsControlsHandler(dbConn.DB)
+	privacyopsIncidentHandler := api.NewPrivacyOpsIncidentHandler(dbConn.DB)
+	riskopsERMHandler := api.NewRiskOpsERMHandler(dbConn.DB)
+	riskopsSecurityHandler := api.NewRiskOpsSecurityHandler(dbConn.DB)
+	riskopsVendorHandler := api.NewRiskOpsVendorHandler(dbConn.DB)
+	riskopsContinuityHandler := api.NewRiskOpsContinuityHandler(dbConn.DB)
+	auditopsInternalAuditHandler := api.NewAuditOpsInternalAuditHandler(dbConn.DB)
+	auditopsGovernanceHandler := api.NewAuditOpsGovernanceHandler(dbConn.DB)
+	auditopsContinuousAuditHandler := api.NewAuditOpsContinuousAuditHandler(dbConn.DB)
+	auditopsEvidenceHandler := api.NewAuditOpsEvidenceHandler(dbConn.DB)
+	auditopsReportingHandler := api.NewAuditOpsReportingHandler(dbConn.DB)
+	aiDocumentHandler := api.NewAIDocumentHandler(dbConn.DB)
 
 	// Initialize Redis cache
 	if redisClient != nil {
@@ -101,7 +101,7 @@ func main() {
 	r.Use(middleware.TenantMiddleware())
 
 	// Setup routes
-	setupRoutes(r)
+	setupRoutes(r, regopsGapAnalysisHandler, regopsObligationMappingHandler, regopsPoliciesHandler, regopsControlsHandler, privacyopsDataInventoryHandler, privacyopsRoPAHandler, privacyopsDSRHandler, privacyopsDPIAHandler, privacyopsControlsHandler, privacyopsIncidentHandler, riskopsERMHandler, riskopsSecurityHandler, riskopsVendorHandler, riskopsContinuityHandler, auditopsInternalAuditHandler, auditopsGovernanceHandler, auditopsContinuousAuditHandler, auditopsEvidenceHandler, auditopsReportingHandler, aiDocumentHandler)
 
 	// Start server
 	port := fmt.Sprintf(":%s", cfg.Server.Port)
@@ -111,7 +111,7 @@ func main() {
 	}
 }
 
-func setupRoutes(r *gin.Engine) {
+func setupRoutes(r *gin.Engine, regopsGapAnalysisHandler *api.RegOpsGapAnalysisHandler, regopsObligationMappingHandler *api.RegOpsObligationMappingHandler, regopsPoliciesHandler *api.RegOpsPoliciesHandler, regopsControlsHandler *api.RegOpsControlsHandler, privacyopsDataInventoryHandler *api.PrivacyOpsDataInventoryHandler, privacyopsRoPAHandler *api.PrivacyOpsRoPAHandler, privacyopsDSRHandler *api.PrivacyOpsDSRHandler, privacyopsDPIAHandler *api.PrivacyOpsDPIAHandler, privacyopsControlsHandler *api.PrivacyOpsControlsHandler, privacyopsIncidentHandler *api.PrivacyOpsIncidentHandler, riskopsERMHandler *api.RiskOpsERMHandler, riskopsSecurityHandler *api.RiskOpsSecurityHandler, riskopsVendorHandler *api.RiskOpsVendorHandler, riskopsContinuityHandler *api.RiskOpsContinuityHandler, auditopsInternalAuditHandler *api.AuditOpsInternalAuditHandler, auditopsGovernanceHandler *api.AuditOpsGovernanceHandler, auditopsContinuousAuditHandler *api.AuditOpsContinuousAuditHandler, auditopsEvidenceHandler *api.AuditOpsEvidenceHandler, auditopsReportingHandler *api.AuditOpsReportingHandler, aiDocumentHandler *api.AIDocumentHandler) {
 	// Public routes
 	public := r.Group("/api")
 	{
@@ -168,11 +168,11 @@ func setupRoutes(r *gin.Engine) {
 			regops.PUT("/policies/:id", middleware.RBACMiddleware(models.PermissionRegOpsUpdate), api.GetRegOpsHandler().UpdatePolicy)
 			regops.DELETE("/policies/:id", middleware.RBACMiddleware(models.PermissionRegOpsDelete), api.GetRegOpsHandler().DeletePolicy)
 			// Controls
-			regops.GET("/controls", middleware.RBACMiddleware(models.PermissionRegOpsView), regopsControlsHandler.GetPrivacyControls)
-			regops.POST("/controls", middleware.RBACMiddleware(models.PermissionRegOpsCreate), regopsControlsHandler.CreatePrivacyControl)
-			regops.PUT("/controls/:id", middleware.RBACMiddleware(models.PermissionRegOpsUpdate), regopsControlsHandler.UpdatePrivacyControl)
-			regops.DELETE("/controls/:id", middleware.RBACMiddleware(models.PermissionRegOpsDelete), regopsControlsHandler.DeletePrivacyControl)
-			regops.GET("/controls/stats", middleware.RBACMiddleware(models.PermissionRegOpsView), regopsControlsHandler.GetPrivacyControlsStats)
+			regops.GET("/controls", middleware.RBACMiddleware(models.PermissionRegOpsView), regopsControlsHandler.GetControls)
+			regops.POST("/controls", middleware.RBACMiddleware(models.PermissionRegOpsCreate), regopsControlsHandler.CreateControl)
+			regops.PUT("/controls/:id", middleware.RBACMiddleware(models.PermissionRegOpsUpdate), regopsControlsHandler.UpdateControl)
+			regops.DELETE("/controls/:id", middleware.RBACMiddleware(models.PermissionRegOpsDelete), regopsControlsHandler.DeleteControl)
+			regops.GET("/controls/stats", middleware.RBACMiddleware(models.PermissionRegOpsView), regopsControlsHandler.GetControlStats)
 			// Recovery endpoints for all RegOps entities
 			regops.GET("/compliance-assessments/deleted", middleware.RBACMiddleware(models.PermissionRegOpsView), api.GetRegOpsHandler().GetDeletedComplianceAssessments)
 			regops.POST("/compliance-assessments/:id/restore", middleware.RBACMiddleware(models.PermissionRegOpsUpdate), api.GetRegOpsHandler().RestoreComplianceAssessment)
@@ -186,11 +186,11 @@ func setupRoutes(r *gin.Engine) {
 		privacyops := protected.Group("/privacyops")
 		{
 			// Data Inventory
-			privacyops.GET("/data-inventory", middleware.RBACMiddleware(models.PermissionPrivacyOpsView), privacyopsDataInventoryHandler.GetProcessingActivities)
-			privacyops.POST("/data-inventory", middleware.RBACMiddleware(models.PermissionPrivacyOpsCreate), privacyopsDataInventoryHandler.CreateProcessingActivity)
-			privacyops.PUT("/data-inventory/:id", middleware.RBACMiddleware(models.PermissionPrivacyOpsUpdate), privacyopsDataInventoryHandler.UpdateProcessingActivity)
-			privacyops.DELETE("/data-inventory/:id", middleware.RBACMiddleware(models.PermissionPrivacyOpsDelete), privacyopsDataInventoryHandler.DeleteProcessingActivity)
-			privacyops.GET("/data-inventory/stats", middleware.RBACMiddleware(models.PermissionPrivacyOpsView), privacyopsDataInventoryHandler.GetRoPAStats)
+			privacyops.GET("/data-inventory", middleware.RBACMiddleware(models.PermissionPrivacyOpsView), privacyopsDataInventoryHandler.GetDataInventory)
+			privacyops.POST("/data-inventory", middleware.RBACMiddleware(models.PermissionPrivacyOpsCreate), privacyopsDataInventoryHandler.CreateDataItem)
+			privacyops.PUT("/data-inventory/:id", middleware.RBACMiddleware(models.PermissionPrivacyOpsUpdate), privacyopsDataInventoryHandler.UpdateDataItem)
+			privacyops.DELETE("/data-inventory/:id", middleware.RBACMiddleware(models.PermissionPrivacyOpsDelete), privacyopsDataInventoryHandler.DeleteDataItem)
+			privacyops.GET("/data-inventory/stats", middleware.RBACMiddleware(models.PermissionPrivacyOpsView), privacyopsDataInventoryHandler.GetDataInventoryStats)
 			// RoPA
 			privacyops.GET("/ropa", middleware.RBACMiddleware(models.PermissionPrivacyOpsView), privacyopsRoPAHandler.GetProcessingActivities)
 			privacyops.POST("/ropa", middleware.RBACMiddleware(models.PermissionPrivacyOpsCreate), privacyopsRoPAHandler.CreateProcessingActivity)
@@ -231,10 +231,10 @@ func setupRoutes(r *gin.Engine) {
 		riskops := protected.Group("/riskops")
 		{
 			// Risk Register (ERM)
-			riskops.GET("/risk-register", middleware.RBACMiddleware(models.PermissionRiskOpsView), riskopsERMHandler.GetRisks)
+			riskops.GET("/risk-register", middleware.RBACMiddleware(models.PermissionRiskOpsView), riskopsERMHandler.GetRiskRegister)
 			riskops.POST("/risk-register", middleware.RBACMiddleware(models.PermissionRiskOpsCreate), riskopsERMHandler.CreateRisk)
 			riskops.PUT("/risk-register/:id", middleware.RBACMiddleware(models.PermissionRiskOpsUpdate), riskopsERMHandler.UpdateRisk)
-			riskops.DELETE("/risk-register/:id", middleware.RBACMiddleware(models.PermissionRiskOpsDelete), riskopsERMHandler.DeleteRisk)
+			riskops.DELETE("/risk-register/:id", middleware.RBACMiddleware(models.PermissionRiskOpsDelete), riskopsERMHandler.CloseRisk)
 			riskops.POST("/risk-register/:id/close", middleware.RBACMiddleware(models.PermissionRiskOpsUpdate), riskopsERMHandler.CloseRisk)
 			riskops.GET("/risk-register/stats", middleware.RBACMiddleware(models.PermissionRiskOpsView), riskopsERMHandler.GetRiskStats)
 			// Security Risk & Vulnerability Management

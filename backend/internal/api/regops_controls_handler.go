@@ -4,116 +4,26 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/cyber/backend/internal/db"
+	"github.com/cyber/backend/internal/models"
 	"github.com/gin-gonic/gin"
+	"gorm.io/gorm"
 )
 
-type Control struct {
-	ID          int       `json:"id"`
-	Code        string    `json:"code"`
-	Name        string    `json:"name"`
-	Framework   string    `json:"framework"`
-	Type        string    `json:"type"`
-	Status      string    `json:"status"`
-	Effectiveness int    `json:"effectiveness"`
-	LastTested  string    `json:"lastTested"`
-	Owner       string    `json:"owner"`
-	Description string    `json:"description"`
-	CreatedAt   time.Time `json:"createdAt"`
-}
-
 type RegOpsControlsHandler struct {
-	db *db.Database
+	db *gorm.DB
 }
 
-func NewRegOpsControlsHandler(db *db.Database) *RegOpsControlsHandler {
+func NewRegOpsControlsHandler(db *gorm.DB) *RegOpsControlsHandler {
 	return &RegOpsControlsHandler{db: db}
 }
 
 func (h *RegOpsControlsHandler) GetControls(c *gin.Context) {
-	var controls []Control
-	
-	// In production, fetch from database with tenant filtering
-	// For now, return sample data
-	controls = []Control{
-		{
-			ID:           1,
-			Code:         "ACC-001",
-			Name:         "Access Control Policy",
-			Framework:    "ISO 27001 A.9",
-			Type:         "preventive",
-			Status:       "active",
-			Effectiveness: 85,
-			LastTested:   "2024-12-20",
-			Owner:       "Security Team",
-			Description:  "Formal access control policy governing user access rights and privileges",
-			CreatedAt:     time.Now().AddDate(2024, 12, 20, 0, 0, 0),
-		},
-		{
-			ID:           2,
-			Code:         "ENC-001",
-			Name:         "Data Encryption Standard",
-			Framework:    "GDPR Article 32",
-			Type:         "preventive",
-			Status:       "active",
-			Effectiveness: 92,
-			LastTested:   "2024-12-18",
-			Owner:       "Infrastructure Team",
-			Description:  "Encryption requirements for data at rest and in transit",
-			CreatedAt:     time.Now().AddDate(2024, 12, 18, 0, 0, 0),
-		},
-		{
-			ID:           3,
-			Code:         "MON-001",
-			Name:         "Security Monitoring",
-			Framework:    "NIST CSF",
-			Type:         "detective",
-			Status:       "active",
-			Effectiveness: 78,
-			LastTested:   "2024-12-22",
-			Owner:       "SOC Team",
-			Description:  "Continuous monitoring and alerting for security events",
-			CreatedAt:     time.Now().AddDate(2024, 12, 22, 0, 0, 0),
-		},
-		{
-			ID:           4,
-			Code:         "INC-001",
-			Name:         "Incident Response Procedure",
-			Framework:    "ISO 27035",
-			Type:         "corrective",
-			Status:       "active",
-			Effectiveness: 88,
-			LastTested:   "2024-12-15",
-			Owner:       "Security Team",
-			Description:  "Procedures for responding to security incidents",
-			CreatedAt:     time.Now().AddDate(2024, 12, 15, 0, 0, 0),
-		},
-		{
-			ID:           5,
-			Code:         "BKP-001",
-			Name:         "Backup and Recovery",
-			Framework:    "ISO 27001 A.12",
-			Type:         "compensating",
-			Status:       "inactive",
-			Effectiveness: 65,
-			LastTested:   "2024-12-10",
-			Owner:       "IT Operations",
-			Description:  "Backup procedures and recovery testing",
-			CreatedAt:     time.Now().AddDate(2024, 12, 10, 0, 0, 0),
-		},
-		{
-			ID:           6,
-			Code:         "DPIA-001",
-			Name:         "Data Protection Impact Assessment",
-			Framework:    "GDPR Article 35",
-			Type:         "preventive",
-			Status:       "draft",
-			Effectiveness: 0,
-			LastTested:   "-",
-			Owner:       "Privacy Team",
-			Description:  "DPIA process for high-risk processing activities",
-			CreatedAt:     time.Now().AddDate(2024, 12, 19, 0, 0, 0),
-		},
+	var controls []models.RegOpsControl
+	tenantID := c.GetString("tenant_id")
+
+	if err := h.db.Where("tenant_id = ? AND is_deleted = ?", tenantID, false).Find(&controls).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch RegOps controls"})
+		return
 	}
 
 	c.JSON(http.StatusOK, gin.H{
@@ -124,12 +34,17 @@ func (h *RegOpsControlsHandler) GetControls(c *gin.Context) {
 
 func (h *RegOpsControlsHandler) CreateControl(c *gin.Context) {
 	var req struct {
-		Code        string `json:"code" binding:"required"`
-		Name        string `json:"name" binding:"required"`
-		Framework   string `json:"framework" binding:"required"`
-		Type        string `json:"type" binding:"required"`
-		Owner       string `json:"owner" binding:"required"`
-		Description string `json:"description" binding:"required"`
+		Name                  string `json:"name" binding:"required"`
+		Description           string `json:"description" binding:"required"`
+		ControlType          string `json:"controlType"`
+		ControlFamily        string `json:"controlFamily"`
+		Framework             string `json:"framework"`
+		ImplementationStatus string `json:"implementationStatus"`
+		Effectiveness        string `json:"effectiveness"`
+		TestingFrequency     string `json:"testingFrequency"`
+		Owner                 string `json:"owner" binding:"required"`
+		LastTested           string `json:"lastTested"`
+		NextTest             string `json:"nextTest"`
 	}
 
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -137,26 +52,42 @@ func (h *RegOpsControlsHandler) CreateControl(c *gin.Context) {
 		return
 	}
 
-	// In production, insert into database
-	// For now, return success with generated ID
-	newControl := Control{
-		ID:           len([]Control{}) + 10,
-		Code:         req.Code,
-		Name:         req.Name,
-		Framework:    req.Framework,
-		Type:         req.Type,
-		Status:       "active",
-		Effectiveness: 0,
-		LastTested:   "-",
-		Owner:       req.Owner,
-		Description:  req.Description,
-		CreatedAt:   time.Now(),
+	tenantID := c.GetString("tenant_id")
+	
+	control := models.RegOpsControl{
+		TenantID:            tenantID,
+		Name:                  req.Name,
+		Description:           req.Description,
+		ControlType:          req.ControlType,
+		ControlFamily:        req.ControlFamily,
+		Framework:             req.Framework,
+		ImplementationStatus: req.ImplementationStatus,
+		Effectiveness:        req.Effectiveness,
+		TestingFrequency:     req.TestingFrequency,
+		Owner:                 req.Owner,
+	}
+
+	if req.LastTested != "" {
+		if t, err := time.Parse("2006-01-02", req.LastTested); err == nil {
+			control.LastTested = &t
+		}
+	}
+
+	if req.NextTest != "" {
+		if t, err := time.Parse("2006-01-02", req.NextTest); err == nil {
+			control.NextTest = &t
+		}
+	}
+
+	if err := h.db.Create(&control).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create RegOps control"})
+		return
 	}
 
 	c.JSON(http.StatusCreated, gin.H{
 		"success": true,
-		"message": "Control created successfully",
-		"data":    newControl,
+		"message": "RegOps control created successfully",
+		"data":    control,
 	})
 }
 
@@ -164,13 +95,17 @@ func (h *RegOpsControlsHandler) UpdateControl(c *gin.Context) {
 	id := c.Param("id")
 	
 	var req struct {
-		Name        string `json:"name"`
-		Framework   string `json:"framework"`
-		Type        string `json:"type"`
-		Status      string `json:"status"`
-		Effectiveness int    `json:"effectiveness"`
-		Owner       string `json:"owner"`
-		Description string `json:"description"`
+		Name                  string `json:"name"`
+		Description           string `json:"description"`
+		ControlType          string `json:"controlType"`
+		ControlFamily        string `json:"controlFamily"`
+		Framework             string `json:"framework"`
+		ImplementationStatus string `json:"implementationStatus"`
+		Effectiveness        string `json:"effectiveness"`
+		TestingFrequency     string `json:"testingFrequency"`
+		Owner                 string `json:"owner"`
+		LastTested           string `json:"lastTested"`
+		NextTest             string `json:"nextTest"`
 	}
 
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -178,32 +113,112 @@ func (h *RegOpsControlsHandler) UpdateControl(c *gin.Context) {
 		return
 	}
 
-	// In production, update in database
+	tenantID := c.GetString("tenant_id")
+	var control models.RegOpsControl
+	
+	if err := h.db.Where("id = ? AND tenant_id = ? AND is_deleted = ?", id, tenantID, false).First(&control).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "RegOps control not found"})
+		return
+	}
+
+	updates := map[string]interface{}{
+		"updated_at": time.Now(),
+	}
+
+	if req.Name != "" {
+		updates["name"] = req.Name
+	}
+	if req.Description != "" {
+		updates["description"] = req.Description
+	}
+	if req.ControlType != "" {
+		updates["control_type"] = req.ControlType
+	}
+	if req.ControlFamily != "" {
+		updates["control_family"] = req.ControlFamily
+	}
+	if req.Framework != "" {
+		updates["framework"] = req.Framework
+	}
+	if req.ImplementationStatus != "" {
+		updates["implementation_status"] = req.ImplementationStatus
+	}
+	if req.Effectiveness != "" {
+		updates["effectiveness"] = req.Effectiveness
+	}
+	if req.TestingFrequency != "" {
+		updates["testing_frequency"] = req.TestingFrequency
+	}
+	if req.Owner != "" {
+		updates["owner"] = req.Owner
+	}
+	if req.LastTested != "" {
+		if t, err := time.Parse("2006-01-02", req.LastTested); err == nil {
+			updates["last_tested"] = &t
+		}
+	}
+	if req.NextTest != "" {
+		if t, err := time.Parse("2006-01-02", req.NextTest); err == nil {
+			updates["next_test"] = &t
+		}
+	}
+
+	if err := h.db.Model(&control).Updates(updates).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update RegOps control"})
+		return
+	}
+
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
-		"message": "Control updated successfully",
+		"message": "RegOps control updated successfully",
 	})
 }
 
 func (h *RegOpsControlsHandler) DeleteControl(c *gin.Context) {
 	id := c.Param("id")
-	
-	// In production, delete from database
+	tenantID := c.GetString("tenant_id")
+
+	if err := h.db.Model(&models.RegOpsControl{}).
+		Where("id = ? AND tenant_id = ?", id, tenantID).
+		Updates(map[string]interface{}{
+			"is_deleted": true,
+			"deleted_at": time.Now(),
+		}).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete RegOps control"})
+		return
+	}
+
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
-		"message": "Control deleted successfully",
+		"message": "RegOps control deleted successfully",
 	})
 }
 
 func (h *RegOpsControlsHandler) GetControlStats(c *gin.Context) {
-	// In production, calculate from database
+	tenantID := c.GetString("tenant_id")
+	
+	var total int64
+	var active int64
+	var implemented int64
+
+	h.db.Model(&models.RegOpsControl{}).
+		Where("tenant_id = ? AND is_deleted = ?", tenantID, false).
+		Count(&total)
+
+	h.db.Model(&models.RegOpsControl{}).
+		Where("tenant_id = ? AND is_deleted = ? AND implementation_status = ?", tenantID, false, "implemented").
+		Count(&active)
+
+	h.db.Model(&models.RegOpsControl{}).
+		Where("tenant_id = ? AND is_deleted = ? AND implementation_status IN (?)", tenantID, false, []string{"implemented", "partially_implemented"}).
+		Count(&implemented)
+
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
 		"data": gin.H{
-			"total":         6,
-			"active":       5,
-			"inactive":     1,
-			"avgEffectiveness": 81.6,
+			"total":       total,
+			"active":      active,
+			"implemented": implemented,
 		},
 	})
 }
