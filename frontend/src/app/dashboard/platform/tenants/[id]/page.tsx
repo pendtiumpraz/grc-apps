@@ -70,6 +70,8 @@ export default function TenantDetailPage() {
   const [activeTab, setActiveTab] = useState<'overview' | 'users' | 'billing'>('overview');
   const [showSuspendModal, setShowSuspendModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [showActivateModal, setShowActivateModal] = useState(false);
+  const [activateForm, setActivateForm] = useState({ plan_type: 'basic', duration_months: 12, price: 0, billing_cycle: 'monthly' });
 
   // User edit state
   const [showUserModal, setShowUserModal] = useState(false);
@@ -144,6 +146,19 @@ export default function TenantDetailPage() {
   };
 
   const handleActivate = async () => {
+    setSaving(true);
+    try {
+      await platformAPI.activateTenant(tenantId, activateForm);
+      await loadTenantDetail();
+      setShowActivateModal(false);
+    } catch (error) {
+      console.error('Failed to activate tenant:', error);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleQuickActivate = async () => {
     try {
       await platformAPI.updateTenant(tenantId, { status: 'active' });
       loadTenantDetail();
@@ -298,9 +313,13 @@ export default function TenantDetailPage() {
                         <Button variant="outline" onClick={() => setShowSuspendModal(true)} className="border-yellow-600 text-yellow-400 hover:bg-yellow-500/20">
                           <Ban className="w-4 h-4 mr-2" />Suspend
                         </Button>
+                      ) : tenant.status === 'pending' ? (
+                        <Button variant="outline" onClick={() => setShowActivateModal(true)} className="border-green-600 text-green-400 hover:bg-green-500/20">
+                          <CheckCircle className="w-4 h-4 mr-2" />Activate Tenant
+                        </Button>
                       ) : (
-                        <Button variant="outline" onClick={handleActivate} className="border-green-600 text-green-400 hover:bg-green-500/20">
-                          <CheckCircle className="w-4 h-4 mr-2" />Activate
+                        <Button variant="outline" onClick={handleQuickActivate} className="border-green-600 text-green-400 hover:bg-green-500/20">
+                          <CheckCircle className="w-4 h-4 mr-2" />Reactivate
                         </Button>
                       )}
                       <Button variant="outline" onClick={() => setShowDeleteModal(true)} className="border-red-600 text-red-400 hover:bg-red-500/20">
@@ -614,6 +633,51 @@ export default function TenantDetailPage() {
                     <Button variant="outline" onClick={() => setShowPasswordModal(false)} className="border-gray-600 text-gray-300">Cancel</Button>
                     <Button onClick={handleResetPassword} disabled={userSaving || newPassword.length < 8} className="bg-yellow-600 hover:bg-yellow-700 text-white">
                       {userSaving ? <RefreshCw className="w-4 h-4 animate-spin mr-2" /> : <Key className="w-4 h-4 mr-2" />}Reset Password
+                    </Button>
+                  </div>
+                </Card>
+              </div>
+            )}
+
+            {/* Activate Tenant Modal */}
+            {showActivateModal && (
+              <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+                <Card className="bg-gray-900 border-gray-700 w-full max-w-md p-6">
+                  <div className="flex items-center justify-between mb-6">
+                    <h3 className="text-xl font-bold text-white">Activate Tenant</h3>
+                    <Button variant="ghost" size="sm" onClick={() => setShowActivateModal(false)}><X className="w-5 h-5 text-gray-400" /></Button>
+                  </div>
+                  <p className="text-gray-400 mb-4">Activate <span className="text-white font-medium">{tenant.name}</span> and set subscription details.</p>
+                  <div className="space-y-4">
+                    <div>
+                      <Label className="text-gray-300">Plan Type</Label>
+                      <select value={activateForm.plan_type} onChange={(e) => setActivateForm({ ...activateForm, plan_type: e.target.value })} className="w-full mt-1 bg-gray-800 border border-gray-600 text-white rounded-md px-3 py-2">
+                        <option value="basic">Basic</option>
+                        <option value="pro">Pro</option>
+                        <option value="enterprise">Enterprise</option>
+                      </select>
+                    </div>
+                    <div>
+                      <Label className="text-gray-300">Duration (Months)</Label>
+                      <Input type="number" min={1} max={60} value={activateForm.duration_months} onChange={(e) => setActivateForm({ ...activateForm, duration_months: parseInt(e.target.value) || 12 })} className="mt-1 bg-gray-800 border-gray-600 text-white" />
+                      <p className="text-gray-500 text-sm mt-1">Subscription will be active for this many months from today.</p>
+                    </div>
+                    <div>
+                      <Label className="text-gray-300">Price (IDR)</Label>
+                      <Input type="number" min={0} value={activateForm.price} onChange={(e) => setActivateForm({ ...activateForm, price: parseFloat(e.target.value) || 0 })} className="mt-1 bg-gray-800 border-gray-600 text-white" />
+                    </div>
+                    <div>
+                      <Label className="text-gray-300">Billing Cycle</Label>
+                      <select value={activateForm.billing_cycle} onChange={(e) => setActivateForm({ ...activateForm, billing_cycle: e.target.value })} className="w-full mt-1 bg-gray-800 border border-gray-600 text-white rounded-md px-3 py-2">
+                        <option value="monthly">Monthly</option>
+                        <option value="yearly">Yearly</option>
+                      </select>
+                    </div>
+                  </div>
+                  <div className="flex justify-end gap-3 mt-6">
+                    <Button variant="outline" onClick={() => setShowActivateModal(false)} className="border-gray-600 text-gray-300">Cancel</Button>
+                    <Button onClick={handleActivate} disabled={saving} className="bg-green-600 hover:bg-green-700 text-white">
+                      {saving ? <RefreshCw className="w-4 h-4 animate-spin mr-2" /> : <CheckCircle className="w-4 h-4 mr-2" />}Activate
                     </Button>
                   </div>
                 </Card>

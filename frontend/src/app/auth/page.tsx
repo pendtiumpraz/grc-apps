@@ -27,9 +27,11 @@ export default function AuthPage() {
   // Register form state
   const [registerFirstName, setRegisterFirstName] = useState('')
   const [registerLastName, setRegisterLastName] = useState('')
+  const [registerCompanyName, setRegisterCompanyName] = useState('')
   const [registerEmail, setRegisterEmail] = useState('')
   const [registerPassword, setRegisterPassword] = useState('')
   const [registerConfirmPassword, setRegisterConfirmPassword] = useState('')
+  const [isPending, setIsPending] = useState(false)
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -54,7 +56,7 @@ export default function AuthPage() {
     setError('')
     setSuccess('')
 
-    if (!registerFirstName || !registerLastName || !registerEmail || !registerPassword) {
+    if (!registerFirstName || !registerLastName || !registerCompanyName || !registerEmail || !registerPassword) {
       setError('Please fill in all fields')
       return
     }
@@ -69,15 +71,22 @@ export default function AuthPage() {
       password: registerPassword,
       firstName: registerFirstName,
       lastName: registerLastName,
+      companyName: registerCompanyName,
     })
 
     if (result.success) {
-      setSuccess('Account created successfully! Please login.')
-      setActiveTab('login')
-      setLoginEmail(registerEmail)
+      if (result.pending) {
+        setIsPending(true)
+        setSuccess('Registration successful! Your organization is pending approval. You will be notified once activated by the platform administrator.')
+      } else {
+        setSuccess('Account created successfully! Please login.')
+        setActiveTab('login')
+        setLoginEmail(registerEmail)
+      }
       // Clear register form
       setRegisterFirstName('')
       setRegisterLastName('')
+      setRegisterCompanyName('')
       setRegisterEmail('')
       setRegisterPassword('')
       setRegisterConfirmPassword('')
@@ -223,11 +232,23 @@ export default function AuthPage() {
                     </div>
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="register-email" className="text-gray-300">Email</Label>
+                    <Label htmlFor="register-companyName" className="text-gray-300">Company / Organization Name</Label>
+                    <Input
+                      id="register-companyName"
+                      type="text"
+                      placeholder="Acme Corporation"
+                      value={registerCompanyName}
+                      onChange={(e) => setRegisterCompanyName(e.target.value)}
+                      className="bg-gray-800/50 border-cyan-500/30 text-white placeholder:text-gray-500 focus:border-cyan-500 focus:ring-cyan-500/50"
+                      required
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="register-email" className="text-gray-300">Work Email</Label>
                     <Input
                       id="register-email"
                       type="email"
-                      placeholder="your@email.com"
+                      placeholder="you@company.com"
                       value={registerEmail}
                       onChange={(e) => setRegisterEmail(e.target.value)}
                       className="bg-gray-800/50 border-cyan-500/30 text-white placeholder:text-gray-500 focus:border-cyan-500 focus:ring-cyan-500/50"

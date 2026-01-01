@@ -13,7 +13,8 @@ interface AuthContextType {
     password: string
     firstName: string
     lastName: string
-  }) => Promise<{ success: boolean; error?: string }>
+    companyName: string
+  }) => Promise<{ success: boolean; pending?: boolean; error?: string }>
   logout: () => void
 }
 
@@ -38,10 +39,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setIsLoading(true)
     try {
       const response = await authApi.login(email, password)
- 
+
       if (response.success && response.user) {
         setUser(response.user)
-        
+
         // Redirect based on role
         if (typeof window !== 'undefined') {
           const role = response.user.role.toLowerCase()
@@ -53,10 +54,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             window.location.href = '/dashboard'
           }
         }
-        
+
         return { success: true }
       }
- 
+
       return { success: false, error: 'Login failed' }
     } catch (error: any) {
       console.error('Login error:', error)
@@ -71,13 +72,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     password: string
     firstName: string
     lastName: string
-  }): Promise<{ success: boolean; error?: string }> => {
+    companyName: string
+  }): Promise<{ success: boolean; pending?: boolean; error?: string }> => {
     setIsLoading(true)
     try {
       const response = await authApi.register(data)
 
       if (response.success) {
-        return { success: true }
+        return { success: true, pending: response.pending }
       }
 
       return { success: false, error: 'Registration failed' }
