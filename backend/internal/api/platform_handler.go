@@ -189,7 +189,38 @@ func (h *PlatformHandler) GetAllTenants(c *gin.Context) {
 	c.JSON(http.StatusOK, result)
 }
 
-// GetTenantByID returns a specific tenant
+// TenantDetail represents full tenant information
+type TenantDetail struct {
+	ID          string `json:"id"`
+	Name        string `json:"name"`
+	Domain      string `json:"domain"`
+	Description string `json:"description"`
+	Status      string `json:"status"`
+	CreatedAt   string `json:"created_at"`
+	// Stats
+	UserCount int64 `json:"user_count"`
+	DocCount  int64 `json:"doc_count"`
+	RiskCount int64 `json:"risk_count"`
+	VulnCount int64 `json:"vuln_count"`
+	// Subscription
+	Subscription *models.Subscription `json:"subscription"`
+	// Users
+	Users []UserSummary `json:"users"`
+	// Invoices
+	Invoices []models.Invoice `json:"invoices"`
+}
+
+type UserSummary struct {
+	ID        string  `json:"id"`
+	Email     string  `json:"email"`
+	FirstName string  `json:"first_name"`
+	LastName  string  `json:"last_name"`
+	Role      string  `json:"role"`
+	Status    string  `json:"status"`
+	LastLogin *string `json:"last_login"`
+}
+
+// GetTenantByID returns a specific tenant with full details
 func (h *PlatformHandler) GetTenantByID(c *gin.Context) {
 	id := c.Param("id")
 
@@ -199,7 +230,52 @@ func (h *PlatformHandler) GetTenantByID(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, tenant)
+	// Build detail response
+	detail := TenantDetail{
+		ID:          tenant.ID,
+		Name:        tenant.Name,
+		Domain:      tenant.Domain,
+		Description: tenant.Description,
+		Status:      tenant.Status,
+		CreatedAt:   tenant.CreatedAt.Format("2006-01-02"),
+	}
+
+	// Get stats
+	h.db.Model(&models.User{}).Where("tenant_id = ? AND deleted_at IS NULL", id).Count(&detail.UserCount)
+	h.db.Model(&models.Document{}).Where("tenant_id = ? AND deleted_at IS NULL", id).Count(&detail.DocCount)
+	h.db.Model(&models.RiskRegister{}).Where("tenant_id = ? AND deleted_at IS NULL", id).Count(&detail.RiskCount)
+	h.db.Model(&models.Vulnerability{}).Where("tenant_id = ? AND deleted_at IS NULL AND status = ?", id, "open").Count(&detail.VulnCount)
+
+	// Get subscription
+	var sub models.Subscription
+	if err := h.db.Where("tenant_id = ? AND deleted_at IS NULL", id).First(&sub).Error; err == nil {
+		detail.Subscription = &sub
+	}
+
+	// Get users
+	var users []models.User
+	h.db.Where("tenant_id = ? AND deleted_at IS NULL", id).Order("created_at DESC").Limit(50).Find(&users)
+	for _, u := range users {
+		var lastLogin *string
+		if u.LastLogin != nil {
+			formatted := u.LastLogin.Format("2006-01-02 15:04")
+			lastLogin = &formatted
+		}
+		detail.Users = append(detail.Users, UserSummary{
+			ID:        u.ID,
+			Email:     u.Email,
+			FirstName: u.FirstName,
+			LastName:  u.LastName,
+			Role:      u.Role,
+			Status:    u.Status,
+			LastLogin: lastLogin,
+		})
+	}
+
+	// Get invoices
+	h.db.Where("tenant_id = ? AND deleted_at IS NULL", id).Order("created_at DESC").Limit(20).Find(&detail.Invoices)
+
+	c.JSON(http.StatusOK, detail)
 }
 
 // CreateTenant creates a new tenant with admin user
