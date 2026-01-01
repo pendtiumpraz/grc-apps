@@ -61,7 +61,10 @@ export default function TenantDetailPage() {
   const tenantId = params?.id as string;
 
   const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
   const [tenant, setTenant] = useState<TenantDetail | null>(null);
+  const [editing, setEditing] = useState(false);
+  const [editForm, setEditForm] = useState({ name: '', domain: '', description: '' });
   const [activeTab, setActiveTab] = useState<'overview' | 'users' | 'billing' | 'settings'>('overview');
   const [showSuspendModal, setShowSuspendModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -83,6 +86,37 @@ export default function TenantDetailPage() {
       console.error('Failed to load tenant:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const startEdit = () => {
+    if (tenant) {
+      setEditForm({
+        name: tenant.name,
+        domain: tenant.domain,
+        description: tenant.description || '',
+      });
+      setEditing(true);
+    }
+  };
+
+  const cancelEdit = () => {
+    setEditing(false);
+    setEditForm({ name: '', domain: '', description: '' });
+  };
+
+  const handleSave = async () => {
+    if (!editForm.name || !editForm.domain) return;
+
+    setSaving(true);
+    try {
+      await platformAPI.updateTenant(tenantId, editForm);
+      await loadTenantDetail();
+      setEditing(false);
+    } catch (error) {
+      console.error('Failed to save tenant:', error);
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -180,33 +214,64 @@ export default function TenantDetailPage() {
                   <p className="text-gray-400">{tenant.domain}</p>
                 </div>
                 <div className="flex gap-2">
-                  {tenant.status === 'active' ? (
-                    <Button
-                      variant="outline"
-                      onClick={() => setShowSuspendModal(true)}
-                      className="border-yellow-600 text-yellow-400 hover:bg-yellow-500/20"
-                    >
-                      <Ban className="w-4 h-4 mr-2" />
-                      Suspend
-                    </Button>
+                  {editing ? (
+                    <>
+                      <Button
+                        variant="outline"
+                        onClick={cancelEdit}
+                        className="border-gray-600 text-gray-300 hover:bg-gray-700"
+                      >
+                        <XCircle className="w-4 h-4 mr-2" />
+                        Cancel
+                      </Button>
+                      <Button
+                        onClick={handleSave}
+                        disabled={saving}
+                        className="bg-cyan-600 hover:bg-cyan-700 text-white"
+                      >
+                        {saving ? <RefreshCw className="w-4 h-4 mr-2 animate-spin" /> : <Save className="w-4 h-4 mr-2" />}
+                        Save
+                      </Button>
+                    </>
                   ) : (
-                    <Button
-                      variant="outline"
-                      onClick={handleActivate}
-                      className="border-green-600 text-green-400 hover:bg-green-500/20"
-                    >
-                      <CheckCircle className="w-4 h-4 mr-2" />
-                      Activate
-                    </Button>
+                    <>
+                      <Button
+                        variant="outline"
+                        onClick={startEdit}
+                        className="border-gray-600 text-gray-300 hover:bg-gray-700"
+                      >
+                        <Edit className="w-4 h-4 mr-2" />
+                        Edit
+                      </Button>
+                      {tenant.status === 'active' ? (
+                        <Button
+                          variant="outline"
+                          onClick={() => setShowSuspendModal(true)}
+                          className="border-yellow-600 text-yellow-400 hover:bg-yellow-500/20"
+                        >
+                          <Ban className="w-4 h-4 mr-2" />
+                          Suspend
+                        </Button>
+                      ) : (
+                        <Button
+                          variant="outline"
+                          onClick={handleActivate}
+                          className="border-green-600 text-green-400 hover:bg-green-500/20"
+                        >
+                          <CheckCircle className="w-4 h-4 mr-2" />
+                          Activate
+                        </Button>
+                      )}
+                      <Button
+                        variant="outline"
+                        onClick={() => setShowDeleteModal(true)}
+                        className="border-red-600 text-red-400 hover:bg-red-500/20"
+                      >
+                        <Trash2 className="w-4 h-4 mr-2" />
+                        Delete
+                      </Button>
+                    </>
                   )}
-                  <Button
-                    variant="outline"
-                    onClick={() => setShowDeleteModal(true)}
-                    className="border-red-600 text-red-400 hover:bg-red-500/20"
-                  >
-                    <Trash2 className="w-4 h-4 mr-2" />
-                    Delete
-                  </Button>
                 </div>
               </div>
 
@@ -277,8 +342,8 @@ export default function TenantDetailPage() {
                     key={tab}
                     onClick={() => setActiveTab(tab)}
                     className={`px-6 py-3 text-sm font-medium transition-colors ${activeTab === tab
-                        ? 'text-cyan-400 border-b-2 border-cyan-400'
-                        : 'text-gray-400 hover:text-white'
+                      ? 'text-cyan-400 border-b-2 border-cyan-400'
+                      : 'text-gray-400 hover:text-white'
                       }`}
                   >
                     {tab.charAt(0).toUpperCase() + tab.slice(1)}
@@ -297,18 +362,45 @@ export default function TenantDetailPage() {
                   </h3>
                   <div className="space-y-4">
                     <div>
-                      <Label className="text-gray-400">Description</Label>
-                      <p className="text-white mt-1">{tenant.description || 'No description'}</p>
+                      <Label className="text-gray-400">Name</Label>
+                      {editing ? (
+                        <Input
+                          value={editForm.name}
+                          onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
+                          className="mt-1 bg-gray-800 border-gray-600 text-white"
+                        />
+                      ) : (
+                        <p className="text-white mt-1">{tenant.name}</p>
+                      )}
                     </div>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <Label className="text-gray-400">Domain</Label>
+                    <div>
+                      <Label className="text-gray-400">Domain</Label>
+                      {editing ? (
+                        <Input
+                          value={editForm.domain}
+                          onChange={(e) => setEditForm({ ...editForm, domain: e.target.value })}
+                          className="mt-1 bg-gray-800 border-gray-600 text-white"
+                        />
+                      ) : (
                         <p className="text-white mt-1">{tenant.domain}</p>
-                      </div>
-                      <div>
-                        <Label className="text-gray-400">Created</Label>
-                        <p className="text-white mt-1">{tenant.created_at}</p>
-                      </div>
+                      )}
+                    </div>
+                    <div>
+                      <Label className="text-gray-400">Description</Label>
+                      {editing ? (
+                        <textarea
+                          value={editForm.description}
+                          onChange={(e) => setEditForm({ ...editForm, description: e.target.value })}
+                          className="w-full mt-1 bg-gray-800 border border-gray-600 text-white rounded-md px-3 py-2"
+                          rows={3}
+                        />
+                      ) : (
+                        <p className="text-white mt-1">{tenant.description || 'No description'}</p>
+                      )}
+                    </div>
+                    <div>
+                      <Label className="text-gray-400">Created</Label>
+                      <p className="text-white mt-1">{tenant.created_at}</p>
                     </div>
                   </div>
                 </Card>

@@ -199,15 +199,29 @@ export default function Sidebar() {
                 {menuItems.map((item) => {
                     const Icon = item.icon
                     const hasSubItems = item.subItems && item.subItems.length > 0
-                    // Fix: Dashboard should only be active on exact match, not all sub-paths
-                    const isActive = item.href === '/dashboard'
-                        ? pathname === '/dashboard'
-                        : pathname === item.href || pathname?.startsWith(item.href + '/')
+
+                    // Improved active check logic
+                    const isActive = (() => {
+                        if (!pathname) return false
+
+                        // Exact match for dashboard home
+                        if (item.href === '/dashboard') {
+                            return pathname === '/dashboard'
+                        }
+
+                        // For platform sub-pages, check if current path starts with the menu item href
+                        // But also handle specific cases like /tenants/[id] matching /tenants
+                        if (pathname === item.href) return true
+                        if (pathname.startsWith(item.href + '/')) return true
+
+                        return false
+                    })()
+
                     const isExpanded = expandedItems.includes(item.label)
 
                     const buttonClasses = `w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all group ${isActive
-                            ? 'bg-gradient-to-r from-cyan-500/20 to-blue-600/20 border border-cyan-500/50 shadow-lg shadow-cyan-500/20'
-                            : 'hover:bg-cyan-500/10 border border-transparent'
+                        ? 'bg-gradient-to-r from-cyan-500/20 to-blue-600/20 border border-cyan-500/50 shadow-lg shadow-cyan-500/20'
+                        : 'hover:bg-cyan-500/10 border border-transparent'
                         }`
 
                     const iconElement = (
@@ -262,8 +276,8 @@ export default function Sidebar() {
                                                 key={subItem.href}
                                                 href={subItem.href}
                                                 className={`flex items-center gap-3 px-4 py-2 rounded-lg transition-all group ${isSubActive
-                                                        ? 'bg-gradient-to-r from-cyan-500/20 to-blue-600/20 border border-cyan-500/50'
-                                                        : 'hover:bg-cyan-500/10 border border-transparent'
+                                                    ? 'bg-gradient-to-r from-cyan-500/20 to-blue-600/20 border border-cyan-500/50'
+                                                    : 'hover:bg-cyan-500/10 border border-transparent'
                                                     }`}
                                             >
                                                 <div className={`w-2 h-2 rounded-full ${isSubActive ? 'bg-cyan-400' : 'bg-gray-600'}`} />
