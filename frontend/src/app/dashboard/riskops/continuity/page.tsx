@@ -7,26 +7,35 @@ import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Search, RefreshCw, Plus, Filter, CheckCircle, Clock, AlertTriangle, Play } from 'lucide-react'
-import { useRiskOpsContinuityStore } from '@/stores/useRiskOpsContinuityStore'
-import Swal from 'sweetalert2'
+import { Search, RefreshCw, Plus, CheckCircle, Clock, AlertTriangle, Play, Edit, Trash2, Eye, X, RotateCcw, Trash, Loader2 } from 'lucide-react'
+import { useContinuityStore } from '@/stores/useContinuityStore'
+import { confirmDelete, confirmRestore, confirmPermanentDelete, showSuccess, showError } from '@/lib/sweetalert'
 
 export default function ContinuityPage() {
   const [searchTerm, setSearchTerm] = useState('')
   const [filterStatus, setFilterStatus] = useState('all')
   const [selectedPlan, setSelectedPlan] = useState<any>(null)
-  const [isCreating, setIsCreating] = useState(false)
+  const [viewMode, setViewMode] = useState<'list' | 'create' | 'edit' | 'trash'>('list')
+  const [deleting, setDeleting] = useState<number | string | null>(null)
+  const [restoring, setRestoring] = useState<number | string | null>(null)
   const [formData, setFormData] = useState({
-    name: '',
-    type: '',
-    description: '',
-    recoveryTimeObjective: '',
-    rto: '',
-    rpo: '',
-    owner: '',
+    name: '', type: '', description: '', recoveryTimeObjective: '', rto: '', rpo: '', owner: '',
   })
 
-  const { plans, loading, error, fetchPlans, createPlan, updatePlan, deletePlan, testPlan } = useRiskOpsContinuityStore()
+  const {
+    plans,
+    deletedPlans,
+    loading,
+    error,
+    fetchPlans,
+    fetchDeletedPlans,
+    createPlan,
+    updatePlan,
+    deletePlan,
+    restorePlan,
+    permanentDeletePlan,
+    activatePlan
+  } = useContinuityStore()
 
   useEffect(() => {
     fetchPlans()
@@ -42,96 +51,102 @@ export default function ContinuityPage() {
   }
 
   const filteredPlans = plans.filter(plan => {
-    const matchesSearch = plan.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         plan.type.toLowerCase().includes(searchTerm.toLowerCase())
+    const name = plan.name || ''
+    const type = plan.type || ''
+    const matchesSearch = name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      type.toLowerCase().includes(searchTerm.toLowerCase())
     const matchesFilter = filterStatus === 'all' || plan.status === filterStatus
     return matchesSearch && matchesFilter
   })
 
+  const filteredDeletedPlans = (deletedPlans || []).filter(plan => {
+    const name = plan.name || ''
+    return name.toLowerCase().includes(searchTerm.toLowerCase())
+  })
+
+  const resetForm = () => {
+    setFormData({ name: '', type: '', description: '', recoveryTimeObjective: '', rto: '', rpo: '', owner: '' })
+  }
+
   const handleCreatePlan = async () => {
     try {
       await createPlan(formData)
-      setIsCreating(false)
-      setFormData({
-        name: '',
-        type: '',
-        description: '',
-        recoveryTimeObjective: '',
-        rto: '',
-        rpo: '',
-        owner: '',
-      })
-      Swal.fire({
-        title: 'Berhasil!',
-        text: 'Continuity plan berhasil dibuat.',
-        icon: 'success',
-        timer: 1500,
-        showConfirmButton: false,
-      })
-    } catch (error) {
-      console.error('Error creating plan:', error)
-      Swal.fire({
-        title: 'Error',
-        text: 'Gagal membuat continuity plan.',
-        icon: 'error',
-        confirmButtonColor: '#dc2626',
-      })
+      setViewMode('list')
+      resetForm()
+      showSuccess('Continuity plan berhasil ditambahkan')
+    } catch (error: any) {
+      showError(error.message || 'Gagal membuat continuity plan')
     }
   }
 
-  const handleTestPlan = async (id: number) => {
+  const handleActivatePlan = async (id: number | string, name: string) => {
     try {
-      await testPlan(id)
-      Swal.fire({
-        title: 'Berhasil!',
-        text: 'Continuity plan berhasil diuji.',
-        icon: 'success',
-        timer: 1500,
-        showConfirmButton: false,
-      })
-    } catch (error) {
-      console.error('Error testing plan:', error)
-      Swal.fire({
-        title: 'Error',
-        text: 'Gagal menguji continuity plan.',
-        icon: 'error',
-        confirmButtonColor: '#dc2626',
-      })
+      await activatePlan(id)
+      showSuccess(`Plan "${name}" berhasil diaktifkan`)
+      setSelectedPlan(null)
+    } catch (error: any) {
+      showError(error.message || 'Gagal mengaktifkan plan')
     }
   }
 
-  const handleDeletePlan = async (id: number) => {
-    const result = await Swal.fire({
-      title: 'Hapus Plan?',
-      text: 'Apakah Anda yakin ingin menghapus continuity plan ini?',
-      icon: 'warning',
-      showCancelButton: true,
-      confirmButtonColor: '#dc2626',
-      cancelButtonColor: '#6b7280',
-      confirmButtonText: 'Ya, Hapus!',
-      cancelButtonText: 'Batal',
-    })
-
-    if (!result.isConfirmed) return
-
+  const handleDeletePlan = async (id: number | string, name: string) => {
+    const confirmed = await confirmDelete(name)
+    if (!confirmed) return
+    setDeleting(id)
     try {
       await deletePlan(id)
-      Swal.fire({
-        title: 'Terhapus!',
-        text: 'Continuity plan berhasil dihapus.',
-        icon: 'success',
-        timer: 1500,
-        showConfirmButton: false,
-      })
-    } catch (error) {
-      console.error('Error deleting plan:', error)
-      Swal.fire({
-        title: 'Error',
-        text: 'Gagal menghapus continuity plan.',
-        icon: 'error',
-        confirmButtonColor: '#dc2626',
-      })
+      showSuccess('Plan berhasil dihapus')
+      setSelectedPlan(null)
+    } catch (error: any) {
+      showError(error.message || 'Gagal menghapus plan')
+    } finally {
+      setDeleting(null)
     }
+  }
+
+  const handleRestorePlan = async (id: number | string, name: string) => {
+    const confirmed = await confirmRestore(name)
+    if (!confirmed) return
+    setRestoring(id)
+    try {
+      await restorePlan(id)
+      showSuccess('Plan berhasil di-restore')
+      fetchPlans()
+      fetchDeletedPlans()
+    } catch (error: any) {
+      showError(error.message || 'Gagal me-restore plan')
+    } finally {
+      setRestoring(null)
+    }
+  }
+
+  const handlePermanentDelete = async (id: number | string, name: string) => {
+    const confirmed = await confirmPermanentDelete(name)
+    if (!confirmed) return
+    setDeleting(id)
+    try {
+      await permanentDeletePlan(id)
+      showSuccess('Plan berhasil dihapus permanen')
+    } catch (error: any) {
+      showError(error.message || 'Gagal menghapus plan')
+    } finally {
+      setDeleting(null)
+    }
+  }
+
+  const handleViewTrash = () => {
+    fetchDeletedPlans()
+    setViewMode('trash')
+  }
+
+  const handleEdit = (plan: any) => {
+    setSelectedPlan(plan)
+    setFormData({
+      name: plan.name || '', type: plan.type || '', description: plan.description || '',
+      recoveryTimeObjective: plan.recoveryTimeObjective || '', rto: plan.rto || '',
+      rpo: plan.rpo || '', owner: plan.owner || '',
+    })
+    setViewMode('edit')
   }
 
   if (error) {
@@ -248,7 +263,7 @@ export default function ContinuityPage() {
                       </select>
                     </div>
                     <div className="flex gap-2">
-                      <Button 
+                      <Button
                         onClick={() => setIsCreating(true)}
                         disabled={loading}
                         className="bg-cyan-600 hover:bg-cyan-700 text-white disabled:opacity-50"
@@ -492,7 +507,7 @@ export default function ContinuityPage() {
                         <p className="text-white mt-1">{selectedPlan.recoveryTimeObjective}</p>
                       </div>
                       <div className="flex gap-3 justify-end pt-4 border-t border-gray-700">
-                        <Button 
+                        <Button
                           onClick={() => handleDeletePlan(selectedPlan.id)}
                           className="bg-red-600 hover:bg-red-700 text-white"
                         >
