@@ -7,23 +7,35 @@ import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Search, FileText, Plus, Filter, CheckCircle, Clock, AlertTriangle } from 'lucide-react'
-import { useRegOpsPoliciesStore } from '@/stores/useRegOpsPoliciesStore'
+import { Search, FileText, Plus, CheckCircle, Clock, AlertTriangle, Edit, Trash2, Eye, X, RotateCcw, Trash, Loader2 } from 'lucide-react'
+import { usePolicyStore } from '@/stores/usePolicyStore'
+import { confirmDelete, confirmRestore, confirmPermanentDelete, showSuccess, showError } from '@/lib/sweetalert'
 
 export default function PoliciesPage() {
   const [searchTerm, setSearchTerm] = useState('')
   const [filterStatus, setFilterStatus] = useState('all')
   const [selectedPolicy, setSelectedPolicy] = useState<any>(null)
-  const [isCreating, setIsCreating] = useState(false)
+  const [viewMode, setViewMode] = useState<'list' | 'create' | 'edit' | 'trash'>('list')
+  const [deleting, setDeleting] = useState<number | string | null>(null)
+  const [restoring, setRestoring] = useState<number | string | null>(null)
   const [formData, setFormData] = useState({
-    name: '',
-    type: '',
-    category: '',
-    description: '',
-    owner: '',
+    name: '', type: '', category: '', description: '', owner: '',
   })
 
-  const { policies, loading, error, fetchPolicies, createPolicy, updatePolicy, deletePolicy } = useRegOpsPoliciesStore()
+  const {
+    policies,
+    deletedPolicies,
+    loading,
+    error,
+    fetchPolicies,
+    fetchDeletedPolicies,
+    createPolicy,
+    updatePolicy,
+    deletePolicy,
+    restorePolicy,
+    permanentDeletePolicy,
+    publishPolicy
+  } = usePolicyStore()
 
   useEffect(() => {
     fetchPolicies()
@@ -39,36 +51,92 @@ export default function PoliciesPage() {
   }
 
   const filteredPolicies = policies.filter(policy => {
-    const matchesSearch = policy.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         policy.type.toLowerCase().includes(searchTerm.toLowerCase())
+    const name = policy.name || ''
+    const type = policy.type || ''
+    const matchesSearch = name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      type.toLowerCase().includes(searchTerm.toLowerCase())
     const matchesFilter = filterStatus === 'all' || policy.status === filterStatus
     return matchesSearch && matchesFilter
   })
 
+  const filteredDeletedPolicies = (deletedPolicies || []).filter(policy => {
+    const name = policy.name || ''
+    return name.toLowerCase().includes(searchTerm.toLowerCase())
+  })
+
+  const resetForm = () => {
+    setFormData({ name: '', type: '', category: '', description: '', owner: '' })
+  }
+
   const handleCreatePolicy = async () => {
     try {
       await createPolicy(formData)
-      setIsCreating(false)
-      setFormData({
-        name: '',
-        type: '',
-        category: '',
-        description: '',
-        owner: '',
-      })
-    } catch (error) {
-      console.error('Error creating policy:', error)
+      setViewMode('list')
+      resetForm()
+      showSuccess('Policy berhasil ditambahkan')
+    } catch (error: any) {
+      showError(error.message || 'Gagal membuat policy')
     }
   }
 
-  const handleDeletePolicy = async (id: number) => {
-    if (!confirm('Apakah Anda yakin ingin menghapus policy ini?')) return
-
+  const handleDeletePolicy = async (id: number | string, name: string) => {
+    const confirmed = await confirmDelete(name)
+    if (!confirmed) return
+    setDeleting(id)
     try {
       await deletePolicy(id)
-    } catch (error) {
-      console.error('Error deleting policy:', error)
+      showSuccess('Policy berhasil dihapus')
+      setSelectedPolicy(null)
+    } catch (error: any) {
+      showError(error.message || 'Gagal menghapus policy')
+    } finally {
+      setDeleting(null)
     }
+  }
+
+  const handleRestorePolicy = async (id: number | string, name: string) => {
+    const confirmed = await confirmRestore(name)
+    if (!confirmed) return
+    setRestoring(id)
+    try {
+      await restorePolicy(id)
+      showSuccess('Policy berhasil di-restore')
+      fetchPolicies()
+      fetchDeletedPolicies()
+    } catch (error: any) {
+      showError(error.message || 'Gagal me-restore policy')
+    } finally {
+      setRestoring(null)
+    }
+  }
+
+  const handlePermanentDelete = async (id: number | string, name: string) => {
+    const confirmed = await confirmPermanentDelete(name)
+    if (!confirmed) return
+    setDeleting(id)
+    try {
+      await permanentDeletePolicy(id)
+      showSuccess('Policy berhasil dihapus permanen')
+    } catch (error: any) {
+      showError(error.message || 'Gagal menghapus policy')
+    } finally {
+      setDeleting(null)
+    }
+  }
+
+  const handlePublishPolicy = async (id: number | string, name: string) => {
+    try {
+      await publishPolicy(id)
+      showSuccess(`Policy "${name}" berhasil dipublish`)
+      setSelectedPolicy(null)
+    } catch (error: any) {
+      showError(error.message || 'Gagal publish policy')
+    }
+  }
+
+  const handleViewTrash = () => {
+    fetchDeletedPolicies()
+    setViewMode('trash')
   }
 
   if (error) {
@@ -181,7 +249,7 @@ export default function PoliciesPage() {
                       </select>
                     </div>
                     <div className="flex gap-2">
-                      <Button 
+                      <Button
                         onClick={() => setIsCreating(true)}
                         disabled={loading}
                         className="bg-cyan-600 hover:bg-cyan-700 text-white disabled:opacity-50"
@@ -379,7 +447,7 @@ export default function PoliciesPage() {
                         </div>
                       </div>
                       <div className="flex gap-3 justify-end pt-4 border-t border-gray-700">
-                        <Button 
+                        <Button
                           onClick={() => handleDeletePolicy(selectedPolicy.id)}
                           className="bg-red-600 hover:bg-red-700 text-white"
                         >

@@ -7,25 +7,34 @@ import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Search, Shield, Plus, Filter, CheckCircle, AlertTriangle, TrendingUp } from 'lucide-react'
-import { useRegOpsObligationMappingStore } from '@/stores/useRegOpsObligationMappingStore'
+import { Search, Shield, Plus, CheckCircle, AlertTriangle, TrendingUp, Edit, Trash2, Eye, X, RotateCcw, Trash, Loader2 } from 'lucide-react'
+import { useObligationStore } from '@/stores/useObligationStore'
+import { confirmDelete, confirmRestore, confirmPermanentDelete, showSuccess, showError } from '@/lib/sweetalert'
 
 export default function ObligationMappingPage() {
   const [searchTerm, setSearchTerm] = useState('')
   const [filterStatus, setFilterStatus] = useState('all')
   const [selectedObligation, setSelectedObligation] = useState<any>(null)
-  const [isCreating, setIsCreating] = useState(false)
+  const [viewMode, setViewMode] = useState<'list' | 'create' | 'edit' | 'trash'>('list')
+  const [deleting, setDeleting] = useState<number | string | null>(null)
+  const [restoring, setRestoring] = useState<number | string | null>(null)
   const [formData, setFormData] = useState({
-    regulation: '',
-    regulationType: '',
-    article: '',
-    requirement: '',
-    category: '',
-    control: '',
-    owner: '',
+    regulation: '', regulationType: '', article: '', requirement: '', category: '', control: '', owner: '',
   })
 
-  const { obligations, loading, error, fetchObligations, createObligation, updateObligation, deleteObligation, getObligationStats } = useRegOpsObligationMappingStore()
+  const {
+    obligations,
+    deletedObligations,
+    loading,
+    error,
+    fetchObligations,
+    fetchDeletedObligations,
+    createObligation,
+    updateObligation,
+    deleteObligation,
+    restoreObligation,
+    permanentDeleteObligation
+  } = useObligationStore()
 
   useEffect(() => {
     fetchObligations()
@@ -42,47 +51,82 @@ export default function ObligationMappingPage() {
   }
 
   const filteredObligations = obligations.filter(obligation => {
-    const matchesSearch = obligation.regulation.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         obligation.requirement.toLowerCase().includes(searchTerm.toLowerCase())
+    const name = obligation.name || ''
+    const framework = obligation.framework || ''
+    const matchesSearch = name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      framework.toLowerCase().includes(searchTerm.toLowerCase())
     const matchesFilter = filterStatus === 'all' || obligation.status === filterStatus
     return matchesSearch && matchesFilter
   })
 
+  const filteredDeletedObligations = (deletedObligations || []).filter(obligation => {
+    const name = obligation.name || ''
+    return name.toLowerCase().includes(searchTerm.toLowerCase())
+  })
+
+  const resetForm = () => {
+    setFormData({ regulation: '', regulationType: '', article: '', requirement: '', category: '', control: '', owner: '' })
+  }
+
   const handleCreateObligation = async () => {
     try {
       await createObligation(formData)
-      setIsCreating(false)
-      setFormData({
-        regulation: '',
-        regulationType: '',
-        article: '',
-        requirement: '',
-        category: '',
-        control: '',
-        owner: '',
-      })
-    } catch (error) {
-      console.error('Error creating obligation:', error)
+      setViewMode('list')
+      resetForm()
+      showSuccess('Obligation berhasil ditambahkan')
+    } catch (error: any) {
+      showError(error.message || 'Gagal membuat obligation')
     }
   }
 
-  const handleUpdateObligation = async (id: number) => {
-    try {
-      await updateObligation(id, { status: 'compliant' })
-      setSelectedObligation(null)
-    } catch (error) {
-      console.error('Error updating obligation:', error)
-    }
-  }
-
-  const handleDeleteObligation = async (id: number) => {
-    if (!confirm('Apakah Anda yakin ingin menghapus obligation ini?')) return
-
+  const handleDeleteObligation = async (id: number | string, name: string) => {
+    const confirmed = await confirmDelete(name)
+    if (!confirmed) return
+    setDeleting(id)
     try {
       await deleteObligation(id)
-    } catch (error) {
-      console.error('Error deleting obligation:', error)
+      showSuccess('Obligation berhasil dihapus')
+      setSelectedObligation(null)
+    } catch (error: any) {
+      showError(error.message || 'Gagal menghapus obligation')
+    } finally {
+      setDeleting(null)
     }
+  }
+
+  const handleRestoreObligation = async (id: number | string, name: string) => {
+    const confirmed = await confirmRestore(name)
+    if (!confirmed) return
+    setRestoring(id)
+    try {
+      await restoreObligation(id)
+      showSuccess('Obligation berhasil di-restore')
+      fetchObligations()
+      fetchDeletedObligations()
+    } catch (error: any) {
+      showError(error.message || 'Gagal me-restore obligation')
+    } finally {
+      setRestoring(null)
+    }
+  }
+
+  const handlePermanentDelete = async (id: number | string, name: string) => {
+    const confirmed = await confirmPermanentDelete(name)
+    if (!confirmed) return
+    setDeleting(id)
+    try {
+      await permanentDeleteObligation(id)
+      showSuccess('Obligation berhasil dihapus permanen')
+    } catch (error: any) {
+      showError(error.message || 'Gagal menghapus obligation')
+    } finally {
+      setDeleting(null)
+    }
+  }
+
+  const handleViewTrash = () => {
+    fetchDeletedObligations()
+    setViewMode('trash')
   }
 
   if (error) {
@@ -196,7 +240,7 @@ export default function ObligationMappingPage() {
                       </select>
                     </div>
                     <div className="flex gap-2">
-                      <Button 
+                      <Button
                         onClick={() => setIsCreating(true)}
                         disabled={loading}
                         className="bg-cyan-600 hover:bg-cyan-700 text-white disabled:opacity-50"
@@ -435,7 +479,7 @@ export default function ObligationMappingPage() {
                         >
                           Mark as Compliant
                         </Button>
-                        <Button 
+                        <Button
                           onClick={() => handleDeleteObligation(selectedObligation.id)}
                           className="bg-red-600 hover:bg-red-700 text-white"
                         >
