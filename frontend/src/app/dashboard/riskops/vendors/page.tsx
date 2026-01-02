@@ -7,16 +7,15 @@ import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Search, Building, Plus, Filter, CheckCircle, Clock, AlertTriangle, Shield } from 'lucide-react'
-import { useRiskOpsVendorStore } from '@/stores/useRiskOpsVendorStore'
-import Swal from 'sweetalert2'
+import { Search, Building2, Plus, CheckCircle, Clock, AlertTriangle, Edit, Trash2, Eye, X, RotateCcw, Trash, Loader2 } from 'lucide-react'
+import { useVendorStore } from '@/stores/useVendorStore'
+import { confirmDelete, confirmRestore, confirmPermanentDelete, showSuccess, showError } from '@/lib/sweetalert'
 
 export default function VendorsPage() {
   const [searchTerm, setSearchTerm] = useState('')
   const [filterRiskLevel, setFilterRiskLevel] = useState('all')
   const [filterStatus, setFilterStatus] = useState('all')
   const [selectedVendor, setSelectedVendor] = useState<any>(null)
-  const [isCreating, setIsCreating] = useState(false)
   const [formData, setFormData] = useState({
     name: '',
     type: '',
@@ -27,7 +26,23 @@ export default function VendorsPage() {
     owner: '',
   })
 
-  const { vendors, loading, error, fetchVendors, createVendor, updateVendor, deleteVendor } = useRiskOpsVendorStore()
+  const [viewMode, setViewMode] = useState<'list' | 'create' | 'edit' | 'trash'>('list')
+  const [deleting, setDeleting] = useState<number | string | null>(null)
+  const [restoring, setRestoring] = useState<number | string | null>(null)
+
+  const {
+    vendors,
+    deletedVendors,
+    loading,
+    error,
+    fetchVendors,
+    fetchDeletedVendors,
+    createVendor,
+    updateVendor,
+    deleteVendor,
+    restoreVendor,
+    permanentDeleteVendor
+  } = useVendorStore()
 
   useEffect(() => {
     fetchVendors()
@@ -53,7 +68,7 @@ export default function VendorsPage() {
 
   const filteredVendors = vendors.filter(vendor => {
     const matchesSearch = vendor.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         vendor.type.toLowerCase().includes(searchTerm.toLowerCase())
+      vendor.type.toLowerCase().includes(searchTerm.toLowerCase())
     const matchesRiskLevel = filterRiskLevel === 'all' || vendor.riskLevel === filterRiskLevel
     const matchesStatus = filterStatus === 'all' || vendor.status === filterStatus
     return matchesSearch && matchesRiskLevel && matchesStatus
@@ -62,66 +77,76 @@ export default function VendorsPage() {
   const handleCreateVendor = async () => {
     try {
       await createVendor(formData)
-      setIsCreating(false)
+      setViewMode('list')
       setFormData({
-        name: '',
-        type: '',
-        category: '',
-        riskLevel: '',
-        description: '',
-        contractExpiry: '',
-        owner: '',
+        name: '', type: '', category: '', riskLevel: '',
+        description: '', contractExpiry: '', owner: '',
       })
-      Swal.fire({
-        title: 'Berhasil!',
-        text: 'Vendor berhasil dibuat.',
-        icon: 'success',
-        timer: 1500,
-        showConfirmButton: false,
-      })
-    } catch (error) {
-      console.error('Error creating vendor:', error)
-      Swal.fire({
-        title: 'Error',
-        text: 'Gagal membuat vendor.',
-        icon: 'error',
-        confirmButtonColor: '#dc2626',
-      })
+      showSuccess('Vendor berhasil ditambahkan')
+    } catch (error: any) {
+      showError(error.message || 'Gagal membuat vendor')
     }
   }
 
-  const handleDeleteVendor = async (id: number) => {
-    const result = await Swal.fire({
-      title: 'Hapus Vendor?',
-      text: 'Apakah Anda yakin ingin menghapus vendor ini?',
-      icon: 'warning',
-      showCancelButton: true,
-      confirmButtonColor: '#dc2626',
-      cancelButtonColor: '#6b7280',
-      confirmButtonText: 'Ya, Hapus!',
-      cancelButtonText: 'Batal',
-    })
-
-    if (!result.isConfirmed) return
-
+  const handleDeleteVendor = async (id: number | string, name: string) => {
+    const confirmed = await confirmDelete(name)
+    if (!confirmed) return
+    setDeleting(id)
     try {
       await deleteVendor(id)
-      Swal.fire({
-        title: 'Terhapus!',
-        text: 'Vendor berhasil dihapus.',
-        icon: 'success',
-        timer: 1500,
-        showConfirmButton: false,
-      })
-    } catch (error) {
-      console.error('Error deleting vendor:', error)
-      Swal.fire({
-        title: 'Error',
-        text: 'Gagal menghapus vendor.',
-        icon: 'error',
-        confirmButtonColor: '#dc2626',
-      })
+      showSuccess('Vendor berhasil dihapus')
+      setSelectedVendor(null)
+    } catch (error: any) {
+      showError(error.message || 'Gagal menghapus vendor')
+    } finally {
+      setDeleting(null)
     }
+  }
+
+  const handleRestoreVendor = async (id: number | string, name: string) => {
+    const confirmed = await confirmRestore(name)
+    if (!confirmed) return
+    setRestoring(id)
+    try {
+      await restoreVendor(id)
+      showSuccess('Vendor berhasil di-restore')
+      fetchVendors()
+      fetchDeletedVendors()
+    } catch (error: any) {
+      showError(error.message || 'Gagal me-restore vendor')
+    } finally {
+      setRestoring(null)
+    }
+  }
+
+  const handlePermanentDelete = async (id: number | string, name: string) => {
+    const confirmed = await confirmPermanentDelete(name)
+    if (!confirmed) return
+    setDeleting(id)
+    try {
+      await permanentDeleteVendor(id)
+      showSuccess('Vendor berhasil dihapus permanen')
+    } catch (error: any) {
+      showError(error.message || 'Gagal menghapus vendor')
+    } finally {
+      setDeleting(null)
+    }
+  }
+
+  const handleViewTrash = () => {
+    fetchDeletedVendors()
+    setViewMode('trash')
+  }
+
+  const handleEdit = (vendor: any) => {
+    setSelectedVendor(vendor)
+    setFormData({
+      name: vendor.name || '', type: vendor.type || '',
+      category: vendor.category || '', riskLevel: vendor.riskLevel || '',
+      description: vendor.description || '', contractExpiry: vendor.contractExpiry || '',
+      owner: vendor.owner || '',
+    })
+    setViewMode('edit')
   }
 
   if (error) {
@@ -244,7 +269,7 @@ export default function VendorsPage() {
                       </select>
                     </div>
                     <div className="flex gap-2">
-                      <Button 
+                      <Button
                         onClick={() => setIsCreating(true)}
                         disabled={loading}
                         className="bg-cyan-600 hover:bg-cyan-700 text-white disabled:opacity-50"
@@ -482,7 +507,7 @@ export default function VendorsPage() {
                         <p className="text-white mt-1">{selectedVendor.description}</p>
                       </div>
                       <div className="flex gap-3 justify-end pt-4 border-t border-gray-700">
-                        <Button 
+                        <Button
                           onClick={() => handleDeleteVendor(selectedVendor.id)}
                           className="bg-red-600 hover:bg-red-700 text-white"
                         >
