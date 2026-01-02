@@ -7,22 +7,10 @@ import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Search, FileText, AlertTriangle, CheckCircle, TrendingUp, Plus, Download, Edit, Trash2, Eye, X, RotateCcw, Trash, Loader2, Sparkles, Wand2 } from 'lucide-react'
+import { Search, FileText, AlertTriangle, CheckCircle, TrendingUp, Plus, Download, Edit, Trash2, Eye, X, RotateCcw, Trash, Loader2, Sparkles, Wand2, Filter } from 'lucide-react'
 import { useGapAnalysisStore } from '@/stores/useGapAnalysisStore'
 import { confirmDelete, confirmRestore, confirmPermanentDelete, showSuccess, showError } from '@/lib/sweetalert'
 import { AIDocumentGenerator, AIDocumentAnalyzer, useAIDocuments } from '@/components/ai/AIDocuments'
-
-interface ComplianceGap {
-  id: number
-  regulation: string
-  requirement: string
-  currentStatus: string
-  gapStatus: 'critical' | 'high' | 'medium' | 'low'
-  riskLevel: number
-  recommendation: string
-  priority: number
-  lastAssessed: string
-}
 
 export default function ComplianceGapAnalysis() {
   const [searchTerm, setSearchTerm] = useState('')
@@ -271,47 +259,32 @@ export default function ComplianceGapAnalysis() {
                     <table className="w-full">
                       <thead>
                         <tr className="border-b border-gray-700">
-                          <th className="text-left p-4 text-gray-400 font-medium">Regulation</th>
-                          <th className="text-left p-4 text-gray-400 font-medium">Requirement</th>
-                          <th className="text-left p-4 text-gray-400 font-medium">Current Status</th>
-                          <th className="text-left p-4 text-gray-400 font-medium">Gap Status</th>
-                          <th className="text-left p-4 text-gray-400 font-medium">Risk Level</th>
+                          <th className="text-left p-4 text-gray-400 font-medium">Name/Framework</th>
+                          <th className="text-left p-4 text-gray-400 font-medium">Gap Description</th>
+                          <th className="text-left p-4 text-gray-400 font-medium">Current State</th>
+                          <th className="text-left p-4 text-gray-400 font-medium">Status</th>
                           <th className="text-left p-4 text-gray-400 font-medium">Priority</th>
+                          <th className="text-left p-4 text-gray-400 font-medium">Owner</th>
                           <th className="text-right p-4 text-gray-400 font-medium">Actions</th>
                         </tr>
                       </thead>
                       <tbody>
                         {filteredGaps.map((gap) => (
                           <tr key={gap.id} className="border-b border-gray-800 hover:bg-gray-800/50">
-                            <td className="p-4 text-white font-medium">{gap.regulation}</td>
-                            <td className="p-4 text-white">{gap.requirement}</td>
-                            <td className="p-4 text-gray-300">{gap.currentStatus}</td>
+                            <td className="p-4 text-white font-medium">{gap.name || gap.framework}</td>
+                            <td className="p-4 text-white">{gap.gapDescription}</td>
+                            <td className="p-4 text-gray-300">{gap.currentState}</td>
                             <td className="p-4">
-                              <span className={`px-2 py-1 rounded-full text-xs font-medium border ${getGapStatusColor(gap.gapStatus)}`}>
-                                {gap.gapStatus.charAt(0).toUpperCase() + gap.gapStatus.slice(1)}
+                              <span className={`px-2 py-1 rounded-full text-xs font-medium border ${getGapStatusColor(gap.status)}`}>
+                                {gap.status?.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')}
                               </span>
                             </td>
                             <td className="p-4">
-                              <div className="flex items-center gap-2">
-                                <div className="w-16 bg-gray-800 rounded-full h-2">
-                                  <div
-                                    className={`h-2 rounded-full transition-all duration-1000 ${gap.riskLevel >= 8 ? 'bg-red-500' :
-                                      gap.riskLevel >= 5 ? 'bg-yellow-500' : 'bg-green-500'
-                                      }`}
-                                    style={{ width: `${gap.riskLevel * 10}%` }}
-                                  />
-                                </div>
-                                <span className="text-white text-sm">{gap.riskLevel}/10</span>
-                              </div>
-                            </td>
-                            <td className="p-4">
-                              <span className={`px-2 py-1 rounded-full text-xs font-medium ${gap.priority === 1 ? 'bg-red-500/20 text-red-400 border border-red-500/30' :
-                                gap.priority === 2 ? 'bg-yellow-500/20 text-yellow-400 border border-yellow-500/30' :
-                                  'bg-green-500/20 text-green-400 border border-green-500/30'
-                                }`}>
-                                P{gap.priority}
+                              <span className={`px-2 py-1 rounded-full text-xs font-medium border ${getGapStatusColor(gap.priority)}`}>
+                                {gap.priority?.charAt(0).toUpperCase() + gap.priority?.slice(1)}
                               </span>
                             </td>
+                            <td className="p-4 text-gray-300">{gap.owner || '-'}</td>
                             <td className="p-4">
                               <div className="flex items-center justify-end gap-2">
                                 <Button
@@ -320,7 +293,16 @@ export default function ComplianceGapAnalysis() {
                                   onClick={() => handleViewGap(gap)}
                                   className="text-gray-400 hover:text-white hover:bg-gray-700"
                                 >
-                                  <Filter className="w-4 h-4" />
+                                  <Eye className="w-4 h-4" />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={() => handleDeleteGap(gap.id, gap.name)}
+                                  disabled={deleting === gap.id}
+                                  className="text-red-400 hover:text-red-300 hover:bg-red-900/20"
+                                >
+                                  {deleting === gap.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
                                 </Button>
                               </div>
                             </td>
