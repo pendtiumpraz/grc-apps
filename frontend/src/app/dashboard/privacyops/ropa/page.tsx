@@ -7,14 +7,20 @@ import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Search, Database, Plus, Filter, CheckCircle, Clock, AlertTriangle, Shield } from 'lucide-react'
+import {
+  Search, Database, Plus, CheckCircle, Clock, AlertTriangle, Shield,
+  Edit, Trash2, Eye, X, RotateCcw, Trash, Loader2
+} from 'lucide-react'
 import { usePrivacyOpsRoPAStore } from '@/stores/usePrivacyOpsRoPAStore'
+import { confirmDelete, confirmRestore, confirmPermanentDelete, showSuccess, showError } from '@/lib/sweetalert'
 
 export default function RoPAPage() {
   const [searchTerm, setSearchTerm] = useState('')
   const [filterStatus, setFilterStatus] = useState('all')
   const [selectedActivity, setSelectedActivity] = useState<any>(null)
-  const [isCreating, setIsCreating] = useState(false)
+  const [viewMode, setViewMode] = useState<'list' | 'create' | 'edit' | 'trash'>('list')
+  const [deleting, setDeleting] = useState<number | null>(null)
+  const [restoring, setRestoring] = useState<number | null>(null)
   const [formData, setFormData] = useState({
     name: '',
     description: '',
@@ -24,9 +30,22 @@ export default function RoPAPage() {
     legalBasis: '',
     retentionPeriod: '',
     owner: '',
+    status: 'active',
   })
 
-  const { activities, loading, error, fetchActivities, createActivity, updateActivity, deleteActivity } = usePrivacyOpsRoPAStore()
+  const {
+    activities,
+    deletedActivities,
+    loading,
+    error,
+    fetchActivities,
+    fetchDeletedActivities,
+    createActivity,
+    updateActivity,
+    deleteActivity,
+    restoreActivity,
+    permanentDeleteActivity
+  } = usePrivacyOpsRoPAStore()
 
   useEffect(() => {
     fetchActivities()
@@ -50,33 +69,116 @@ export default function RoPAPage() {
     return matchesSearch && matchesFilter
   })
 
+  const filteredDeletedActivities = (deletedActivities || []).filter(activity => {
+    const name = activity.name || ''
+    return name.toLowerCase().includes(searchTerm.toLowerCase())
+  })
+
+  const resetForm = () => {
+    setFormData({
+      name: '',
+      description: '',
+      dataCategory: '',
+      dataSubject: '',
+      processingPurpose: '',
+      legalBasis: '',
+      retentionPeriod: '',
+      owner: '',
+      status: 'active',
+    })
+  }
+
   const handleCreateActivity = async () => {
     try {
       await createActivity(formData)
-      setIsCreating(false)
-      setFormData({
-        name: '',
-        description: '',
-        dataCategory: '',
-        dataSubject: '',
-        processingPurpose: '',
-        legalBasis: '',
-        retentionPeriod: '',
-        owner: '',
-      })
-    } catch (error) {
-      console.error('Error creating activity:', error)
+      showSuccess('Activity berhasil dibuat')
+      resetForm()
+      setViewMode('list')
+    } catch (error: any) {
+      showError(error.message || 'Gagal membuat activity')
     }
   }
 
-  const handleDeleteActivity = async (id: number) => {
-    if (!confirm('Apakah Anda yakin ingin menghapus activity ini?')) return
+  const handleUpdateActivity = async () => {
+    if (!selectedActivity) return
+    try {
+      await updateActivity(selectedActivity.id, formData)
+      showSuccess('Activity berhasil diupdate')
+      resetForm()
+      setSelectedActivity(null)
+      setViewMode('list')
+    } catch (error: any) {
+      showError(error.message || 'Gagal mengupdate activity')
+    }
+  }
 
+  const handleDeleteActivity = async (id: number, name: string) => {
+    const confirmed = await confirmDelete(name)
+    if (!confirmed) return
+
+    setDeleting(id)
     try {
       await deleteActivity(id)
-    } catch (error) {
-      console.error('Error deleting activity:', error)
+      showSuccess('Activity berhasil dihapus dan dipindahkan ke Trash')
+      setSelectedActivity(null)
+    } catch (error: any) {
+      showError(error.message || 'Gagal menghapus activity')
+    } finally {
+      setDeleting(null)
     }
+  }
+
+  const handleRestoreActivity = async (id: number, name: string) => {
+    const confirmed = await confirmRestore(name)
+    if (!confirmed) return
+
+    setRestoring(id)
+    try {
+      await restoreActivity(id)
+      showSuccess('Activity berhasil di-restore')
+      fetchActivities()
+      fetchDeletedActivities()
+    } catch (error: any) {
+      showError(error.message || 'Gagal me-restore activity')
+    } finally {
+      setRestoring(null)
+    }
+  }
+
+  const handlePermanentDelete = async (id: number, name: string) => {
+    const confirmed = await confirmPermanentDelete(name)
+    if (!confirmed) return
+
+    setDeleting(id)
+    try {
+      await permanentDeleteActivity(id)
+      showSuccess('Activity berhasil dihapus permanen')
+    } catch (error: any) {
+      showError(error.message || 'Gagal menghapus activity secara permanen')
+    } finally {
+      setDeleting(null)
+    }
+  }
+
+  const handleEdit = (activity: any) => {
+    setSelectedActivity(activity)
+    setFormData({
+      name: activity.name || '',
+      description: activity.description || '',
+      dataCategory: activity.category || activity.dataCategory || '',
+      dataSubject: activity.dataSubject || '',
+      processingPurpose: activity.processingPurpose || '',
+      legalBasis: activity.legalBasis || '',
+      retentionPeriod: activity.retentionPeriod || '',
+      owner: activity.owner || '',
+      status: activity.status || 'active',
+    })
+    setViewMode('edit')
+  }
+
+  const handleViewTrash = () => {
+    fetchDeletedActivities()
+    setViewMode('trash')
   }
 
   if (error) {
@@ -150,33 +252,33 @@ export default function RoPAPage() {
                 <div className="p-4">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-gray-400 text-sm">Inactive</p>
-                      <p className="text-2xl font-bold text-gray-400 mt-1">{activities.filter(a => a.status === 'inactive').length}</p>
+                      <p className="text-gray-400 text-sm">In Trash</p>
+                      <p className="text-2xl font-bold text-red-400 mt-1">{deletedActivities?.length || 0}</p>
                     </div>
-                    <div className="p-3 bg-gray-500/20 rounded-lg">
-                      <AlertTriangle className="w-6 h-6 text-gray-400" />
+                    <div className="p-3 bg-red-500/20 rounded-lg">
+                      <Trash2 className="w-6 h-6 text-red-400" />
                     </div>
                   </div>
                 </div>
               </Card>
             </div>
 
-            {/* Filters */}
-            <div className="mb-8">
-              <Card className="bg-gray-900 border-gray-700">
-                <div className="p-4">
-                  <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
-                    <div className="flex flex-col md:flex-row gap-4 flex-1">
-                      <div className="relative flex-1">
-                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
-                        <Input
-                          type="text"
-                          placeholder="Search activities..."
-                          value={searchTerm}
-                          onChange={(e) => setSearchTerm(e.target.value)}
-                          className="pl-10 bg-gray-800 border-gray-700 text-white placeholder-gray-400"
-                        />
-                      </div>
+            {/* Action Bar */}
+            <Card className="bg-gray-900 border-gray-700 mb-6">
+              <div className="p-4">
+                <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
+                  <div className="flex flex-col md:flex-row gap-4 flex-1">
+                    <div className="relative flex-1">
+                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                      <Input
+                        type="text"
+                        placeholder="Search activities..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        className="pl-10 bg-gray-800 border-gray-700 text-white placeholder-gray-400"
+                      />
+                    </div>
+                    {viewMode === 'list' && (
                       <select
                         value={filterStatus}
                         onChange={(e) => setFilterStatus(e.target.value)}
@@ -187,34 +289,58 @@ export default function RoPAPage() {
                         <option value="under_review">Under Review</option>
                         <option value="inactive">Inactive</option>
                       </select>
-                    </div>
-                    <div className="flex gap-2">
+                    )}
+                  </div>
+                  <div className="flex gap-2">
+                    <Button
+                      variant={viewMode === 'trash' ? 'default' : 'outline'}
+                      onClick={viewMode === 'trash' ? () => setViewMode('list') : handleViewTrash}
+                      className={viewMode === 'trash'
+                        ? 'bg-red-600 hover:bg-red-700 text-white'
+                        : 'border-gray-600 text-gray-300 hover:bg-gray-700'}
+                    >
+                      <Trash2 className="w-4 h-4 mr-2" />
+                      {viewMode === 'trash' ? 'Back to List' : 'Trash'}
+                    </Button>
+                    {viewMode !== 'create' && viewMode !== 'edit' && (
                       <Button
-                        onClick={() => setIsCreating(true)}
-                        disabled={loading}
-                        className="bg-cyan-600 hover:bg-cyan-700 text-white disabled:opacity-50"
+                        onClick={() => { resetForm(); setViewMode('create'); }}
+                        className="bg-cyan-600 hover:bg-cyan-700 text-white"
                       >
                         <Plus className="w-4 h-4 mr-2" />
                         New Activity
                       </Button>
-                    </div>
+                    )}
                   </div>
                 </div>
-              </Card>
-            </div>
+              </div>
+            </Card>
 
-            {/* Create Form */}
-            {isCreating && (
-              <Card className="bg-gray-900 border-gray-700 mb-8">
+            {/* Create/Edit Form */}
+            {(viewMode === 'create' || viewMode === 'edit') && (
+              <Card className="bg-gray-900 border-gray-700 mb-6">
                 <div className="p-6">
-                  <h3 className="text-xl font-bold text-white mb-4">Create New Processing Activity</h3>
+                  <div className="flex items-center justify-between mb-6">
+                    <h3 className="text-xl font-bold text-white">
+                      {viewMode === 'create' ? 'Create New' : 'Edit'} Processing Activity
+                    </h3>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => { resetForm(); setSelectedActivity(null); setViewMode('list'); }}
+                      className="text-gray-400 hover:text-white hover:bg-gray-700"
+                    >
+                      <X className="w-5 h-5" />
+                    </Button>
+                  </div>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <Label className="text-gray-300 mb-2 block">Name</Label>
+                      <Label className="text-gray-300 mb-2 block">Name <span className="text-red-400">*</span></Label>
                       <Input
                         type="text"
                         value={formData.name}
                         onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                        placeholder="Activity name"
                         className="bg-gray-800 border-gray-700 text-white"
                       />
                     </div>
@@ -224,6 +350,7 @@ export default function RoPAPage() {
                         type="text"
                         value={formData.dataCategory}
                         onChange={(e) => setFormData({ ...formData, dataCategory: e.target.value })}
+                        placeholder="e.g., Personal Data, Financial Data"
                         className="bg-gray-800 border-gray-700 text-white"
                       />
                     </div>
@@ -233,6 +360,7 @@ export default function RoPAPage() {
                         type="text"
                         value={formData.dataSubject}
                         onChange={(e) => setFormData({ ...formData, dataSubject: e.target.value })}
+                        placeholder="e.g., Customers, Employees"
                         className="bg-gray-800 border-gray-700 text-white"
                       />
                     </div>
@@ -242,6 +370,29 @@ export default function RoPAPage() {
                         type="text"
                         value={formData.owner}
                         onChange={(e) => setFormData({ ...formData, owner: e.target.value })}
+                        placeholder="Process owner"
+                        className="bg-gray-800 border-gray-700 text-white"
+                      />
+                    </div>
+                    <div>
+                      <Label className="text-gray-300 mb-2 block">Status</Label>
+                      <select
+                        value={formData.status}
+                        onChange={(e) => setFormData({ ...formData, status: e.target.value })}
+                        className="w-full bg-gray-800 border border-gray-700 text-white rounded-md px-3 py-2"
+                      >
+                        <option value="active">Active</option>
+                        <option value="under_review">Under Review</option>
+                        <option value="inactive">Inactive</option>
+                      </select>
+                    </div>
+                    <div>
+                      <Label className="text-gray-300 mb-2 block">Retention Period</Label>
+                      <Input
+                        type="text"
+                        value={formData.retentionPeriod}
+                        onChange={(e) => setFormData({ ...formData, retentionPeriod: e.target.value })}
+                        placeholder="e.g., 5 years"
                         className="bg-gray-800 border-gray-700 text-white"
                       />
                     </div>
@@ -250,6 +401,7 @@ export default function RoPAPage() {
                       <textarea
                         value={formData.description}
                         onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                        placeholder="Describe the processing activity"
                         className="w-full bg-gray-800 border-gray-700 text-white rounded-md px-3 py-2 min-h-[80px]"
                       />
                     </div>
@@ -258,6 +410,7 @@ export default function RoPAPage() {
                       <textarea
                         value={formData.processingPurpose}
                         onChange={(e) => setFormData({ ...formData, processingPurpose: e.target.value })}
+                        placeholder="Purpose of processing this data"
                         className="w-full bg-gray-800 border-gray-700 text-white rounded-md px-3 py-2 min-h-[80px]"
                       />
                     </div>
@@ -266,44 +419,24 @@ export default function RoPAPage() {
                       <textarea
                         value={formData.legalBasis}
                         onChange={(e) => setFormData({ ...formData, legalBasis: e.target.value })}
+                        placeholder="Legal basis for processing (e.g., Consent, Contract, Legal Obligation)"
                         className="w-full bg-gray-800 border-gray-700 text-white rounded-md px-3 py-2 min-h-[80px]"
-                      />
-                    </div>
-                    <div>
-                      <Label className="text-gray-300 mb-2 block">Retention Period</Label>
-                      <Input
-                        type="text"
-                        value={formData.retentionPeriod}
-                        onChange={(e) => setFormData({ ...formData, retentionPeriod: e.target.value })}
-                        className="bg-gray-800 border-gray-700 text-white"
                       />
                     </div>
                   </div>
                   <div className="flex gap-3 justify-end mt-6">
                     <Button
                       variant="outline"
-                      onClick={() => {
-                        setIsCreating(false)
-                        setFormData({
-                          name: '',
-                          description: '',
-                          dataCategory: '',
-                          dataSubject: '',
-                          processingPurpose: '',
-                          legalBasis: '',
-                          retentionPeriod: '',
-                          owner: '',
-                        })
-                      }}
+                      onClick={() => { resetForm(); setSelectedActivity(null); setViewMode('list'); }}
                       className="border-gray-600 text-gray-300 hover:bg-gray-700"
                     >
                       Cancel
                     </Button>
                     <Button
-                      onClick={handleCreateActivity}
+                      onClick={viewMode === 'create' ? handleCreateActivity : handleUpdateActivity}
                       className="bg-cyan-600 hover:bg-cyan-700 text-white"
                     >
-                      Create
+                      {viewMode === 'create' ? 'Create' : 'Update'}
                     </Button>
                   </div>
                 </div>
@@ -311,15 +444,19 @@ export default function RoPAPage() {
             )}
 
             {/* Activity List */}
-            <div className="mb-8">
-              {loading ? (
-                <Card className="bg-gray-900 border-gray-700">
+            {viewMode === 'list' && (
+              <Card className="bg-gray-900 border-gray-700">
+                {loading ? (
                   <div className="flex items-center justify-center py-12">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-cyan-400"></div>
+                    <Loader2 className="w-8 h-8 animate-spin text-cyan-400" />
                   </div>
-                </Card>
-              ) : (
-                <Card className="bg-gray-900 border-gray-700">
+                ) : filteredActivities.length === 0 ? (
+                  <div className="text-center py-12 text-gray-400">
+                    <Database className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                    <p className="text-lg font-medium mb-2">No activities found</p>
+                    <p className="text-sm">Create a new activity to get started</p>
+                  </div>
+                ) : (
                   <div className="overflow-x-auto">
                     <table className="w-full">
                       <thead>
@@ -336,7 +473,7 @@ export default function RoPAPage() {
                         {filteredActivities.map((activity) => (
                           <tr key={activity.id} className="border-b border-gray-800 hover:bg-gray-800/50">
                             <td className="p-4 text-white font-medium">{activity.name}</td>
-                            <td className="p-4 text-white">{activity.category}</td>
+                            <td className="p-4 text-white">{activity.category || activity.dataCategory}</td>
                             <td className="p-4 text-white">{activity.dataSubject}</td>
                             <td className="p-4">
                               <span className={`px-2 py-1 rounded-full text-xs font-medium border ${getStatusColor(activity.status)}`}>
@@ -347,12 +484,33 @@ export default function RoPAPage() {
                             <td className="p-4">
                               <div className="flex items-center justify-end gap-2">
                                 <Button
-                                  variant="ghost"
+                                  variant="outline"
                                   size="icon"
                                   onClick={() => setSelectedActivity(activity)}
-                                  className="text-gray-400 hover:text-white hover:bg-gray-700"
+                                  className="border-gray-600 text-gray-300 hover:bg-gray-700"
                                 >
-                                  <Filter className="w-4 h-4" />
+                                  <Eye className="w-4 h-4" />
+                                </Button>
+                                <Button
+                                  variant="outline"
+                                  size="icon"
+                                  onClick={() => handleEdit(activity)}
+                                  className="border-gray-600 text-gray-300 hover:bg-gray-700"
+                                >
+                                  <Edit className="w-4 h-4" />
+                                </Button>
+                                <Button
+                                  variant="outline"
+                                  size="icon"
+                                  onClick={() => handleDeleteActivity(activity.id, activity.name)}
+                                  disabled={deleting === activity.id}
+                                  className="border-red-600 text-red-400 hover:bg-red-900/20"
+                                >
+                                  {deleting === activity.id ? (
+                                    <Loader2 className="w-4 h-4 animate-spin" />
+                                  ) : (
+                                    <Trash2 className="w-4 h-4" />
+                                  )}
                                 </Button>
                               </div>
                             </td>
@@ -361,13 +519,79 @@ export default function RoPAPage() {
                       </tbody>
                     </table>
                   </div>
-                </Card>
-              )}
-            </div>
+                )}
+              </Card>
+            )}
+
+            {/* Trash View */}
+            {viewMode === 'trash' && (
+              <Card className="bg-gray-900 border-gray-700">
+                <div className="p-4 border-b border-gray-700">
+                  <h3 className="text-lg font-semibold text-white flex items-center gap-2">
+                    <Trash2 className="w-5 h-5 text-red-400" />
+                    Deleted Activities (Trash)
+                  </h3>
+                  <p className="text-gray-400 text-sm mt-1">Items in trash can be restored or permanently deleted</p>
+                </div>
+                {loading ? (
+                  <div className="flex items-center justify-center py-12">
+                    <Loader2 className="w-8 h-8 animate-spin text-cyan-400" />
+                  </div>
+                ) : filteredDeletedActivities.length === 0 ? (
+                  <div className="text-center py-12 text-gray-400">
+                    <Trash className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                    <p className="text-lg font-medium mb-2">Trash is empty</p>
+                    <p className="text-sm">Deleted items will appear here</p>
+                  </div>
+                ) : (
+                  <div className="divide-y divide-gray-700">
+                    {filteredDeletedActivities.map((activity) => (
+                      <div key={activity.id} className="flex items-center gap-4 p-4 hover:bg-gray-800/50">
+                        <div className="flex-1 min-w-0">
+                          <h4 className="text-white font-medium truncate">{activity.name}</h4>
+                          <p className="text-gray-400 text-sm mt-1">
+                            Deleted: {activity.deleted_at ? new Date(activity.deleted_at).toLocaleDateString('id-ID') : 'Unknown'}
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleRestoreActivity(activity.id, activity.name)}
+                            disabled={restoring === activity.id}
+                            className="border-green-600 text-green-400 hover:bg-green-900/20"
+                          >
+                            {restoring === activity.id ? (
+                              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                            ) : (
+                              <RotateCcw className="w-4 h-4 mr-2" />
+                            )}
+                            Restore
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="icon"
+                            onClick={() => handlePermanentDelete(activity.id, activity.name)}
+                            disabled={deleting === activity.id}
+                            className="border-red-600 text-red-400 hover:bg-red-900/20"
+                          >
+                            {deleting === activity.id ? (
+                              <Loader2 className="w-4 h-4 animate-spin" />
+                            ) : (
+                              <Trash className="w-4 h-4" />
+                            )}
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </Card>
+            )}
 
             {/* Activity Detail Modal */}
-            {selectedActivity && (
-              <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+            {selectedActivity && viewMode === 'list' && (
+              <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
                 <Card className="bg-gray-900 border-gray-700 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
                   <div className="p-6">
                     <div className="flex items-center justify-between mb-6">
@@ -378,7 +602,7 @@ export default function RoPAPage() {
                         onClick={() => setSelectedActivity(null)}
                         className="text-gray-400 hover:text-white hover:bg-gray-700"
                       >
-                        <Filter className="w-5 h-5" />
+                        <X className="w-5 h-5" />
                       </Button>
                     </div>
                     <div className="space-y-4">
@@ -389,7 +613,7 @@ export default function RoPAPage() {
                         </div>
                         <div>
                           <Label className="text-gray-400">Data Category</Label>
-                          <p className="text-white mt-1">{selectedActivity.category}</p>
+                          <p className="text-white mt-1">{selectedActivity.category || selectedActivity.dataCategory}</p>
                         </div>
                         <div>
                           <Label className="text-gray-400">Data Subject</Label>
@@ -424,9 +648,23 @@ export default function RoPAPage() {
                       </div>
                       <div className="flex gap-3 justify-end pt-4 border-t border-gray-700">
                         <Button
-                          onClick={() => handleDeleteActivity(selectedActivity.id)}
+                          variant="outline"
+                          onClick={() => handleEdit(selectedActivity)}
+                          className="border-gray-600 text-gray-300 hover:bg-gray-700"
+                        >
+                          <Edit className="w-4 h-4 mr-2" />
+                          Edit
+                        </Button>
+                        <Button
+                          onClick={() => handleDeleteActivity(selectedActivity.id, selectedActivity.name)}
+                          disabled={deleting === selectedActivity.id}
                           className="bg-red-600 hover:bg-red-700 text-white"
                         >
+                          {deleting === selectedActivity.id ? (
+                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                          ) : (
+                            <Trash2 className="w-4 h-4 mr-2" />
+                          )}
                           Delete
                         </Button>
                       </div>

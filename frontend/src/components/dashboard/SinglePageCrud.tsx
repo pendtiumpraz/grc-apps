@@ -20,6 +20,7 @@ import {
   Sparkles
 } from 'lucide-react'
 import { aiAPI } from '@/lib/api'
+import { confirmDelete, confirmRestore, confirmPermanentDelete, showSuccess, showError } from '@/lib/sweetalert'
 
 export interface CrudField {
   key: string
@@ -174,24 +175,29 @@ export const SinglePageCrud: React.FC<SinglePageCrudProps> = ({
     }
   }
 
-  const handleDelete = async (id: string | number) => {
-    if (!confirm('Are you sure you want to delete this item?')) return
+  const handleDelete = async (id: string | number, itemName?: string) => {
+    const confirmed = await confirmDelete(itemName || 'item ini')
+    if (!confirmed) return
 
     setDeleting(id)
     try {
       const response = await api.delete(id)
       if (response.success) {
         store.removeItem(id)
+        showSuccess('Item berhasil dihapus dan dipindahkan ke Trash')
       }
     } catch (error: any) {
-      alert(error.message || 'Failed to delete item')
+      showError(error.message || 'Gagal menghapus item')
     } finally {
       setDeleting(null)
     }
   }
 
-  const handleRestore = async (id: string | number) => {
+  const handleRestore = async (id: string | number, itemName?: string) => {
     if (!api.restore) return
+
+    const confirmed = await confirmRestore(itemName || 'item ini')
+    if (!confirmed) return
 
     setRestoring(id)
     try {
@@ -199,17 +205,20 @@ export const SinglePageCrud: React.FC<SinglePageCrudProps> = ({
       if (response.success) {
         loadDeletedItems()
         loadItems()
+        showSuccess('Item berhasil di-restore')
       }
     } catch (error: any) {
-      alert(error.message || 'Failed to restore item')
+      showError(error.message || 'Gagal me-restore item')
     } finally {
       setRestoring(null)
     }
   }
 
-  const handlePermanentDelete = async (id: string | number) => {
+  const handlePermanentDelete = async (id: string | number, itemName?: string) => {
     if (!api.permanentDelete) return
-    if (!confirm('Are you sure you want to permanently delete this item? This action cannot be undone.')) return
+
+    const confirmed = await confirmPermanentDelete(itemName || 'item ini')
+    if (!confirmed) return
 
     setDeleting(id)
     try {
@@ -218,9 +227,10 @@ export const SinglePageCrud: React.FC<SinglePageCrudProps> = ({
         if (store.deletedItems) {
           store.setDeletedItems?.(store.deletedItems.filter(item => item.id !== id))
         }
+        showSuccess('Item berhasil dihapus permanen')
       }
     } catch (error: any) {
-      alert(error.message || 'Failed to permanently delete item')
+      showError(error.message || 'Gagal menghapus item secara permanen')
     } finally {
       setDeleting(null)
     }
@@ -247,17 +257,17 @@ export const SinglePageCrud: React.FC<SinglePageCrudProps> = ({
 
   const handleAiSuggest = async () => {
     if (!aiContext) return
-    
+
     setLoadingAi(true)
     try {
       const prompt = `Suggest values for a ${title} form with the following fields: ${fields.map(f => f.label).join(', ')}. Provide JSON output with field names as keys.`
-      
+
       const response = await aiAPI.chat(prompt, { module: aiContext }, 'autofill')
       if (response.success && response.data?.response) {
         try {
           // Try to parse as JSON first
           const trimmedResponse = response.data.response.trim()
-          
+
           // Check if response starts with { or [
           if (trimmedResponse.startsWith('{') || trimmedResponse.startsWith('[')) {
             const parsed = JSON.parse(trimmedResponse)
@@ -298,7 +308,7 @@ export const SinglePageCrud: React.FC<SinglePageCrudProps> = ({
     setLoadingAi(true)
     try {
       const prompt = `Suggest a value for the "${field.label}" field in a ${title} form. Current context: ${JSON.stringify(formData)}.`
-      
+
       const response = await aiAPI.chat(prompt, { module: aiContext }, 'autofill')
       if (response.success && response.data?.response) {
         setFormData(prev => ({ ...prev, [field.key]: response.data.response }))
@@ -592,7 +602,7 @@ export const SinglePageCrud: React.FC<SinglePageCrudProps> = ({
                 </Button>
               </div>
             )}
-  
+
             <div className="flex gap-3 mt-6">
               <Button
                 onClick={viewMode === 'create' ? handleCreate : handleUpdate}
@@ -677,7 +687,7 @@ export const SinglePageCrud: React.FC<SinglePageCrudProps> = ({
                     <Button
                       variant="outline"
                       size="icon"
-                      onClick={() => handleDelete(item.id)}
+                      onClick={() => handleDelete(item.id, item[fields[0].key])}
                       disabled={deleting === item.id}
                       className="border-red-600 text-red-400 hover:bg-red-900/20"
                     >
@@ -726,7 +736,7 @@ export const SinglePageCrud: React.FC<SinglePageCrudProps> = ({
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => handleRestore(item.id)}
+                      onClick={() => handleRestore(item.id, item[fields[0].key])}
                       disabled={restoring === item.id}
                       className="border-green-600 text-green-400 hover:bg-green-900/20"
                     >
@@ -740,7 +750,7 @@ export const SinglePageCrud: React.FC<SinglePageCrudProps> = ({
                     <Button
                       variant="outline"
                       size="icon"
-                      onClick={() => handlePermanentDelete(item.id)}
+                      onClick={() => handlePermanentDelete(item.id, item[fields[0].key])}
                       disabled={deleting === item.id}
                       className="border-red-600 text-red-400 hover:bg-red-900/20"
                     >

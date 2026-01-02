@@ -7,14 +7,20 @@ import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Search, User, Plus, Filter, CheckCircle, XCircle, Clock, AlertTriangle } from 'lucide-react'
+import {
+  Search, User, Plus, CheckCircle, XCircle, Clock, AlertTriangle,
+  Edit, Trash2, Eye, X, RotateCcw, Trash, Loader2
+} from 'lucide-react'
 import { usePrivacyOpsDSRStore } from '@/stores/usePrivacyOpsDSRStore'
+import { confirmDelete, confirmRestore, confirmPermanentDelete, showSuccess, showError } from '@/lib/sweetalert'
 
 export default function DSRPage() {
   const [searchTerm, setSearchTerm] = useState('')
   const [filterStatus, setFilterStatus] = useState('all')
   const [selectedDSR, setSelectedDSR] = useState<any>(null)
-  const [isCreating, setIsCreating] = useState(false)
+  const [viewMode, setViewMode] = useState<'list' | 'create' | 'edit' | 'trash'>('list')
+  const [deleting, setDeleting] = useState<number | null>(null)
+  const [restoring, setRestoring] = useState<number | null>(null)
   const [formData, setFormData] = useState({
     dataSubject: '',
     requestType: '',
@@ -23,14 +29,27 @@ export default function DSRPage() {
     phone: '',
     deadline: '',
     assignedTo: '',
-    // Additional fields for frontend compatibility
     subjectName: '',
     dataCategories: '',
     owner: '',
     description: '',
   })
 
-  const { dsrs, loading, error, fetchDSRs, createDSR, updateDSR, deleteDSR, approveDSR, rejectDSR } = usePrivacyOpsDSRStore()
+  const {
+    dsrs,
+    deletedDsrs,
+    loading,
+    error,
+    fetchDSRs,
+    fetchDeletedDSRs,
+    createDSR,
+    updateDSR,
+    deleteDSR,
+    restoreDSR,
+    permanentDeleteDSR,
+    approveDSR,
+    rejectDSR
+  } = usePrivacyOpsDSRStore()
 
   useEffect(() => {
     fetchDSRs()
@@ -47,60 +66,148 @@ export default function DSRPage() {
   }
 
   const filteredDSRs = dsrs.filter(dsr => {
-    const matchesSearch = dsr.dataSubject.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         dsr.requestType.toLowerCase().includes(searchTerm.toLowerCase())
+    const subjectName = dsr.subjectName || dsr.dataSubject || ''
+    const requestType = dsr.requestType || ''
+    const matchesSearch = subjectName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      requestType.toLowerCase().includes(searchTerm.toLowerCase())
     const matchesFilter = filterStatus === 'all' || dsr.status === filterStatus
     return matchesSearch && matchesFilter
   })
 
+  const filteredDeletedDSRs = (deletedDsrs || []).filter(dsr => {
+    const subjectName = dsr.subjectName || dsr.dataSubject || ''
+    return subjectName.toLowerCase().includes(searchTerm.toLowerCase())
+  })
+
+  const resetForm = () => {
+    setFormData({
+      dataSubject: '',
+      requestType: '',
+      notes: '',
+      email: '',
+      phone: '',
+      deadline: '',
+      assignedTo: '',
+      subjectName: '',
+      dataCategories: '',
+      owner: '',
+      description: '',
+    })
+  }
+
   const handleCreateDSR = async () => {
     try {
       await createDSR(formData)
-      setIsCreating(false)
-      setFormData({
-        dataSubject: '',
-        requestType: '',
-        notes: '',
-        email: '',
-        phone: '',
-        deadline: '',
-        assignedTo: '',
-        subjectName: '',
-        dataCategories: '',
-        owner: '',
-        description: '',
-      })
-    } catch (error) {
-      console.error('Error creating DSR:', error)
+      showSuccess('DSR berhasil dibuat')
+      resetForm()
+      setViewMode('list')
+    } catch (error: any) {
+      showError(error.message || 'Gagal membuat DSR')
     }
   }
 
-  const handleApproveDSR = async (id: number) => {
+  const handleUpdateDSR = async () => {
+    if (!selectedDSR) return
+    try {
+      await updateDSR(selectedDSR.id, formData)
+      showSuccess('DSR berhasil diupdate')
+      resetForm()
+      setSelectedDSR(null)
+      setViewMode('list')
+    } catch (error: any) {
+      showError(error.message || 'Gagal mengupdate DSR')
+    }
+  }
+
+  const handleApproveDSR = async (id: number, name: string) => {
     try {
       await approveDSR(id)
+      showSuccess(`DSR "${name}" berhasil disetujui`)
       setSelectedDSR(null)
-    } catch (error) {
-      console.error('Error approving DSR:', error)
+    } catch (error: any) {
+      showError(error.message || 'Gagal menyetujui DSR')
     }
   }
 
-  const handleRejectDSR = async (id: number) => {
+  const handleRejectDSR = async (id: number, name: string) => {
     try {
       await rejectDSR(id)
+      showSuccess(`DSR "${name}" berhasil ditolak`)
       setSelectedDSR(null)
-    } catch (error) {
-      console.error('Error rejecting DSR:', error)
+    } catch (error: any) {
+      showError(error.message || 'Gagal menolak DSR')
     }
   }
 
-  const handleDeleteDSR = async (id: number) => {
-    if (!confirm('Apakah Anda yakin ingin menghapus DSR ini?')) return
+  const handleDeleteDSR = async (id: number, name: string) => {
+    const confirmed = await confirmDelete(name)
+    if (!confirmed) return
 
+    setDeleting(id)
     try {
       await deleteDSR(id)
-    } catch (error) {
-      console.error('Error deleting DSR:', error)
+      showSuccess('DSR berhasil dihapus dan dipindahkan ke Trash')
+      setSelectedDSR(null)
+    } catch (error: any) {
+      showError(error.message || 'Gagal menghapus DSR')
+    } finally {
+      setDeleting(null)
     }
+  }
+
+  const handleRestoreDSR = async (id: number, name: string) => {
+    const confirmed = await confirmRestore(name)
+    if (!confirmed) return
+
+    setRestoring(id)
+    try {
+      await restoreDSR(id)
+      showSuccess('DSR berhasil di-restore')
+      fetchDSRs()
+      fetchDeletedDSRs()
+    } catch (error: any) {
+      showError(error.message || 'Gagal me-restore DSR')
+    } finally {
+      setRestoring(null)
+    }
+  }
+
+  const handlePermanentDelete = async (id: number, name: string) => {
+    const confirmed = await confirmPermanentDelete(name)
+    if (!confirmed) return
+
+    setDeleting(id)
+    try {
+      await permanentDeleteDSR(id)
+      showSuccess('DSR berhasil dihapus permanen')
+    } catch (error: any) {
+      showError(error.message || 'Gagal menghapus DSR secara permanen')
+    } finally {
+      setDeleting(null)
+    }
+  }
+
+  const handleEdit = (dsr: any) => {
+    setSelectedDSR(dsr)
+    setFormData({
+      dataSubject: dsr.dataSubject || '',
+      requestType: dsr.requestType || '',
+      notes: dsr.notes || '',
+      email: dsr.email || '',
+      phone: dsr.phone || '',
+      deadline: dsr.deadline || '',
+      assignedTo: dsr.assignedTo || '',
+      subjectName: dsr.subjectName || '',
+      dataCategories: dsr.dataCategories || '',
+      owner: dsr.owner || '',
+      description: dsr.description || '',
+    })
+    setViewMode('edit')
+  }
+
+  const handleViewTrash = () => {
+    fetchDeletedDSRs()
+    setViewMode('trash')
   }
 
   if (error) {
@@ -127,7 +234,7 @@ export default function DSRPage() {
             </div>
 
             {/* Stats */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+            <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-8">
               <Card className="bg-gray-900 border-gray-700">
                 <div className="p-4">
                   <div className="flex items-center justify-between">
@@ -183,24 +290,38 @@ export default function DSRPage() {
                   </div>
                 </div>
               </Card>
-            </div>
 
-            {/* Filters */}
-            <div className="mb-8">
               <Card className="bg-gray-900 border-gray-700">
                 <div className="p-4">
-                  <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
-                    <div className="flex flex-col md:flex-row gap-4 flex-1">
-                      <div className="relative flex-1">
-                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
-                        <Input
-                          type="text"
-                          placeholder="Search DSRs..."
-                          value={searchTerm}
-                          onChange={(e) => setSearchTerm(e.target.value)}
-                          className="pl-10 bg-gray-800 border-gray-700 text-white placeholder-gray-400"
-                        />
-                      </div>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-gray-400 text-sm">In Trash</p>
+                      <p className="text-2xl font-bold text-red-400 mt-1">{deletedDsrs?.length || 0}</p>
+                    </div>
+                    <div className="p-3 bg-red-500/20 rounded-lg">
+                      <Trash2 className="w-6 h-6 text-red-400" />
+                    </div>
+                  </div>
+                </div>
+              </Card>
+            </div>
+
+            {/* Action Bar */}
+            <Card className="bg-gray-900 border-gray-700 mb-6">
+              <div className="p-4">
+                <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
+                  <div className="flex flex-col md:flex-row gap-4 flex-1">
+                    <div className="relative flex-1">
+                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                      <Input
+                        type="text"
+                        placeholder="Search DSRs..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        className="pl-10 bg-gray-800 border-gray-700 text-white placeholder-gray-400"
+                      />
+                    </div>
+                    {viewMode === 'list' && (
                       <select
                         value={filterStatus}
                         onChange={(e) => setFilterStatus(e.target.value)}
@@ -212,30 +333,54 @@ export default function DSRPage() {
                         <option value="in_progress">In Progress</option>
                         <option value="pending">Pending</option>
                       </select>
-                    </div>
-                    <div className="flex gap-2">
-                      <Button 
-                        onClick={() => setIsCreating(true)}
+                    )}
+                  </div>
+                  <div className="flex gap-2">
+                    <Button
+                      variant={viewMode === 'trash' ? 'default' : 'outline'}
+                      onClick={viewMode === 'trash' ? () => setViewMode('list') : handleViewTrash}
+                      className={viewMode === 'trash'
+                        ? 'bg-red-600 hover:bg-red-700 text-white'
+                        : 'border-gray-600 text-gray-300 hover:bg-gray-700'}
+                    >
+                      <Trash2 className="w-4 h-4 mr-2" />
+                      {viewMode === 'trash' ? 'Back to List' : 'Trash'}
+                    </Button>
+                    {viewMode !== 'create' && viewMode !== 'edit' && (
+                      <Button
+                        onClick={() => { resetForm(); setViewMode('create'); }}
                         disabled={loading}
                         className="bg-cyan-600 hover:bg-cyan-700 text-white disabled:opacity-50"
                       >
                         <Plus className="w-4 h-4 mr-2" />
                         New DSR
                       </Button>
-                    </div>
+                    )}
                   </div>
                 </div>
-              </Card>
-            </div>
+              </div>
+            </Card>
 
-            {/* Create Form */}
-            {isCreating && (
-              <Card className="bg-gray-900 border-gray-700 mb-8">
+            {/* Create/Edit Form */}
+            {(viewMode === 'create' || viewMode === 'edit') && (
+              <Card className="bg-gray-900 border-gray-700 mb-6">
                 <div className="p-6">
-                  <h3 className="text-xl font-bold text-white mb-4">Create New DSR</h3>
+                  <div className="flex items-center justify-between mb-6">
+                    <h3 className="text-xl font-bold text-white">
+                      {viewMode === 'create' ? 'Create New' : 'Edit'} DSR
+                    </h3>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => { resetForm(); setSelectedDSR(null); setViewMode('list'); }}
+                      className="text-gray-400 hover:text-white hover:bg-gray-700"
+                    >
+                      <X className="w-5 h-5" />
+                    </Button>
+                  </div>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <Label className="text-gray-300 mb-2 block">Subject Name</Label>
+                      <Label className="text-gray-300 mb-2 block">Subject Name <span className="text-red-400">*</span></Label>
                       <Input
                         type="text"
                         value={formData.subjectName}
@@ -244,7 +389,7 @@ export default function DSRPage() {
                       />
                     </div>
                     <div>
-                      <Label className="text-gray-300 mb-2 block">Request Type</Label>
+                      <Label className="text-gray-300 mb-2 block">Request Type <span className="text-red-400">*</span></Label>
                       <select
                         value={formData.requestType}
                         onChange={(e) => setFormData({ ...formData, requestType: e.target.value })}
@@ -255,7 +400,27 @@ export default function DSRPage() {
                         <option value="deletion">Deletion Request</option>
                         <option value="correction">Correction Request</option>
                         <option value="portability">Portability Request</option>
+                        <option value="objection">Objection</option>
+                        <option value="restriction">Restriction Request</option>
                       </select>
+                    </div>
+                    <div>
+                      <Label className="text-gray-300 mb-2 block">Email</Label>
+                      <Input
+                        type="email"
+                        value={formData.email}
+                        onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                        className="bg-gray-800 border-gray-700 text-white"
+                      />
+                    </div>
+                    <div>
+                      <Label className="text-gray-300 mb-2 block">Phone</Label>
+                      <Input
+                        type="tel"
+                        value={formData.phone}
+                        onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                        className="bg-gray-800 border-gray-700 text-white"
+                      />
                     </div>
                     <div>
                       <Label className="text-gray-300 mb-2 block">Data Categories</Label>
@@ -263,6 +428,7 @@ export default function DSRPage() {
                         type="text"
                         value={formData.dataCategories}
                         onChange={(e) => setFormData({ ...formData, dataCategories: e.target.value })}
+                        placeholder="e.g., Personal, Financial, Health"
                         className="bg-gray-800 border-gray-700 text-white"
                       />
                     </div>
@@ -284,43 +450,45 @@ export default function DSRPage() {
                         className="bg-gray-800 border-gray-700 text-white"
                       />
                     </div>
-                  </div>
-                  <div className="md:col-span-2">
-                    <Label className="text-gray-300 mb-2 block">Description</Label>
-                    <textarea
-                      value={formData.description}
-                      onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                      className="w-full bg-gray-800 border-gray-700 text-white rounded-md px-3 py-2 min-h-[80px]"
-                    />
+                    <div>
+                      <Label className="text-gray-300 mb-2 block">Assigned To</Label>
+                      <Input
+                        type="text"
+                        value={formData.assignedTo}
+                        onChange={(e) => setFormData({ ...formData, assignedTo: e.target.value })}
+                        className="bg-gray-800 border-gray-700 text-white"
+                      />
+                    </div>
+                    <div className="md:col-span-2">
+                      <Label className="text-gray-300 mb-2 block">Description</Label>
+                      <textarea
+                        value={formData.description}
+                        onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                        className="w-full bg-gray-800 border-gray-700 text-white rounded-md px-3 py-2 min-h-[80px]"
+                      />
+                    </div>
+                    <div className="md:col-span-2">
+                      <Label className="text-gray-300 mb-2 block">Notes</Label>
+                      <textarea
+                        value={formData.notes}
+                        onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+                        className="w-full bg-gray-800 border-gray-700 text-white rounded-md px-3 py-2 min-h-[80px]"
+                      />
+                    </div>
                   </div>
                   <div className="flex gap-3 justify-end mt-6">
                     <Button
                       variant="outline"
-                      onClick={() => {
-                        setIsCreating(false)
-                        setFormData({
-                          dataSubject: '',
-                          requestType: '',
-                          notes: '',
-                          email: '',
-                          phone: '',
-                          deadline: '',
-                          assignedTo: '',
-                          subjectName: '',
-                          dataCategories: '',
-                          owner: '',
-                          description: '',
-                        })
-                      }}
+                      onClick={() => { resetForm(); setSelectedDSR(null); setViewMode('list'); }}
                       className="border-gray-600 text-gray-300 hover:bg-gray-700"
                     >
                       Cancel
                     </Button>
                     <Button
-                      onClick={handleCreateDSR}
+                      onClick={viewMode === 'create' ? handleCreateDSR : handleUpdateDSR}
                       className="bg-cyan-600 hover:bg-cyan-700 text-white"
                     >
-                      Create
+                      {viewMode === 'create' ? 'Create' : 'Update'}
                     </Button>
                   </div>
                 </div>
@@ -328,22 +496,25 @@ export default function DSRPage() {
             )}
 
             {/* DSR List */}
-            <div className="mb-8">
-              {loading ? (
-                <Card className="bg-gray-900 border-gray-700">
+            {viewMode === 'list' && (
+              <Card className="bg-gray-900 border-gray-700">
+                {loading ? (
                   <div className="flex items-center justify-center py-12">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-cyan-400"></div>
+                    <Loader2 className="w-8 h-8 animate-spin text-cyan-400" />
                   </div>
-                </Card>
-              ) : (
-                <Card className="bg-gray-900 border-gray-700">
+                ) : filteredDSRs.length === 0 ? (
+                  <div className="text-center py-12 text-gray-400">
+                    <User className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                    <p className="text-lg font-medium mb-2">No DSRs found</p>
+                    <p className="text-sm">Create a new DSR to get started</p>
+                  </div>
+                ) : (
                   <div className="overflow-x-auto">
                     <table className="w-full">
                       <thead>
                         <tr className="border-b border-gray-700">
                           <th className="text-left p-4 text-gray-400 font-medium">Subject Name</th>
                           <th className="text-left p-4 text-gray-400 font-medium">Request Type</th>
-                          <th className="text-left p-4 text-gray-400 font-medium">Data Categories</th>
                           <th className="text-left p-4 text-gray-400 font-medium">Status</th>
                           <th className="text-left p-4 text-gray-400 font-medium">Deadline</th>
                           <th className="text-left p-4 text-gray-400 font-medium">Owner</th>
@@ -353,25 +524,45 @@ export default function DSRPage() {
                       <tbody>
                         {filteredDSRs.map((dsr) => (
                           <tr key={dsr.id} className="border-b border-gray-800 hover:bg-gray-800/50">
-                            <td className="p-4 text-white font-medium">{dsr.subjectName}</td>
-                            <td className="p-4 text-white">{dsr.requestType}</td>
-                            <td className="p-4 text-gray-300">{dsr.dataCategories}</td>
+                            <td className="p-4 text-white font-medium">{dsr.subjectName || dsr.dataSubject}</td>
+                            <td className="p-4 text-white capitalize">{dsr.requestType}</td>
                             <td className="p-4">
                               <span className={`px-2 py-1 rounded-full text-xs font-medium border ${getStatusColor(dsr.status)}`}>
                                 {dsr.status}
                               </span>
                             </td>
                             <td className="p-4 text-gray-300">{dsr.deadline}</td>
-                            <td className="p-4 text-gray-300">{dsr.owner}</td>
+                            <td className="p-4 text-gray-300">{dsr.owner || dsr.assignedTo}</td>
                             <td className="p-4">
                               <div className="flex items-center justify-end gap-2">
                                 <Button
-                                  variant="ghost"
+                                  variant="outline"
                                   size="icon"
                                   onClick={() => setSelectedDSR(dsr)}
-                                  className="text-gray-400 hover:text-white hover:bg-gray-700"
+                                  className="border-gray-600 text-gray-300 hover:bg-gray-700"
                                 >
-                                  <Filter className="w-4 h-4" />
+                                  <Eye className="w-4 h-4" />
+                                </Button>
+                                <Button
+                                  variant="outline"
+                                  size="icon"
+                                  onClick={() => handleEdit(dsr)}
+                                  className="border-gray-600 text-gray-300 hover:bg-gray-700"
+                                >
+                                  <Edit className="w-4 h-4" />
+                                </Button>
+                                <Button
+                                  variant="outline"
+                                  size="icon"
+                                  onClick={() => handleDeleteDSR(dsr.id, dsr.subjectName || dsr.dataSubject)}
+                                  disabled={deleting === dsr.id}
+                                  className="border-red-600 text-red-400 hover:bg-red-900/20"
+                                >
+                                  {deleting === dsr.id ? (
+                                    <Loader2 className="w-4 h-4 animate-spin" />
+                                  ) : (
+                                    <Trash2 className="w-4 h-4" />
+                                  )}
                                 </Button>
                               </div>
                             </td>
@@ -380,13 +571,79 @@ export default function DSRPage() {
                       </tbody>
                     </table>
                   </div>
-                </Card>
-              )}
-            </div>
+                )}
+              </Card>
+            )}
+
+            {/* Trash View */}
+            {viewMode === 'trash' && (
+              <Card className="bg-gray-900 border-gray-700">
+                <div className="p-4 border-b border-gray-700">
+                  <h3 className="text-lg font-semibold text-white flex items-center gap-2">
+                    <Trash2 className="w-5 h-5 text-red-400" />
+                    Deleted DSRs (Trash)
+                  </h3>
+                  <p className="text-gray-400 text-sm mt-1">Items in trash can be restored or permanently deleted</p>
+                </div>
+                {loading ? (
+                  <div className="flex items-center justify-center py-12">
+                    <Loader2 className="w-8 h-8 animate-spin text-cyan-400" />
+                  </div>
+                ) : filteredDeletedDSRs.length === 0 ? (
+                  <div className="text-center py-12 text-gray-400">
+                    <Trash className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                    <p className="text-lg font-medium mb-2">Trash is empty</p>
+                    <p className="text-sm">Deleted items will appear here</p>
+                  </div>
+                ) : (
+                  <div className="divide-y divide-gray-700">
+                    {filteredDeletedDSRs.map((dsr) => (
+                      <div key={dsr.id} className="flex items-center gap-4 p-4 hover:bg-gray-800/50">
+                        <div className="flex-1 min-w-0">
+                          <h4 className="text-white font-medium truncate">{dsr.subjectName || dsr.dataSubject}</h4>
+                          <p className="text-gray-400 text-sm mt-1">
+                            {dsr.requestType} • Deleted: {dsr.deleted_at ? new Date(dsr.deleted_at).toLocaleDateString('id-ID') : 'Unknown'}
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleRestoreDSR(dsr.id, dsr.subjectName || dsr.dataSubject)}
+                            disabled={restoring === dsr.id}
+                            className="border-green-600 text-green-400 hover:bg-green-900/20"
+                          >
+                            {restoring === dsr.id ? (
+                              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                            ) : (
+                              <RotateCcw className="w-4 h-4 mr-2" />
+                            )}
+                            Restore
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="icon"
+                            onClick={() => handlePermanentDelete(dsr.id, dsr.subjectName || dsr.dataSubject)}
+                            disabled={deleting === dsr.id}
+                            className="border-red-600 text-red-400 hover:bg-red-900/20"
+                          >
+                            {deleting === dsr.id ? (
+                              <Loader2 className="w-4 h-4 animate-spin" />
+                            ) : (
+                              <Trash className="w-4 h-4" />
+                            )}
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </Card>
+            )}
 
             {/* DSR Detail Modal */}
-            {selectedDSR && (
-              <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+            {selectedDSR && viewMode === 'list' && (
+              <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
                 <Card className="bg-gray-900 border-gray-700 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
                   <div className="p-6">
                     <div className="flex items-center justify-between mb-6">
@@ -397,18 +654,18 @@ export default function DSRPage() {
                         onClick={() => setSelectedDSR(null)}
                         className="text-gray-400 hover:text-white hover:bg-gray-700"
                       >
-                        <Filter className="w-5 h-5" />
+                        <X className="w-5 h-5" />
                       </Button>
                     </div>
                     <div className="space-y-4">
                       <div className="grid grid-cols-2 gap-4">
                         <div>
                           <Label className="text-gray-400">Subject Name</Label>
-                          <p className="text-white font-medium mt-1">{selectedDSR.subjectName}</p>
+                          <p className="text-white font-medium mt-1">{selectedDSR.subjectName || selectedDSR.dataSubject}</p>
                         </div>
                         <div>
                           <Label className="text-gray-400">Request Type</Label>
-                          <p className="text-white mt-1">{selectedDSR.requestType}</p>
+                          <p className="text-white mt-1 capitalize">{selectedDSR.requestType}</p>
                         </div>
                         <div>
                           <Label className="text-gray-400">Status</Label>
@@ -421,34 +678,46 @@ export default function DSRPage() {
                           <p className="text-white mt-1">{selectedDSR.deadline}</p>
                         </div>
                         <div>
+                          <Label className="text-gray-400">Email</Label>
+                          <p className="text-white mt-1">{selectedDSR.email || '-'}</p>
+                        </div>
+                        <div>
+                          <Label className="text-gray-400">Phone</Label>
+                          <p className="text-white mt-1">{selectedDSR.phone || '-'}</p>
+                        </div>
+                        <div>
                           <Label className="text-gray-400">Owner</Label>
-                          <p className="text-white mt-1">{selectedDSR.owner}</p>
+                          <p className="text-white mt-1">{selectedDSR.owner || selectedDSR.assignedTo || '-'}</p>
                         </div>
                         <div>
                           <Label className="text-gray-400">Created At</Label>
-                          <p className="text-white mt-1">{new Date(selectedDSR.createdAt).toLocaleDateString('id-ID')}</p>
+                          <p className="text-white mt-1">{selectedDSR.createdAt ? new Date(selectedDSR.createdAt).toLocaleDateString('id-ID') : '-'}</p>
                         </div>
                       </div>
                       <div>
                         <Label className="text-gray-400">Description</Label>
-                        <p className="text-white mt-1">{selectedDSR.description}</p>
+                        <p className="text-white mt-1">{selectedDSR.description || '-'}</p>
                       </div>
                       <div>
                         <Label className="text-gray-400">Data Categories</Label>
-                        <p className="text-white mt-1">{selectedDSR.dataCategories}</p>
+                        <p className="text-white mt-1">{selectedDSR.dataCategories || '-'}</p>
+                      </div>
+                      <div>
+                        <Label className="text-gray-400">Notes</Label>
+                        <p className="text-white mt-1">{selectedDSR.notes || '-'}</p>
                       </div>
                       <div className="flex gap-3 justify-end pt-4 border-t border-gray-700">
                         {selectedDSR.status === 'pending' && (
                           <>
                             <Button
-                              onClick={() => handleApproveDSR(selectedDSR.id)}
+                              onClick={() => handleApproveDSR(selectedDSR.id, selectedDSR.subjectName || selectedDSR.dataSubject)}
                               className="bg-green-600 hover:bg-green-700 text-white"
                             >
                               <CheckCircle className="w-4 h-4 mr-2" />
                               Approve
                             </Button>
                             <Button
-                              onClick={() => handleRejectDSR(selectedDSR.id)}
+                              onClick={() => handleRejectDSR(selectedDSR.id, selectedDSR.subjectName || selectedDSR.dataSubject)}
                               className="bg-red-600 hover:bg-red-700 text-white"
                             >
                               <XCircle className="w-4 h-4 mr-2" />
@@ -456,10 +725,24 @@ export default function DSRPage() {
                             </Button>
                           </>
                         )}
-                        <Button 
-                          onClick={() => handleDeleteDSR(selectedDSR.id)}
+                        <Button
+                          variant="outline"
+                          onClick={() => handleEdit(selectedDSR)}
+                          className="border-gray-600 text-gray-300 hover:bg-gray-700"
+                        >
+                          <Edit className="w-4 h-4 mr-2" />
+                          Edit
+                        </Button>
+                        <Button
+                          onClick={() => handleDeleteDSR(selectedDSR.id, selectedDSR.subjectName || selectedDSR.dataSubject)}
+                          disabled={deleting === selectedDSR.id}
                           className="bg-gray-700 hover:bg-gray-600 text-white"
                         >
+                          {deleting === selectedDSR.id ? (
+                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                          ) : (
+                            <Trash2 className="w-4 h-4 mr-2" />
+                          )}
                           Delete
                         </Button>
                       </div>

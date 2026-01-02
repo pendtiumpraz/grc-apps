@@ -1,5 +1,15 @@
 import { create } from 'zustand'
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080/api'
+
+const getAuthHeaders = () => {
+  const token = localStorage.getItem('token')
+  return {
+    'Authorization': `Bearer ${token}`,
+    'Content-Type': 'application/json',
+  }
+}
+
 export interface DSR {
   id: number
   requestType: string
@@ -14,6 +24,7 @@ export interface DSR {
   assignedTo: string
   notes: string
   createdAt: string
+  deleted_at?: string
   // Additional fields for frontend compatibility
   subjectName?: string
   dataCategories?: string
@@ -23,13 +34,17 @@ export interface DSR {
 
 interface PrivacyOpsDSRStore {
   dsrs: DSR[]
+  deletedDsrs: DSR[]
   loading: boolean
   error: string | null
-  
+
   fetchDSRs: () => Promise<void>
+  fetchDeletedDSRs: () => Promise<void>
   createDSR: (data: Partial<DSR>) => Promise<void>
   updateDSR: (id: number, data: Partial<DSR>) => Promise<void>
   deleteDSR: (id: number) => Promise<void>
+  restoreDSR: (id: number) => Promise<void>
+  permanentDeleteDSR: (id: number) => Promise<void>
   approveDSR: (id: number) => Promise<void>
   rejectDSR: (id: number) => Promise<void>
   getStats: () => Promise<void>
@@ -37,18 +52,15 @@ interface PrivacyOpsDSRStore {
 
 export const usePrivacyOpsDSRStore = create<PrivacyOpsDSRStore>((set) => ({
   dsrs: [],
+  deletedDsrs: [],
   loading: false,
   error: null,
-  
+
   fetchDSRs: async () => {
     set({ loading: true, error: null })
     try {
-      const token = localStorage.getItem('token')
-      const response = await fetch('http://localhost:8080/api/privacyops/dsr', {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
+      const response = await fetch(`${API_URL}/privacyops/dsr`, {
+        headers: getAuthHeaders(),
       })
       const data = await response.json()
       set({ dsrs: data.data || [], loading: false, error: null })
@@ -56,38 +68,46 @@ export const usePrivacyOpsDSRStore = create<PrivacyOpsDSRStore>((set) => ({
       set({ loading: false, error: error.message || 'Failed to fetch DSRs' })
     }
   },
-  
+
+  fetchDeletedDSRs: async () => {
+    set({ loading: true, error: null })
+    try {
+      const response = await fetch(`${API_URL}/privacyops/dsr/deleted`, {
+        headers: getAuthHeaders(),
+      })
+      const data = await response.json()
+      set({ deletedDsrs: data.data || [], loading: false, error: null })
+    } catch (error: any) {
+      set({ loading: false, error: error.message || 'Failed to fetch deleted DSRs' })
+    }
+  },
+
   createDSR: async (data) => {
     set({ loading: true, error: null })
     try {
-      const token = localStorage.getItem('token')
-      const response = await fetch('http://localhost:8080/api/privacyops/dsr', {
+      const response = await fetch(`${API_URL}/privacyops/dsr`, {
         method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
+        headers: getAuthHeaders(),
         body: JSON.stringify(data),
       })
       const result = await response.json()
       if (result.success) {
         set((state) => ({ dsrs: [...state.dsrs, result.data], loading: false, error: null }))
+      } else {
+        throw new Error(result.error || 'Failed to create DSR')
       }
     } catch (error: any) {
       set({ loading: false, error: error.message || 'Failed to create DSR' })
+      throw error
     }
   },
-  
+
   updateDSR: async (id, data) => {
     set({ loading: true, error: null })
     try {
-      const token = localStorage.getItem('token')
-      const response = await fetch(`http://localhost:8080/api/privacyops/dsr/${id}`, {
+      const response = await fetch(`${API_URL}/privacyops/dsr/${id}`, {
         method: 'PUT',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
+        headers: getAuthHeaders(),
         body: JSON.stringify(data),
       })
       const result = await response.json()
@@ -97,46 +117,81 @@ export const usePrivacyOpsDSRStore = create<PrivacyOpsDSRStore>((set) => ({
           loading: false,
           error: null,
         }))
+      } else {
+        throw new Error(result.error || 'Failed to update DSR')
       }
     } catch (error: any) {
       set({ loading: false, error: error.message || 'Failed to update DSR' })
+      throw error
     }
   },
-  
+
   deleteDSR: async (id) => {
-    set({ loading: true, error: null })
     try {
-      const token = localStorage.getItem('token')
-      const response = await fetch(`http://localhost:8080/api/privacyops/dsr/${id}`, {
+      const response = await fetch(`${API_URL}/privacyops/dsr/${id}`, {
         method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
+        headers: getAuthHeaders(),
       })
       const result = await response.json()
       if (result.success) {
         set((state) => ({
           dsrs: state.dsrs.filter((d) => d.id !== id),
-          loading: false,
-          error: null,
         }))
+      } else {
+        throw new Error(result.error || 'Failed to delete DSR')
       }
     } catch (error: any) {
-      set({ loading: false, error: error.message || 'Failed to delete DSR' })
+      set({ error: error.message || 'Failed to delete DSR' })
+      throw error
     }
   },
-  
+
+  restoreDSR: async (id) => {
+    try {
+      const response = await fetch(`${API_URL}/privacyops/dsr/${id}/restore`, {
+        method: 'POST',
+        headers: getAuthHeaders(),
+      })
+      const result = await response.json()
+      if (result.success) {
+        set((state) => ({
+          deletedDsrs: state.deletedDsrs.filter((d) => d.id !== id),
+        }))
+      } else {
+        throw new Error(result.error || 'Failed to restore DSR')
+      }
+    } catch (error: any) {
+      set({ error: error.message || 'Failed to restore DSR' })
+      throw error
+    }
+  },
+
+  permanentDeleteDSR: async (id) => {
+    try {
+      const response = await fetch(`${API_URL}/privacyops/dsr/${id}/permanent`, {
+        method: 'DELETE',
+        headers: getAuthHeaders(),
+      })
+      const result = await response.json()
+      if (result.success) {
+        set((state) => ({
+          deletedDsrs: state.deletedDsrs.filter((d) => d.id !== id),
+        }))
+      } else {
+        throw new Error(result.error || 'Failed to permanently delete DSR')
+      }
+    } catch (error: any) {
+      set({ error: error.message || 'Failed to permanently delete DSR' })
+      throw error
+    }
+  },
+
   approveDSR: async (id) => {
     set({ loading: true, error: null })
     try {
-      const token = localStorage.getItem('token')
-      const response = await fetch(`http://localhost:8080/api/privacyops/dsr/${id}/approve`, {
+      const response = await fetch(`${API_URL}/privacyops/dsr/${id}/approve`, {
         method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
+        headers: getAuthHeaders(),
       })
       const result = await response.json()
       if (result.success) {
@@ -145,22 +200,21 @@ export const usePrivacyOpsDSRStore = create<PrivacyOpsDSRStore>((set) => ({
           loading: false,
           error: null,
         }))
+      } else {
+        throw new Error(result.error || 'Failed to approve DSR')
       }
     } catch (error: any) {
       set({ loading: false, error: error.message || 'Failed to approve DSR' })
+      throw error
     }
   },
-  
+
   rejectDSR: async (id) => {
     set({ loading: true, error: null })
     try {
-      const token = localStorage.getItem('token')
-      const response = await fetch(`http://localhost:8080/api/privacyops/dsr/${id}/reject`, {
+      const response = await fetch(`${API_URL}/privacyops/dsr/${id}/reject`, {
         method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
+        headers: getAuthHeaders(),
       })
       const result = await response.json()
       if (result.success) {
@@ -169,12 +223,15 @@ export const usePrivacyOpsDSRStore = create<PrivacyOpsDSRStore>((set) => ({
           loading: false,
           error: null,
         }))
+      } else {
+        throw new Error(result.error || 'Failed to reject DSR')
       }
     } catch (error: any) {
       set({ loading: false, error: error.message || 'Failed to reject DSR' })
+      throw error
     }
   },
-  
+
   getStats: async () => {
     // Stats are fetched separately
   },
