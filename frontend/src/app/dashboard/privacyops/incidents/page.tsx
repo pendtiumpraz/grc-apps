@@ -7,16 +7,18 @@ import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Search, AlertTriangle, Plus, Filter, CheckCircle, Clock, Play } from 'lucide-react'
-import { usePrivacyOpsIncidentsStore } from '@/stores/usePrivacyOpsIncidentsStore'
-import Swal from 'sweetalert2'
+import { Search, AlertTriangle, Plus, CheckCircle, Clock, Edit, Trash2, Eye, X, RotateCcw, Trash, Loader2 } from 'lucide-react'
+import { usePrivacyOpsIncidentStore } from '@/stores/usePrivacyOpsIncidentStore'
+import { confirmDelete, confirmRestore, confirmPermanentDelete, showSuccess, showError } from '@/lib/sweetalert'
 
 export default function IncidentsPage() {
   const [searchTerm, setSearchTerm] = useState('')
   const [filterStatus, setFilterStatus] = useState('all')
   const [filterSeverity, setFilterSeverity] = useState('all')
   const [selectedIncident, setSelectedIncident] = useState<any>(null)
-  const [isCreating, setIsCreating] = useState(false)
+  const [viewMode, setViewMode] = useState<'list' | 'create' | 'edit' | 'trash'>('list')
+  const [deleting, setDeleting] = useState<number | string | null>(null)
+  const [restoring, setRestoring] = useState<number | string | null>(null)
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -28,7 +30,20 @@ export default function IncidentsPage() {
     owner: '',
   })
 
-  const { incidents, loading, error, fetchIncidents, createIncident, updateIncident, deleteIncident, resolveIncident } = usePrivacyOpsIncidentsStore()
+  const {
+    incidents,
+    deletedIncidents,
+    loading,
+    error,
+    fetchIncidents,
+    fetchDeletedIncidents,
+    createIncident,
+    updateIncident,
+    deleteIncident,
+    restoreIncident,
+    permanentDeleteIncident,
+    resolveIncident
+  } = usePrivacyOpsIncidentStore()
 
   useEffect(() => {
     fetchIncidents()
@@ -54,48 +69,108 @@ export default function IncidentsPage() {
   }
 
   const filteredIncidents = incidents.filter(incident => {
-    const matchesSearch = incident.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         incident.detectedBy.toLowerCase().includes(searchTerm.toLowerCase())
+    const title = incident.title || ''
+    const detectedBy = incident.detectedBy || ''
+    const matchesSearch = title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      detectedBy.toLowerCase().includes(searchTerm.toLowerCase())
     const matchesStatus = filterStatus === 'all' || incident.status === filterStatus
     const matchesSeverity = filterSeverity === 'all' || incident.severity === filterSeverity
     return matchesSearch && matchesStatus && matchesSeverity
   })
 
+  const filteredDeletedIncidents = (deletedIncidents || []).filter(incident => {
+    const title = incident.title || ''
+    return title.toLowerCase().includes(searchTerm.toLowerCase())
+  })
+
+  const resetForm = () => {
+    setFormData({
+      title: '', description: '', type: '',
+      severity: 'low' as 'critical' | 'high' | 'medium' | 'low',
+      detectedBy: '', affectedData: '', affectedUsers: '', owner: '',
+    })
+  }
+
   const handleCreateIncident = async () => {
     try {
       await createIncident(formData)
-      setIsCreating(false)
-      setFormData({
-        title: '',
-        description: '',
-        type: '',
-        severity: 'low' as 'critical' | 'high' | 'medium' | 'low',
-        detectedBy: '',
-        affectedData: '',
-        affectedUsers: '',
-        owner: '',
-      })
-    } catch (error) {
-      console.error('Error creating incident:', error)
+      setViewMode('list')
+      resetForm()
+      showSuccess('Incident berhasil ditambahkan')
+    } catch (error: any) {
+      showError(error.message || 'Gagal menambahkan incident')
     }
   }
 
-  const handleResolveIncident = async (id: number) => {
+  const handleResolveIncident = async (id: number | string, title: string) => {
     try {
       await resolveIncident(id)
-    } catch (error) {
-      console.error('Error resolving incident:', error)
+      showSuccess(`Incident "${title}" berhasil di-resolve`)
+      setSelectedIncident(null)
+    } catch (error: any) {
+      showError(error.message || 'Gagal me-resolve incident')
     }
   }
 
-  const handleDeleteIncident = async (id: number) => {
-    if (!confirm('Apakah Anda yakin ingin menghapus incident ini?')) return
-
+  const handleDeleteIncident = async (id: number | string, title: string) => {
+    const confirmed = await confirmDelete(title)
+    if (!confirmed) return
+    setDeleting(id)
     try {
       await deleteIncident(id)
-    } catch (error) {
-      console.error('Error deleting incident:', error)
+      showSuccess('Incident berhasil dihapus')
+      setSelectedIncident(null)
+    } catch (error: any) {
+      showError(error.message || 'Gagal menghapus incident')
+    } finally {
+      setDeleting(null)
     }
+  }
+
+  const handleRestoreIncident = async (id: number | string, title: string) => {
+    const confirmed = await confirmRestore(title)
+    if (!confirmed) return
+    setRestoring(id)
+    try {
+      await restoreIncident(id)
+      showSuccess('Incident berhasil di-restore')
+      fetchIncidents()
+      fetchDeletedIncidents()
+    } catch (error: any) {
+      showError(error.message || 'Gagal me-restore incident')
+    } finally {
+      setRestoring(null)
+    }
+  }
+
+  const handlePermanentDelete = async (id: number | string, title: string) => {
+    const confirmed = await confirmPermanentDelete(title)
+    if (!confirmed) return
+    setDeleting(id)
+    try {
+      await permanentDeleteIncident(id)
+      showSuccess('Incident berhasil dihapus permanen')
+    } catch (error: any) {
+      showError(error.message || 'Gagal menghapus incident')
+    } finally {
+      setDeleting(null)
+    }
+  }
+
+  const handleViewTrash = () => {
+    fetchDeletedIncidents()
+    setViewMode('trash')
+  }
+
+  const handleEdit = (incident: any) => {
+    setSelectedIncident(incident)
+    setFormData({
+      title: incident.title || '', description: incident.description || '',
+      type: incident.type || '', severity: incident.severity || 'low',
+      detectedBy: incident.detectedBy || '', affectedData: incident.affectedData || '',
+      affectedUsers: incident.affectedUsers || '', owner: incident.owner || '',
+    })
+    setViewMode('edit')
   }
 
   if (error) {
@@ -219,7 +294,7 @@ export default function IncidentsPage() {
                       </select>
                     </div>
                     <div className="flex gap-2">
-                      <Button 
+                      <Button
                         onClick={() => setIsCreating(true)}
                         disabled={loading}
                         className="bg-cyan-600 hover:bg-cyan-700 text-white disabled:opacity-50"
@@ -489,7 +564,7 @@ export default function IncidentsPage() {
                         <p className="text-white mt-1">{selectedIncident.affectedUsers}</p>
                       </div>
                       <div className="flex gap-3 justify-end pt-4 border-t border-gray-700">
-                        <Button 
+                        <Button
                           onClick={() => handleDeleteIncident(selectedIncident.id)}
                           className="bg-red-600 hover:bg-red-700 text-white"
                         >
