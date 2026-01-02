@@ -9,10 +9,11 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import {
   Search, User, Plus, CheckCircle, XCircle, Clock, AlertTriangle,
-  Edit, Trash2, Eye, X, RotateCcw, Trash, Loader2
+  Edit, Trash2, Eye, X, RotateCcw, Trash, Loader2, Download
 } from 'lucide-react'
 import { usePrivacyOpsDSRStore } from '@/stores/usePrivacyOpsDSRStore'
 import { confirmDelete, confirmRestore, confirmPermanentDelete, showSuccess, showError } from '@/lib/sweetalert'
+import DocumentExportModal, { useDocumentExport } from '@/components/documents/DocumentExportModal'
 
 export default function DSRPage() {
   const [searchTerm, setSearchTerm] = useState('')
@@ -50,6 +51,16 @@ export default function DSRPage() {
     approveDSR,
     rejectDSR
   } = usePrivacyOpsDSRStore()
+
+  // Document Export Hook
+  const {
+    isExportModalOpen,
+    exportData,
+    exportTemplateType,
+    exportDocumentName,
+    openExportModal,
+    closeExportModal,
+  } = useDocumentExport()
 
   useEffect(() => {
     fetchDSRs()
