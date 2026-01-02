@@ -7,12 +7,13 @@ import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { 
-  FileText, Plus, Search, Wand2, Eye, Edit, Trash2, 
+import {
+  FileText, Plus, Search, Wand2, Eye, Edit, Trash2,
   Download, CheckCircle, Clock, AlertCircle, ChevronRight,
-  Sparkles, FileCheck, BarChart3
+  Sparkles, FileCheck, BarChart3, FileJson, Printer
 } from 'lucide-react'
 import { useAIDocumentStore, DocumentTemplate, GeneratedDocument, TemplateField } from '@/stores/useAIDocumentStore'
+import { exportToHTML, exportToText, exportToJSON } from '@/lib/documentExport'
 
 export default function AIDocumentGeneratorPage() {
   const [activeTab, setActiveTab] = useState<'templates' | 'documents' | 'generator'>('templates')
@@ -104,6 +105,54 @@ export default function AIDocumentGeneratorPage() {
       await deleteDocument(id)
     } catch (error) {
       console.error('Error deleting document:', error)
+    }
+  }
+
+  const handleDownloadDocument = (doc: GeneratedDocument, format: 'txt' | 'html' | 'json' = 'html') => {
+    const exportData = {
+      ...doc,
+      content: doc.generatedContent,
+    }
+
+    switch (format) {
+      case 'txt':
+        exportToText(exportData, 'default', `${doc.name}.txt`)
+        break
+      case 'html':
+        exportToHTML(exportData, 'default', `${doc.name}.html`)
+        break
+      case 'json':
+        exportToJSON(exportData, `${doc.name}.json`)
+        break
+    }
+  }
+
+  const handlePrintDocument = (doc: GeneratedDocument) => {
+    const printWindow = window.open('', '_blank')
+    if (printWindow) {
+      printWindow.document.write(`
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <meta charset="UTF-8">
+          <title>${doc.name}</title>
+          <style>
+            @page { margin: 2cm; }
+            body { 
+              font-family: 'Courier New', monospace; 
+              white-space: pre-wrap; 
+              line-height: 1.4;
+              font-size: 11px;
+              padding: 20px;
+            }
+          </style>
+        </head>
+        <body>${doc.generatedContent}</body>
+        </html>
+      `)
+      printWindow.document.close()
+      printWindow.focus()
+      setTimeout(() => printWindow.print(), 250)
     }
   }
 
@@ -225,22 +274,20 @@ export default function AIDocumentGeneratorPage() {
               <div className="flex gap-2 bg-gray-900 p-1 rounded-lg">
                 <button
                   onClick={() => setActiveTab('templates')}
-                  className={`flex items-center gap-2 px-4 py-2 rounded-md transition-all ${
-                    activeTab === 'templates'
-                      ? 'bg-cyan-600 text-white'
-                      : 'text-gray-400 hover:text-white hover:bg-gray-800'
-                  }`}
+                  className={`flex items-center gap-2 px-4 py-2 rounded-md transition-all ${activeTab === 'templates'
+                    ? 'bg-cyan-600 text-white'
+                    : 'text-gray-400 hover:text-white hover:bg-gray-800'
+                    }`}
                 >
                   <FileText className="w-4 h-4" />
                   Templates
                 </button>
                 <button
                   onClick={() => setActiveTab('documents')}
-                  className={`flex items-center gap-2 px-4 py-2 rounded-md transition-all ${
-                    activeTab === 'documents'
-                      ? 'bg-cyan-600 text-white'
-                      : 'text-gray-400 hover:text-white hover:bg-gray-800'
-                  }`}
+                  className={`flex items-center gap-2 px-4 py-2 rounded-md transition-all ${activeTab === 'documents'
+                    ? 'bg-cyan-600 text-white'
+                    : 'text-gray-400 hover:text-white hover:bg-gray-800'
+                    }`}
                 >
                   <FileCheck className="w-4 h-4" />
                   Dokumen Saya
@@ -248,11 +295,10 @@ export default function AIDocumentGeneratorPage() {
                 {activeTab === 'generator' && (
                   <button
                     onClick={() => setActiveTab('generator')}
-                    className={`flex items-center gap-2 px-4 py-2 rounded-md transition-all ${
-                      activeTab === 'generator'
-                        ? 'bg-cyan-600 text-white'
-                        : 'text-gray-400 hover:text-white hover:bg-gray-800'
-                    }`}
+                    className={`flex items-center gap-2 px-4 py-2 rounded-md transition-all ${activeTab === 'generator'
+                      ? 'bg-cyan-600 text-white'
+                      : 'text-gray-400 hover:text-white hover:bg-gray-800'
+                      }`}
                   >
                     <Sparkles className="w-4 h-4" />
                     Generate Dokumen
@@ -556,6 +602,34 @@ export default function AIDocumentGeneratorPage() {
                   </div>
                   <div className="p-6 border-t border-gray-700 flex justify-end gap-2">
                     <Button
+                      onClick={() => handlePrintDocument(viewingDocument)}
+                      className="bg-gray-700 hover:bg-gray-600 text-white"
+                    >
+                      <Printer className="w-4 h-4 mr-2" />
+                      Print/PDF
+                    </Button>
+                    <Button
+                      onClick={() => handleDownloadDocument(viewingDocument, 'html')}
+                      className="bg-green-600 hover:bg-green-700 text-white"
+                    >
+                      <Download className="w-4 h-4 mr-2" />
+                      HTML
+                    </Button>
+                    <Button
+                      onClick={() => handleDownloadDocument(viewingDocument, 'txt')}
+                      className="bg-blue-600 hover:bg-blue-700 text-white"
+                    >
+                      <FileText className="w-4 h-4 mr-2" />
+                      TXT
+                    </Button>
+                    <Button
+                      onClick={() => handleDownloadDocument(viewingDocument, 'json')}
+                      className="bg-yellow-600 hover:bg-yellow-700 text-white"
+                    >
+                      <FileJson className="w-4 h-4 mr-2" />
+                      JSON
+                    </Button>
+                    <Button
                       onClick={() => {
                         setEditingDocument(viewingDocument)
                         setDocumentName(viewingDocument.name)
@@ -566,10 +640,6 @@ export default function AIDocumentGeneratorPage() {
                     >
                       <Edit className="w-4 h-4 mr-2" />
                       Edit
-                    </Button>
-                    <Button className="bg-gray-700 hover:bg-gray-600 text-white">
-                      <Download className="w-4 h-4 mr-2" />
-                      Download
                     </Button>
                   </div>
                 </Card>
