@@ -7,8 +7,9 @@ import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Search, FileText, AlertTriangle, CheckCircle, TrendingUp, Plus, Filter, Download } from 'lucide-react'
-import { useRegOpsGapAnalysisStore } from '@/stores/useRegOpsGapAnalysisStore'
+import { Search, FileText, AlertTriangle, CheckCircle, TrendingUp, Plus, Download, Edit, Trash2, Eye, X, RotateCcw, Trash, Loader2 } from 'lucide-react'
+import { useGapAnalysisStore } from '@/stores/useGapAnalysisStore'
+import { confirmDelete, confirmRestore, confirmPermanentDelete, showSuccess, showError } from '@/lib/sweetalert'
 
 interface ComplianceGap {
   id: number
@@ -25,14 +26,28 @@ interface ComplianceGap {
 export default function ComplianceGapAnalysis() {
   const [searchTerm, setSearchTerm] = useState('')
   const [filterStatus, setFilterStatus] = useState('all')
-  const [selectedGap, setSelectedGap] = useState<ComplianceGap | null>(null)
-  
-  const { gaps, loading, error, fetchGaps, createGap, updateGap, deleteGap, getStats } = useRegOpsGapAnalysisStore()
+  const [selectedGap, setSelectedGap] = useState<any>(null)
+  const [viewMode, setViewMode] = useState<'list' | 'create' | 'edit' | 'trash'>('list')
+  const [deleting, setDeleting] = useState<number | string | null>(null)
+  const [restoring, setRestoring] = useState<number | string | null>(null)
+
+  const {
+    gaps,
+    deletedGaps,
+    loading,
+    error,
+    fetchGaps,
+    fetchDeletedGaps,
+    createGap,
+    updateGap,
+    deleteGap,
+    restoreGap,
+    permanentDeleteGap
+  } = useGapAnalysisStore()
 
   useEffect(() => {
     fetchGaps()
-    getStats()
-  }, [])
+  }, [fetchGaps])
 
   const getGapStatusColor = (status: string) => {
     switch (status) {
@@ -45,38 +60,71 @@ export default function ComplianceGapAnalysis() {
   }
 
   const filteredGaps = gaps.filter(gap => {
-    const matchesSearch = gap.regulation.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         gap.requirement.toLowerCase().includes(searchTerm.toLowerCase())
-    const matchesFilter = filterStatus === 'all' || gap.gapStatus === filterStatus
+    const framework = gap.framework || ''
+    const name = gap.name || ''
+    const matchesSearch = framework.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      name.toLowerCase().includes(searchTerm.toLowerCase())
+    const matchesFilter = filterStatus === 'all' || gap.priority === filterStatus
     return matchesSearch && matchesFilter
   })
 
-  const handleViewGap = (gap: ComplianceGap) => {
+  const filteredDeletedGaps = (deletedGaps || []).filter(gap => {
+    const name = gap.name || ''
+    return name.toLowerCase().includes(searchTerm.toLowerCase())
+  })
+
+  const handleViewGap = (gap: any) => {
     setSelectedGap(gap)
   }
 
-  const handleCreateGap = () => {
-    const newGap = {
-      regulation: 'New Regulation',
-      requirement: 'New Requirement',
-      currentStatus: 'Not Assessed',
-      gapStatus: 'medium' as 'low' | 'medium' | 'high' | 'critical',
-      riskLevel: 5,
-      recommendation: 'To be determined',
-      priority: 2,
-      lastAssessed: new Date().toISOString().split('T')[0],
+  const handleDeleteGap = async (id: number | string, name: string) => {
+    const confirmed = await confirmDelete(name)
+    if (!confirmed) return
+    setDeleting(id)
+    try {
+      await deleteGap(id)
+      showSuccess('Gap berhasil dihapus')
+      setSelectedGap(null)
+    } catch (error: any) {
+      showError(error.message || 'Gagal menghapus gap')
+    } finally {
+      setDeleting(null)
     }
-    createGap(newGap)
   }
 
-  const handleUpdateGap = (gap: ComplianceGap) => {
-    updateGap(gap.id, { currentStatus: 'In Progress' })
+  const handleRestoreGap = async (id: number | string, name: string) => {
+    const confirmed = await confirmRestore(name)
+    if (!confirmed) return
+    setRestoring(id)
+    try {
+      await restoreGap(id)
+      showSuccess('Gap berhasil di-restore')
+      fetchGaps()
+      fetchDeletedGaps()
+    } catch (error: any) {
+      showError(error.message || 'Gagal me-restore gap')
+    } finally {
+      setRestoring(null)
+    }
   }
 
-  const handleDeleteGap = (id: number) => {
-    if (confirm('Are you sure you want to delete this gap?')) {
-      deleteGap(id)
+  const handlePermanentDelete = async (id: number | string, name: string) => {
+    const confirmed = await confirmPermanentDelete(name)
+    if (!confirmed) return
+    setDeleting(id)
+    try {
+      await permanentDeleteGap(id)
+      showSuccess('Gap berhasil dihapus permanen')
+    } catch (error: any) {
+      showError(error.message || 'Gagal menghapus gap')
+    } finally {
+      setDeleting(null)
     }
+  }
+
+  const handleViewTrash = () => {
+    fetchDeletedGaps()
+    setViewMode('trash')
   }
 
   if (error) {
@@ -190,7 +238,7 @@ export default function ComplianceGapAnalysis() {
                       </select>
                     </div>
                     <div className="flex gap-2">
-                      <Button 
+                      <Button
                         onClick={handleCreateGap}
                         disabled={loading}
                         className="bg-cyan-600 hover:bg-cyan-700 text-white disabled:opacity-50"
@@ -246,10 +294,9 @@ export default function ComplianceGapAnalysis() {
                               <div className="flex items-center gap-2">
                                 <div className="w-16 bg-gray-800 rounded-full h-2">
                                   <div
-                                    className={`h-2 rounded-full transition-all duration-1000 ${
-                                      gap.riskLevel >= 8 ? 'bg-red-500' :
+                                    className={`h-2 rounded-full transition-all duration-1000 ${gap.riskLevel >= 8 ? 'bg-red-500' :
                                       gap.riskLevel >= 5 ? 'bg-yellow-500' : 'bg-green-500'
-                                    }`}
+                                      }`}
                                     style={{ width: `${gap.riskLevel * 10}%` }}
                                   />
                                 </div>
@@ -257,11 +304,10 @@ export default function ComplianceGapAnalysis() {
                               </div>
                             </td>
                             <td className="p-4">
-                              <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                                gap.priority === 1 ? 'bg-red-500/20 text-red-400 border border-red-500/30' :
+                              <span className={`px-2 py-1 rounded-full text-xs font-medium ${gap.priority === 1 ? 'bg-red-500/20 text-red-400 border border-red-500/30' :
                                 gap.priority === 2 ? 'bg-yellow-500/20 text-yellow-400 border border-yellow-500/30' :
-                                'bg-green-500/20 text-green-400 border border-green-500/30'
-                              }`}>
+                                  'bg-green-500/20 text-green-400 border border-green-500/30'
+                                }`}>
                                 P{gap.priority}
                               </span>
                             </td>
@@ -347,7 +393,7 @@ export default function ComplianceGapAnalysis() {
                         >
                           Edit Gap
                         </Button>
-                        <Button 
+                        <Button
                           onClick={() => handleDeleteGap(selectedGap.id)}
                           className="bg-red-600 hover:bg-red-700 text-white"
                         >
