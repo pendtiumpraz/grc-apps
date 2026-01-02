@@ -508,6 +508,24 @@ export default function ObligationMappingPage() {
           </div>
         </main>
       </div>
+
+      {/* AI Document Generator Modal */}
+      <AIDocumentGenerator
+        isOpen={isGeneratorOpen}
+        onClose={closeGenerator}
+        moduleType={aiModuleType}
+        moduleData={aiModuleData}
+        moduleName={aiModuleName}
+      />
+
+      {/* AI Document Analyzer Modal */}
+      <AIDocumentAnalyzer
+        isOpen={isAnalyzerOpen}
+        onClose={closeAnalyzer}
+        moduleType={aiModuleType}
+        moduleData={aiModuleData}
+        moduleName={aiModuleName}
+      />
     </div>
   )
 }
