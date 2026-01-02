@@ -9,10 +9,11 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import {
   Search, Database, Plus, CheckCircle, Clock, AlertTriangle, Shield,
-  Edit, Trash2, Eye, X, RotateCcw, Trash, Loader2
+  Edit, Trash2, Eye, X, RotateCcw, Trash, Loader2, Download
 } from 'lucide-react'
 import { usePrivacyOpsRoPAStore } from '@/stores/usePrivacyOpsRoPAStore'
 import { confirmDelete, confirmRestore, confirmPermanentDelete, showSuccess, showError } from '@/lib/sweetalert'
+import DocumentExportModal, { useDocumentExport } from '@/components/documents/DocumentExportModal'
 
 export default function RoPAPage() {
   const [searchTerm, setSearchTerm] = useState('')
@@ -46,6 +47,16 @@ export default function RoPAPage() {
     restoreActivity,
     permanentDeleteActivity
   } = usePrivacyOpsRoPAStore()
+
+  // Document Export Hook
+  const {
+    isExportModalOpen,
+    exportData,
+    exportTemplateType,
+    exportDocumentName,
+    openExportModal,
+    closeExportModal,
+  } = useDocumentExport()
 
   useEffect(() => {
     fetchActivities()
@@ -494,6 +505,15 @@ export default function RoPAPage() {
                                 <Button
                                   variant="outline"
                                   size="icon"
+                                  onClick={() => openExportModal(activity, 'ropa', activity.name)}
+                                  className="border-cyan-600 text-cyan-400 hover:bg-cyan-900/20"
+                                  title="Export Document"
+                                >
+                                  <Download className="w-4 h-4" />
+                                </Button>
+                                <Button
+                                  variant="outline"
+                                  size="icon"
                                   onClick={() => handleEdit(activity)}
                                   className="border-gray-600 text-gray-300 hover:bg-gray-700"
                                 >
@@ -676,6 +696,15 @@ export default function RoPAPage() {
           </div>
         </main>
       </div>
+
+      {/* Document Export Modal */}
+      <DocumentExportModal
+        isOpen={isExportModalOpen}
+        onClose={closeExportModal}
+        data={exportData}
+        templateType={exportTemplateType}
+        documentName={exportDocumentName}
+      />
     </div>
   )
 }
