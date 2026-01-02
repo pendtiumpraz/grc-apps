@@ -7,9 +7,10 @@ import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Search, Shield, Plus, CheckCircle, AlertTriangle, TrendingUp, Edit, Trash2, Eye, X, RotateCcw, Trash, Loader2 } from 'lucide-react'
+import { Search, Shield, Plus, CheckCircle, AlertTriangle, TrendingUp, Edit, Trash2, Eye, X, RotateCcw, Trash, Loader2, Download, Sparkles, Wand2 } from 'lucide-react'
 import { useObligationStore } from '@/stores/useObligationStore'
 import { confirmDelete, confirmRestore, confirmPermanentDelete, showSuccess, showError } from '@/lib/sweetalert'
+import { AIDocumentGenerator, AIDocumentAnalyzer, useAIDocuments } from '@/components/ai/AIDocuments'
 
 export default function ObligationMappingPage() {
   const [searchTerm, setSearchTerm] = useState('')

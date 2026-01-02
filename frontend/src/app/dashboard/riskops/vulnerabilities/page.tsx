@@ -9,10 +9,11 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import {
   Search, Bug, AlertTriangle, Shield, Plus, CheckCircle,
-  Edit, Trash2, Eye, X, RotateCcw, Trash, Loader2
+  Edit, Trash2, Eye, X, RotateCcw, Trash, Loader2, Download, Sparkles, Wand2
 } from 'lucide-react'
 import { useVulnerabilityStore } from '@/stores/useVulnerabilityStore'
 import { confirmDelete, confirmRestore, confirmPermanentDelete, showSuccess, showError } from '@/lib/sweetalert'
+import { AIDocumentGenerator, AIDocumentAnalyzer, useAIDocuments } from '@/components/ai/AIDocuments'
 
 export default function VulnerabilitiesPage() {
   const [searchTerm, setSearchTerm] = useState('')

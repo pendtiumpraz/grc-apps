@@ -9,10 +9,11 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import {
   Search, AlertTriangle, Shield, Plus, TrendingUp, CheckCircle,
-  Edit, Trash2, Eye, X, RotateCcw, Trash, Loader2
+  Edit, Trash2, Eye, X, RotateCcw, Trash, Loader2, Download, Sparkles, Wand2
 } from 'lucide-react'
 import { useRiskRegisterStore } from '@/stores/useRiskRegisterStore'
 import { confirmDelete, confirmRestore, confirmPermanentDelete, showSuccess, showError } from '@/lib/sweetalert'
+import { AIDocumentGenerator, AIDocumentAnalyzer, useAIDocuments } from '@/components/ai/AIDocuments'
 
 export default function RiskRegister() {
   const [searchTerm, setSearchTerm] = useState('')
@@ -574,7 +575,7 @@ export default function RiskRegister() {
                                 <div className="w-16 bg-gray-800 rounded-full h-2">
                                   <div
                                     className={`h-2 rounded-full transition-all duration-1000 ${(risk.riskScore || 0) >= 50 ? 'bg-red-500' :
-                                        (risk.riskScore || 0) >= 30 ? 'bg-yellow-500' : 'bg-green-500'
+                                      (risk.riskScore || 0) >= 30 ? 'bg-yellow-500' : 'bg-green-500'
                                       }`}
                                     style={{ width: `${risk.riskScore || 0}%` }}
                                   />

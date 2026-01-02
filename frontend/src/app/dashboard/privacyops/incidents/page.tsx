@@ -7,9 +7,10 @@ import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Search, AlertTriangle, Plus, CheckCircle, Clock, Edit, Trash2, Eye, X, RotateCcw, Trash, Loader2 } from 'lucide-react'
+import { Search, AlertTriangle, Plus, CheckCircle, Clock, Edit, Trash2, Eye, X, RotateCcw, Trash, Loader2, Download, Sparkles, Wand2 } from 'lucide-react'
 import { usePrivacyOpsIncidentStore } from '@/stores/usePrivacyOpsIncidentStore'
 import { confirmDelete, confirmRestore, confirmPermanentDelete, showSuccess, showError } from '@/lib/sweetalert'
+import { AIDocumentGenerator, AIDocumentAnalyzer, useAIDocuments } from '@/components/ai/AIDocuments'
 
 export default function IncidentsPage() {
   const [searchTerm, setSearchTerm] = useState('')

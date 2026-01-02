@@ -9,10 +9,11 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import {
   Search, Shield, AlertTriangle, CheckCircle, Plus, TrendingUp,
-  Edit, Trash2, Eye, X, RotateCcw, Trash, Loader2
+  Edit, Trash2, Eye, X, RotateCcw, Trash, Loader2, Download, Sparkles, Wand2
 } from 'lucide-react'
 import { usePrivacyOpsDPIAStore } from '@/stores/usePrivacyOpsDPIAStore'
 import { confirmDelete, confirmRestore, confirmPermanentDelete, showSuccess, showError } from '@/lib/sweetalert'
+import { AIDocumentGenerator, AIDocumentAnalyzer, useAIDocuments } from '@/components/ai/AIDocuments'
 
 export default function DPIAManagement() {
   const [searchTerm, setSearchTerm] = useState('')
@@ -603,7 +604,7 @@ export default function DPIAManagement() {
                                 <div className="w-16 bg-gray-800 rounded-full h-2">
                                   <div
                                     className={`h-2 rounded-full transition-all duration-1000 ${(dpia.score || 0) >= 80 ? 'bg-red-500' :
-                                        (dpia.score || 0) >= 50 ? 'bg-yellow-500' : 'bg-green-500'
+                                      (dpia.score || 0) >= 50 ? 'bg-yellow-500' : 'bg-green-500'
                                       }`}
                                     style={{ width: `${dpia.score || 0}%` }}
                                   />

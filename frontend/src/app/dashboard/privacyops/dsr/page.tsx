@@ -9,11 +9,12 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import {
   Search, User, Plus, CheckCircle, XCircle, Clock, AlertTriangle,
-  Edit, Trash2, Eye, X, RotateCcw, Trash, Loader2, Download
+  Edit, Trash2, Eye, X, RotateCcw, Trash, Loader2, Download, Sparkles, Wand2
 } from 'lucide-react'
 import { usePrivacyOpsDSRStore } from '@/stores/usePrivacyOpsDSRStore'
 import { confirmDelete, confirmRestore, confirmPermanentDelete, showSuccess, showError } from '@/lib/sweetalert'
 import DocumentExportModal, { useDocumentExport } from '@/components/documents/DocumentExportModal'
+import { AIDocumentGenerator, AIDocumentAnalyzer, useAIDocuments } from '@/components/ai/AIDocuments'
 
 export default function DSRPage() {
   const [searchTerm, setSearchTerm] = useState('')

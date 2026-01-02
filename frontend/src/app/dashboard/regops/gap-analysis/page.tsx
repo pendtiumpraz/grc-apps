@@ -7,9 +7,10 @@ import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Search, FileText, AlertTriangle, CheckCircle, TrendingUp, Plus, Download, Edit, Trash2, Eye, X, RotateCcw, Trash, Loader2 } from 'lucide-react'
+import { Search, FileText, AlertTriangle, CheckCircle, TrendingUp, Plus, Download, Edit, Trash2, Eye, X, RotateCcw, Trash, Loader2, Sparkles, Wand2 } from 'lucide-react'
 import { useGapAnalysisStore } from '@/stores/useGapAnalysisStore'
 import { confirmDelete, confirmRestore, confirmPermanentDelete, showSuccess, showError } from '@/lib/sweetalert'
+import { AIDocumentGenerator, AIDocumentAnalyzer, useAIDocuments } from '@/components/ai/AIDocuments'
 
 interface ComplianceGap {
   id: number
