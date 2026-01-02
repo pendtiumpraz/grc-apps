@@ -34,6 +34,19 @@ export default function ComplianceGapAnalysis() {
     permanentDeleteGap
   } = useGapAnalysisStore()
 
+  // AI Documents Hook
+  const {
+    isGeneratorOpen,
+    isAnalyzerOpen,
+    moduleType: aiModuleType,
+    moduleData: aiModuleData,
+    moduleName: aiModuleName,
+    openGenerator,
+    openAnalyzer,
+    closeGenerator,
+    closeAnalyzer,
+  } = useAIDocuments()
+
   useEffect(() => {
     fetchGaps()
   }, [fetchGaps])

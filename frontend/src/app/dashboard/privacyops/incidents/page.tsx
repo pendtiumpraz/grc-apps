@@ -46,6 +46,19 @@ export default function IncidentsPage() {
     resolveIncident
   } = usePrivacyOpsIncidentStore()
 
+  // AI Documents Hook
+  const {
+    isGeneratorOpen,
+    isAnalyzerOpen,
+    moduleType: aiModuleType,
+    moduleData: aiModuleData,
+    moduleName: aiModuleName,
+    openGenerator,
+    openAnalyzer,
+    closeGenerator,
+    closeAnalyzer,
+  } = useAIDocuments()
+
   useEffect(() => {
     fetchIncidents()
   }, [fetchIncidents])

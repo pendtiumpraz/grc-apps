@@ -40,6 +40,19 @@ export default function InternalAuditsPage() {
     completeAudit
   } = useAuditStore()
 
+  // AI Documents Hook
+  const {
+    isGeneratorOpen,
+    isAnalyzerOpen,
+    moduleType: aiModuleType,
+    moduleData: aiModuleData,
+    moduleName: aiModuleName,
+    openGenerator,
+    openAnalyzer,
+    closeGenerator,
+    closeAnalyzer,
+  } = useAIDocuments()
+
   useEffect(() => {
     fetchAudits()
   }, [fetchAudits])

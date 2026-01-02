@@ -37,6 +37,19 @@ export default function ObligationMappingPage() {
     permanentDeleteObligation
   } = useObligationStore()
 
+  // AI Documents Hook
+  const {
+    isGeneratorOpen,
+    isAnalyzerOpen,
+    moduleType: aiModuleType,
+    moduleData: aiModuleData,
+    moduleName: aiModuleName,
+    openGenerator,
+    openAnalyzer,
+    closeGenerator,
+    closeAnalyzer,
+  } = useAIDocuments()
+
   useEffect(() => {
     fetchObligations()
   }, [fetchObligations])

@@ -52,6 +52,19 @@ export default function RiskRegister() {
     closeRisk
   } = useRiskRegisterStore()
 
+  // AI Documents Hook
+  const {
+    isGeneratorOpen,
+    isAnalyzerOpen,
+    moduleType: aiModuleType,
+    moduleData: aiModuleData,
+    moduleName: aiModuleName,
+    openGenerator,
+    openAnalyzer,
+    closeGenerator,
+    closeAnalyzer,
+  } = useAIDocuments()
+
   useEffect(() => {
     fetchRisks()
   }, [fetchRisks])
