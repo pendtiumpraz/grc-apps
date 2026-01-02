@@ -571,6 +571,33 @@ export default function DSRPage() {
                                 <Button
                                   variant="outline"
                                   size="icon"
+                                  onClick={() => openGenerator('dsr', dsr, dsr.subjectName || dsr.dataSubject)}
+                                  className="border-purple-600 text-purple-400 hover:bg-purple-900/20"
+                                  title="Generate AI Document"
+                                >
+                                  <Wand2 className="w-4 h-4" />
+                                </Button>
+                                <Button
+                                  variant="outline"
+                                  size="icon"
+                                  onClick={() => openAnalyzer('dsr', dsr, dsr.subjectName || dsr.dataSubject)}
+                                  className="border-pink-600 text-pink-400 hover:bg-pink-900/20"
+                                  title="Analyze with AI"
+                                >
+                                  <Sparkles className="w-4 h-4" />
+                                </Button>
+                                <Button
+                                  variant="outline"
+                                  size="icon"
+                                  onClick={() => openExportModal(dsr, 'dsr', `DSR_${dsr.subjectName || dsr.dataSubject}`)}
+                                  className="border-cyan-600 text-cyan-400 hover:bg-cyan-900/20"
+                                  title="Export Document"
+                                >
+                                  <Download className="w-4 h-4" />
+                                </Button>
+                                <Button
+                                  variant="outline"
+                                  size="icon"
                                   onClick={() => handleEdit(dsr)}
                                   className="border-gray-600 text-gray-300 hover:bg-gray-700"
                                 >
