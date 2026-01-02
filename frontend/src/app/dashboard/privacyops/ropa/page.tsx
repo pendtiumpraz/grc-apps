@@ -9,11 +9,12 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import {
   Search, Database, Plus, CheckCircle, Clock, AlertTriangle, Shield,
-  Edit, Trash2, Eye, X, RotateCcw, Trash, Loader2, Download
+  Edit, Trash2, Eye, X, RotateCcw, Trash, Loader2, Download, Sparkles, Wand2
 } from 'lucide-react'
 import { usePrivacyOpsRoPAStore } from '@/stores/usePrivacyOpsRoPAStore'
 import { confirmDelete, confirmRestore, confirmPermanentDelete, showSuccess, showError } from '@/lib/sweetalert'
 import DocumentExportModal, { useDocumentExport } from '@/components/documents/DocumentExportModal'
+import { AIDocumentGenerator, AIDocumentAnalyzer, useAIDocuments } from '@/components/ai/AIDocuments'
 
 export default function RoPAPage() {
   const [searchTerm, setSearchTerm] = useState('')
@@ -57,6 +58,19 @@ export default function RoPAPage() {
     openExportModal,
     closeExportModal,
   } = useDocumentExport()
+
+  // AI Documents Hook
+  const {
+    isGeneratorOpen,
+    isAnalyzerOpen,
+    moduleType: aiModuleType,
+    moduleData: aiModuleData,
+    moduleName: aiModuleName,
+    openGenerator,
+    openAnalyzer,
+    closeGenerator,
+    closeAnalyzer,
+  } = useAIDocuments()
 
   useEffect(() => {
     fetchActivities()
@@ -505,6 +519,24 @@ export default function RoPAPage() {
                                 <Button
                                   variant="outline"
                                   size="icon"
+                                  onClick={() => openGenerator('ropa', activity, activity.name)}
+                                  className="border-purple-600 text-purple-400 hover:bg-purple-900/20"
+                                  title="Generate Document dengan AI"
+                                >
+                                  <Wand2 className="w-4 h-4" />
+                                </Button>
+                                <Button
+                                  variant="outline"
+                                  size="icon"
+                                  onClick={() => openAnalyzer('ropa', activity, activity.name)}
+                                  className="border-pink-600 text-pink-400 hover:bg-pink-900/20"
+                                  title="Analyze dengan AI"
+                                >
+                                  <Sparkles className="w-4 h-4" />
+                                </Button>
+                                <Button
+                                  variant="outline"
+                                  size="icon"
                                   onClick={() => openExportModal(activity, 'ropa', activity.name)}
                                   className="border-cyan-600 text-cyan-400 hover:bg-cyan-900/20"
                                   title="Export Document"
@@ -704,6 +736,24 @@ export default function RoPAPage() {
         data={exportData}
         templateType={exportTemplateType}
         documentName={exportDocumentName}
+      />
+
+      {/* AI Document Generator Modal */}
+      <AIDocumentGenerator
+        isOpen={isGeneratorOpen}
+        onClose={closeGenerator}
+        moduleType={aiModuleType}
+        moduleData={aiModuleData}
+        moduleName={aiModuleName}
+      />
+
+      {/* AI Document Analyzer Modal */}
+      <AIDocumentAnalyzer
+        isOpen={isAnalyzerOpen}
+        onClose={closeAnalyzer}
+        moduleType={aiModuleType}
+        moduleData={aiModuleData}
+        moduleName={aiModuleName}
       />
     </div>
   )
