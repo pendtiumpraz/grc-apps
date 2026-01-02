@@ -7,27 +7,37 @@ import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Search, FileCheck, Plus, Filter, CheckCircle, Clock, AlertTriangle, Play, Pause } from 'lucide-react'
-import { useAuditOpsInternalAuditsStore } from '@/stores/useAuditOpsInternalAuditsStore'
-import Swal from 'sweetalert2'
+import { Search, FileCheck, Plus, CheckCircle, Clock, AlertTriangle, Play, Pause, Edit, Trash2, Eye, X, RotateCcw, Trash, Loader2 } from 'lucide-react'
+import { useAuditStore } from '@/stores/useAuditStore'
+import { confirmDelete, confirmRestore, confirmPermanentDelete, showSuccess, showError } from '@/lib/sweetalert'
 
 export default function InternalAuditsPage() {
   const [searchTerm, setSearchTerm] = useState('')
   const [filterStatus, setFilterStatus] = useState('all')
   const [filterRisk, setFilterRisk] = useState('all')
   const [selectedAudit, setSelectedAudit] = useState<any>(null)
-  const [isCreating, setIsCreating] = useState(false)
+  const [viewMode, setViewMode] = useState<'list' | 'create' | 'edit' | 'trash'>('list')
+  const [deleting, setDeleting] = useState<number | string | null>(null)
+  const [restoring, setRestoring] = useState<number | string | null>(null)
   const [formData, setFormData] = useState({
-    name: '',
-    scope: '',
-    objectives: '',
-    riskLevel: 'low' as 'high' | 'medium' | 'low',
-    auditor: '',
-    auditDate: '',
-    frequency: '',
+    name: '', scope: '', objectives: '', riskLevel: 'low' as 'high' | 'medium' | 'low',
+    auditor: '', auditDate: '', frequency: '',
   })
 
-  const { audits, loading, error, fetchAudits, createAudit, updateAudit, deleteAudit, startAudit, completeAudit } = useAuditOpsInternalAuditsStore()
+  const {
+    audits,
+    deletedAudits,
+    loading,
+    error,
+    fetchAudits,
+    fetchDeletedAudits,
+    createAudit,
+    updateAudit,
+    deleteAudit,
+    restoreAudit,
+    permanentDeleteAudit,
+    completeAudit
+  } = useAuditStore()
 
   useEffect(() => {
     fetchAudits()
@@ -52,55 +62,103 @@ export default function InternalAuditsPage() {
   }
 
   const filteredAudits = audits.filter(audit => {
-    const matchesSearch = audit.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         audit.auditor.toLowerCase().includes(searchTerm.toLowerCase())
+    const name = audit.name || ''
+    const auditor = audit.auditor || ''
+    const matchesSearch = name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      auditor.toLowerCase().includes(searchTerm.toLowerCase())
     const matchesStatus = filterStatus === 'all' || audit.status === filterStatus
-    const matchesRisk = filterRisk === 'all' || audit.riskLevel === filterRisk
+    const matchesRisk = filterRisk === 'all' || audit.priority === filterRisk
     return matchesSearch && matchesStatus && matchesRisk
   })
+
+  const filteredDeletedAudits = (deletedAudits || []).filter(audit => {
+    const name = audit.name || ''
+    return name.toLowerCase().includes(searchTerm.toLowerCase())
+  })
+
+  const resetForm = () => {
+    setFormData({ name: '', scope: '', objectives: '', riskLevel: 'low', auditor: '', auditDate: '', frequency: '' })
+  }
 
   const handleCreateAudit = async () => {
     try {
       await createAudit(formData)
-      setIsCreating(false)
-      setFormData({
-        name: '',
-        scope: '',
-        objectives: '',
-        riskLevel: 'low' as 'high' | 'medium' | 'low',
-        auditor: '',
-        auditDate: '',
-        frequency: '',
-      })
-    } catch (error) {
-      console.error('Error creating audit:', error)
+      setViewMode('list')
+      resetForm()
+      showSuccess('Audit berhasil ditambahkan')
+    } catch (error: any) {
+      showError(error.message || 'Gagal membuat audit')
     }
   }
 
-  const handleStartAudit = async (id: number) => {
-    try {
-      await startAudit(id)
-    } catch (error) {
-      console.error('Error starting audit:', error)
-    }
-  }
-
-  const handleCompleteAudit = async (id: number) => {
+  const handleCompleteAudit = async (id: number | string, name: string) => {
     try {
       await completeAudit(id)
-    } catch (error) {
-      console.error('Error completing audit:', error)
+      showSuccess(`Audit "${name}" berhasil di-complete`)
+      setSelectedAudit(null)
+    } catch (error: any) {
+      showError(error.message || 'Gagal complete audit')
     }
   }
 
-  const handleDeleteAudit = async (id: number) => {
-    if (!confirm('Apakah Anda yakin ingin menghapus audit ini?')) return
-
+  const handleDeleteAudit = async (id: number | string, name: string) => {
+    const confirmed = await confirmDelete(name)
+    if (!confirmed) return
+    setDeleting(id)
     try {
       await deleteAudit(id)
-    } catch (error) {
-      console.error('Error deleting audit:', error)
+      showSuccess('Audit berhasil dihapus')
+      setSelectedAudit(null)
+    } catch (error: any) {
+      showError(error.message || 'Gagal menghapus audit')
+    } finally {
+      setDeleting(null)
     }
+  }
+
+  const handleRestoreAudit = async (id: number | string, name: string) => {
+    const confirmed = await confirmRestore(name)
+    if (!confirmed) return
+    setRestoring(id)
+    try {
+      await restoreAudit(id)
+      showSuccess('Audit berhasil di-restore')
+      fetchAudits()
+      fetchDeletedAudits()
+    } catch (error: any) {
+      showError(error.message || 'Gagal me-restore audit')
+    } finally {
+      setRestoring(null)
+    }
+  }
+
+  const handlePermanentDelete = async (id: number | string, name: string) => {
+    const confirmed = await confirmPermanentDelete(name)
+    if (!confirmed) return
+    setDeleting(id)
+    try {
+      await permanentDeleteAudit(id)
+      showSuccess('Audit berhasil dihapus permanen')
+    } catch (error: any) {
+      showError(error.message || 'Gagal menghapus audit')
+    } finally {
+      setDeleting(null)
+    }
+  }
+
+  const handleViewTrash = () => {
+    fetchDeletedAudits()
+    setViewMode('trash')
+  }
+
+  const handleEdit = (audit: any) => {
+    setSelectedAudit(audit)
+    setFormData({
+      name: audit.name || '', scope: audit.scope || '', objectives: audit.objectives || '',
+      riskLevel: audit.priority || 'low', auditor: audit.auditor || '',
+      auditDate: audit.startDate || '', frequency: '',
+    })
+    setViewMode('edit')
   }
 
   if (error) {
@@ -223,7 +281,7 @@ export default function InternalAuditsPage() {
                       </select>
                     </div>
                     <div className="flex gap-2">
-                      <Button 
+                      <Button
                         onClick={() => setIsCreating(true)}
                         disabled={loading}
                         className="bg-cyan-600 hover:bg-cyan-700 text-white disabled:opacity-50"
@@ -481,7 +539,7 @@ export default function InternalAuditsPage() {
                         <p className="text-white mt-1">{selectedAudit.objectives}</p>
                       </div>
                       <div className="flex gap-3 justify-end pt-4 border-t border-gray-700">
-                        <Button 
+                        <Button
                           onClick={() => handleDeleteAudit(selectedAudit.id)}
                           className="bg-red-600 hover:bg-red-700 text-white"
                         >
