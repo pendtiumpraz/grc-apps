@@ -487,7 +487,25 @@ export default function IncidentsPage() {
                                   onClick={() => setSelectedIncident(incident)}
                                   className="text-gray-400 hover:text-white hover:bg-gray-700"
                                 >
-                                  <Filter className="w-4 h-4" />
+                                  <Eye className="w-4 h-4" />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={() => openGenerator('incident', incident, incident.title || incident.name)}
+                                  className="text-purple-400 hover:text-purple-300 hover:bg-purple-900/20"
+                                  title="Generate AI Document"
+                                >
+                                  <Wand2 className="w-4 h-4" />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={() => openAnalyzer('incident', incident, incident.title || incident.name)}
+                                  className="text-pink-400 hover:text-pink-300 hover:bg-pink-900/20"
+                                  title="Analyze with AI"
+                                >
+                                  <Sparkles className="w-4 h-4" />
                                 </Button>
                                 {incident.status === 'in_progress' && (
                                   <Button

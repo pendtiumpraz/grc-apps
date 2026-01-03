@@ -639,6 +639,24 @@ export default function DPIAManagement() {
                                 <Button
                                   variant="outline"
                                   size="icon"
+                                  onClick={() => openGenerator('dpia', dpia, dpia.name)}
+                                  className="border-purple-600 text-purple-400 hover:bg-purple-900/20"
+                                  title="Generate AI Document"
+                                >
+                                  <Wand2 className="w-4 h-4" />
+                                </Button>
+                                <Button
+                                  variant="outline"
+                                  size="icon"
+                                  onClick={() => openAnalyzer('dpia', dpia, dpia.name)}
+                                  className="border-pink-600 text-pink-400 hover:bg-pink-900/20"
+                                  title="Analyze with AI"
+                                >
+                                  <Sparkles className="w-4 h-4" />
+                                </Button>
+                                <Button
+                                  variant="outline"
+                                  size="icon"
                                   onClick={() => handleEdit(dpia)}
                                   className="border-gray-600 text-gray-300 hover:bg-gray-700"
                                 >
