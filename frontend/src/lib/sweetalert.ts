@@ -42,8 +42,8 @@ export const confirmPermanentDelete = async (itemName: string = 'item ini') => {
         showCancelButton: true,
         confirmButtonText: 'Ya, Hapus Permanen',
         cancelButtonText: 'Batal',
-        confirmButtonColor: '#dc2626',
         ...darkTheme,
+        confirmButtonColor: '#dc2626',
         customClass: {
             popup: 'rounded-xl border border-red-700',
             title: 'text-white',
@@ -64,8 +64,8 @@ export const confirmRestore = async (itemName: string = 'item ini') => {
         showCancelButton: true,
         confirmButtonText: 'Ya, Restore',
         cancelButtonText: 'Batal',
-        confirmButtonColor: '#10b981',
         ...darkTheme,
+        confirmButtonColor: '#10b981',
         customClass: {
             popup: 'rounded-xl border border-green-700',
             title: 'text-white',
