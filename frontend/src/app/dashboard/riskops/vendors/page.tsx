@@ -285,7 +285,7 @@ export default function VendorsPage() {
                     </div>
                     <div className="flex gap-2">
                       <Button
-                        onClick={() => setIsCreating(true)}
+                        onClick={() => setViewMode('create')}
                         disabled={loading}
                         className="bg-cyan-600 hover:bg-cyan-700 text-white disabled:opacity-50"
                       >
