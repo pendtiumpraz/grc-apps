@@ -3,7 +3,17 @@
 import React, { useState, useEffect } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { RefreshCw, AlertTriangle, CheckCircle, Clock, FileText, ClipboardCheck, Shield, Activity, TrendingUp } from 'lucide-react';
+import { RefreshCw, AlertTriangle, CheckCircle, Clock, FileText, ClipboardCheck, Shield, Search } from 'lucide-react';
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080/api';
+
+const getAuthHeaders = () => {
+  const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+  return {
+    'Authorization': `Bearer ${token}`,
+    'Content-Type': 'application/json',
+  };
+};
 
 interface AuditOpsMonitoringProps {
   domain: string;
@@ -12,23 +22,22 @@ interface AuditOpsMonitoringProps {
 export const AuditOpsMonitoring: React.FC<AuditOpsMonitoringProps> = ({ domain }) => {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  
+
   const [stats, setStats] = useState({
-    activeAuditPlans: 0,
+    totalAudits: 0,
     completedAudits: 0,
+    inProgressAudits: 0,
     pendingAudits: 0,
-    overdueAudits: 0,
+    totalFindings: 0,
+    criticalFindings: 0,
+    highFindings: 0,
+    mediumFindings: 0,
     totalEvidence: 0,
     verifiedEvidence: 0,
-    controlTests: 0,
-    passedTests: 0,
-    failedTests: 0,
-    auditReports: 0,
-    approvedReports: 0,
+    totalReports: 0,
   });
 
   const [recentActivity, setRecentActivity] = useState<any[]>([]);
-  const [upcomingDeadlines, setUpcomingDeadlines] = useState<any[]>([]);
 
   useEffect(() => {
     loadMonitoringData();
@@ -36,35 +45,50 @@ export const AuditOpsMonitoring: React.FC<AuditOpsMonitoringProps> = ({ domain }
 
   const loadMonitoringData = async () => {
     setLoading(true);
-    setTimeout(() => {
+
+    try {
+      // Fetch Internal Audits stats
+      const auditsRes = await fetch(`${API_URL}/auditops/internal-audits/stats`, { headers: getAuthHeaders() });
+      const auditsData = auditsRes.ok ? await auditsRes.json() : null;
+
+      // Fetch Evidence stats
+      const evidenceRes = await fetch(`${API_URL}/auditops/evidence/stats`, { headers: getAuthHeaders() });
+      const evidenceData = evidenceRes.ok ? await evidenceRes.json() : null;
+
+      // Fetch Reports - just count
+      const reportsRes = await fetch(`${API_URL}/auditops/reports`, { headers: getAuthHeaders() });
+      const reportsData = reportsRes.ok ? await reportsRes.json() : null;
+
+      const auditsStats = auditsData?.data || {};
+      const evidenceStats = evidenceData?.data || {};
+      const reportsList = reportsData?.data || [];
+
       setStats({
-        activeAuditPlans: 8,
-        completedAudits: 24,
-        pendingAudits: 5,
-        overdueAudits: 1,
-        totalEvidence: 156,
-        verifiedEvidence: 142,
-        controlTests: 89,
-        passedTests: 76,
-        failedTests: 8,
-        auditReports: 22,
-        approvedReports: 20,
+        totalAudits: auditsStats.total || 0,
+        completedAudits: auditsStats.completed || 0,
+        inProgressAudits: auditsStats.inProgress || 0,
+        pendingAudits: auditsStats.pending || 0,
+        totalFindings: auditsStats.findings || 0,
+        criticalFindings: auditsStats.critical || 0,
+        highFindings: auditsStats.high || 0,
+        mediumFindings: auditsStats.medium || 0,
+        totalEvidence: evidenceStats.total || 0,
+        verifiedEvidence: evidenceStats.verified || 0,
+        totalReports: Array.isArray(reportsList) ? reportsList.length : 0,
       });
+
       setRecentActivity([
-        { id: 1, type: 'audit', message: 'Audit plan completed: ISO 27001 2024 Q1', time: '1 hour ago', status: 'completed' },
-        { id: 2, type: 'evidence', message: 'Evidence verified: Access Control Logs', time: '3 hours ago', status: 'verified' },
-        { id: 3, type: 'test', message: 'Control test passed: Password Policy', time: '5 hours ago', status: 'passed' },
-        { id: 4, type: 'report', message: 'Audit report approved: GDPR Compliance', time: '1 day ago', status: 'approved' },
-        { id: 5, type: 'audit', message: 'New audit plan created: SOC 2 Type II', time: '2 days ago', status: 'created' },
+        { id: 1, type: 'audit', message: `${auditsStats.total || 0} total audits in system`, time: 'Live data', status: 'completed' },
+        { id: 2, type: 'finding', message: `${auditsStats.completed || 0} audits completed`, time: 'Live data', status: 'verified' },
+        { id: 3, type: 'evidence', message: `${evidenceStats.total || 0} evidence items collected`, time: 'Live data', status: 'approved' },
+        { id: 4, type: 'report', message: `${Array.isArray(reportsList) ? reportsList.length : 0} audit reports generated`, time: 'Live data', status: 'updated' },
       ]);
-      setUpcomingDeadlines([
-        { id: 1, item: 'Audit Plan: UU PDP Compliance', dueDate: '2024-01-15', priority: 'high' },
-        { id: 2, item: 'Control Test: Encryption Verification', dueDate: '2024-01-18', priority: 'medium' },
-        { id: 3, item: 'Audit Report Review: ISO 27001', dueDate: '2024-01-22', priority: 'high' },
-        { id: 4, item: 'Evidence Collection: Network Security', dueDate: '2024-01-28', priority: 'low' },
-      ]);
+
+    } catch (error) {
+      console.error('Error loading audit monitoring data:', error);
+    } finally {
       setLoading(false);
-    }, 500);
+    }
   };
 
   const handleRefresh = async () => {
@@ -73,28 +97,13 @@ export const AuditOpsMonitoring: React.FC<AuditOpsMonitoringProps> = ({ domain }
     setRefreshing(false);
   };
 
-  const getPriorityColor = (priority: string) => {
-    switch (priority) {
-      case 'critical': return 'bg-red-500/20 text-red-400 border-red-500/30';
-      case 'high': return 'bg-orange-500/20 text-orange-400 border-orange-500/30';
-      case 'medium': return 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30';
-      case 'low': return 'bg-blue-500/20 text-blue-400 border-blue-500/30';
-      default: return 'bg-gray-500/20 text-gray-400 border-gray-500/30';
-    }
-  };
-
-  const getTestPassRate = () => {
-    if (stats.controlTests === 0) return 0;
-    return Math.round((stats.passedTests / stats.controlTests) * 100);
-  };
-
   return (
     <div className="space-y-6">
       <Card className="bg-gray-900 border-gray-700">
         <div className="flex items-center justify-between p-4">
           <div>
             <h2 className="text-white font-semibold text-xl">AuditOps Monitoring Dashboard</h2>
-            <p className="text-gray-400 text-sm">Audit and governance monitoring</p>
+            <p className="text-gray-400 text-sm">Internal audit and compliance assessment monitoring</p>
           </div>
           <Button
             variant="outline"
@@ -121,12 +130,12 @@ export const AuditOpsMonitoring: React.FC<AuditOpsMonitoringProps> = ({ domain }
               <div className="p-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-gray-400 text-sm">Active Audits</p>
-                    <p className="text-3xl font-bold text-white mt-1">{stats.activeAuditPlans}</p>
-                    <p className="text-gray-500 text-xs mt-1">{stats.completedAudits} completed</p>
+                    <p className="text-gray-400 text-sm">Total Audits</p>
+                    <p className="text-3xl font-bold text-white mt-1">{stats.totalAudits}</p>
+                    <p className="text-green-400 text-xs mt-1">{stats.completedAudits} completed</p>
                   </div>
                   <div className="p-3 bg-blue-500/20 rounded-lg">
-                    <FileText className="w-6 h-6 text-blue-400" />
+                    <ClipboardCheck className="w-6 h-6 text-blue-400" />
                   </div>
                 </div>
               </div>
@@ -136,9 +145,9 @@ export const AuditOpsMonitoring: React.FC<AuditOpsMonitoringProps> = ({ domain }
               <div className="p-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-gray-400 text-sm">Pending Audits</p>
-                    <p className="text-3xl font-bold text-white mt-1">{stats.pendingAudits}</p>
-                    <p className="text-red-400 text-xs mt-1">{stats.overdueAudits} overdue</p>
+                    <p className="text-gray-400 text-sm">In Progress</p>
+                    <p className="text-3xl font-bold text-white mt-1">{stats.inProgressAudits}</p>
+                    <p className="text-yellow-400 text-xs mt-1">{stats.pendingAudits} pending</p>
                   </div>
                   <div className="p-3 bg-yellow-500/20 rounded-lg">
                     <Clock className="w-6 h-6 text-yellow-400" />
@@ -151,14 +160,12 @@ export const AuditOpsMonitoring: React.FC<AuditOpsMonitoringProps> = ({ domain }
               <div className="p-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-gray-400 text-sm">Test Pass Rate</p>
-                    <p className={`text-3xl font-bold mt-1 ${getTestPassRate() >= 80 ? 'text-green-400' : getTestPassRate() >= 60 ? 'text-yellow-400' : 'text-red-400'}`}>
-                      {getTestPassRate()}%
-                    </p>
-                    <p className="text-gray-500 text-xs mt-1">{stats.passedTests} of {stats.controlTests} tests</p>
+                    <p className="text-gray-400 text-sm">Evidence</p>
+                    <p className="text-3xl font-bold text-white mt-1">{stats.totalEvidence}</p>
+                    <p className="text-green-400 text-xs mt-1">{stats.verifiedEvidence} verified</p>
                   </div>
-                  <div className="p-3 bg-green-500/20 rounded-lg">
-                    <ClipboardCheck className="w-6 h-6 text-green-400" />
+                  <div className="p-3 bg-purple-500/20 rounded-lg">
+                    <Search className="w-6 h-6 text-purple-400" />
                   </div>
                 </div>
               </div>
@@ -168,12 +175,12 @@ export const AuditOpsMonitoring: React.FC<AuditOpsMonitoringProps> = ({ domain }
               <div className="p-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-gray-400 text-sm">Approved Reports</p>
-                    <p className="text-3xl font-bold text-white mt-1">{stats.approvedReports}</p>
-                    <p className="text-gray-500 text-xs mt-1">of {stats.auditReports} reports</p>
+                    <p className="text-gray-400 text-sm">Reports</p>
+                    <p className="text-3xl font-bold text-white mt-1">{stats.totalReports}</p>
+                    <p className="text-gray-500 text-xs mt-1">audit reports</p>
                   </div>
-                  <div className="p-3 bg-purple-500/20 rounded-lg">
-                    <Shield className="w-6 h-6 text-purple-400" />
+                  <div className="p-3 bg-green-500/20 rounded-lg">
+                    <FileText className="w-6 h-6 text-green-400" />
                   </div>
                 </div>
               </div>
@@ -182,93 +189,67 @@ export const AuditOpsMonitoring: React.FC<AuditOpsMonitoringProps> = ({ domain }
 
           <Card className="bg-gray-900 border-gray-700">
             <div className="p-4">
-              <h3 className="text-white font-semibold mb-4">Control Test Results</h3>
-              <div className="grid grid-cols-3 gap-4">
-                <div className="bg-green-500/10 border border-green-500/30 rounded-lg p-4">
-                  <div className="flex items-center gap-2">
-                    <CheckCircle className="w-5 h-5 text-green-400" />
-                    <span className="text-gray-400 text-sm">Passed</span>
-                  </div>
-                  <p className="text-2xl font-bold text-green-400 mt-2">{stats.passedTests}</p>
-                </div>
+              <h3 className="text-white font-semibold mb-4">Findings Distribution</h3>
+              <div className="grid grid-cols-4 gap-4">
                 <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-4">
                   <div className="flex items-center gap-2">
                     <AlertTriangle className="w-5 h-5 text-red-400" />
-                    <span className="text-gray-400 text-sm">Failed</span>
+                    <span className="text-gray-400 text-sm">Critical</span>
                   </div>
-                  <p className="text-2xl font-bold text-red-400 mt-2">{stats.failedTests}</p>
+                  <p className="text-2xl font-bold text-red-400 mt-2">{stats.criticalFindings}</p>
                 </div>
-                <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-4">
+                <div className="bg-orange-500/10 border border-orange-500/30 rounded-lg p-4">
                   <div className="flex items-center gap-2">
-                    <TrendingUp className="w-5 h-5 text-blue-400" />
-                    <span className="text-gray-400 text-sm">Pass Rate</span>
+                    <Clock className="w-5 h-5 text-orange-400" />
+                    <span className="text-gray-400 text-sm">High</span>
                   </div>
-                  <p className={`text-2xl font-bold mt-2 ${getTestPassRate() >= 80 ? 'text-green-400' : getTestPassRate() >= 60 ? 'text-yellow-400' : 'text-red-400'}`}>
-                    {getTestPassRate()}%
-                  </p>
+                  <p className="text-2xl font-bold text-orange-400 mt-2">{stats.highFindings}</p>
+                </div>
+                <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-4">
+                  <div className="flex items-center gap-2">
+                    <Clock className="w-5 h-5 text-yellow-400" />
+                    <span className="text-gray-400 text-sm">Medium</span>
+                  </div>
+                  <p className="text-2xl font-bold text-yellow-400 mt-2">{stats.mediumFindings}</p>
+                </div>
+                <div className="bg-green-500/10 border border-green-500/30 rounded-lg p-4">
+                  <div className="flex items-center gap-2">
+                    <CheckCircle className="w-5 h-5 text-green-400" />
+                    <span className="text-gray-400 text-sm">Total</span>
+                  </div>
+                  <p className="text-2xl font-bold text-green-400 mt-2">{stats.totalFindings}</p>
                 </div>
               </div>
             </div>
           </Card>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            <Card className="bg-gray-900 border-gray-700">
-              <div className="p-4">
-                <h3 className="text-white font-semibold mb-4 flex items-center gap-2">
-                  <Activity className="w-5 h-5 text-cyan-400" />
-                  Recent Activity
-                </h3>
-                <div className="space-y-3">
-                  {recentActivity.map((activity) => (
-                    <div key={activity.id} className="flex items-start gap-3 p-3 bg-gray-800/50 rounded-lg">
-                      <div className={`w-2 h-2 rounded-full mt-2 ${
-                        activity.status === 'completed' || activity.status === 'verified' || activity.status === 'passed' || activity.status === 'approved'
-                          ? 'bg-green-400'
-                          : activity.status === 'created'
-                          ? 'bg-blue-400'
-                          : 'bg-yellow-400'
+          <Card className="bg-gray-900 border-gray-700">
+            <div className="p-4">
+              <h3 className="text-white font-semibold mb-4">System Statistics</h3>
+              <div className="space-y-3">
+                {recentActivity.map((activity) => (
+                  <div key={activity.id} className="flex items-start gap-3 p-3 bg-gray-800/50 rounded-lg">
+                    <div className={`w-2 h-2 rounded-full mt-2 ${activity.status === 'completed' || activity.status === 'approved' || activity.status === 'verified'
+                        ? 'bg-green-400'
+                        : 'bg-blue-400'
                       }`} />
-                      <div className="flex-1">
-                        <p className="text-gray-200 text-sm">{activity.message}</p>
-                        <p className="text-gray-500 text-xs mt-1">{activity.time}</p>
-                      </div>
+                    <div className="flex-1">
+                      <p className="text-gray-200 text-sm">{activity.message}</p>
+                      <p className="text-gray-500 text-xs mt-1">{activity.time}</p>
                     </div>
-                  ))}
-                </div>
+                  </div>
+                ))}
               </div>
-            </Card>
+            </div>
+          </Card>
 
-            <Card className="bg-gray-900 border-gray-700">
-              <div className="p-4">
-                <h3 className="text-white font-semibold mb-4 flex items-center gap-2">
-                  <Clock className="w-5 h-5 text-cyan-400" />
-                  Upcoming Deadlines
-                </h3>
-                <div className="space-y-3">
-                  {upcomingDeadlines.map((deadline) => (
-                    <div key={deadline.id} className={`p-3 rounded-lg border ${getPriorityColor(deadline.priority)}`}>
-                      <div className="flex items-center justify-between">
-                        <p className="text-gray-200 text-sm font-medium">{deadline.item}</p>
-                        <span className="text-xs text-gray-400">{deadline.dueDate}</span>
-                      </div>
-                      <div className="flex items-center gap-2 mt-1">
-                        <AlertTriangle className="w-3 h-3" />
-                        <span className="text-xs capitalize">{deadline.priority} priority</span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </Card>
-          </div>
-
-          {stats.overdueAudits > 0 && (
+          {stats.criticalFindings > 0 && (
             <Card className="bg-red-900/20 border-red-700">
               <div className="p-4 flex items-center gap-3">
                 <AlertTriangle className="w-6 h-6 text-red-400" />
                 <div className="flex-1">
                   <p className="text-red-400 font-semibold">Action Required</p>
-                  <p className="text-red-300 text-sm">You have {stats.overdueAudits} overdue audit(s)</p>
+                  <p className="text-red-300 text-sm">You have {stats.criticalFindings} critical finding(s) requiring attention</p>
                 </div>
                 <Button className="bg-red-600 hover:bg-red-700 text-white">
                   View Details
