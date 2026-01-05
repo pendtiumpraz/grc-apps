@@ -5,6 +5,16 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { RefreshCw, AlertTriangle, CheckCircle, Clock, TrendingUp, TrendingDown, FileText, Shield, Scale } from 'lucide-react';
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080/api';
+
+const getAuthHeaders = () => {
+  const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+  return {
+    'Authorization': `Bearer ${token}`,
+    'Content-Type': 'application/json',
+  };
+};
+
 interface RegOpsMonitoringProps {
   domain: string;
 }
@@ -12,8 +22,7 @@ interface RegOpsMonitoringProps {
 export const RegOpsMonitoring: React.FC<RegOpsMonitoringProps> = ({ domain }) => {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  
-  // Mock data - in production, this would come from API
+
   const [stats, setStats] = useState({
     totalRegulations: 0,
     activeRegulations: 0,
@@ -37,39 +46,71 @@ export const RegOpsMonitoring: React.FC<RegOpsMonitoringProps> = ({ domain }) =>
 
   const loadMonitoringData = async () => {
     setLoading(true);
-    // In production, fetch from API
-    // const response = await monitoringAPI.getRegOpsMonitoring(domain);
-    
-    // Mock data
-    setTimeout(() => {
+
+    try {
+      // Fetch controls stats
+      const controlsRes = await fetch(`${API_URL}/regops/controls/stats`, { headers: getAuthHeaders() });
+      const controlsData = controlsRes.ok ? await controlsRes.json() : null;
+
+      // Fetch compliance gaps stats
+      const gapsRes = await fetch(`${API_URL}/regops/compliance-gaps/stats`, { headers: getAuthHeaders() });
+      const gapsData = gapsRes.ok ? await gapsRes.json() : null;
+
+      // Fetch obligations stats
+      const obligationsRes = await fetch(`${API_URL}/regops/obligations/stats`, { headers: getAuthHeaders() });
+      const obligationsData = obligationsRes.ok ? await obligationsRes.json() : null;
+
+      // Calculate stats from API responses
+      const controlsStats = controlsData?.data || {};
+      const gapsStats = gapsData?.data || {};
+      const obligationsStats = obligationsData?.data || {};
+
       setStats({
-        totalRegulations: 24,
-        activeRegulations: 18,
-        complianceRate: 87,
-        pendingAssessments: 5,
-        overdueAssessments: 2,
-        activePolicies: 15,
-        implementedControls: 42,
-        criticalFindings: 1,
-        highFindings: 3,
-        mediumFindings: 8,
-        lowFindings: 12,
+        totalRegulations: obligationsStats.total || 0,
+        activeRegulations: obligationsStats.compliant || 0,
+        complianceRate: obligationsStats.total > 0
+          ? Math.round((obligationsStats.compliant / obligationsStats.total) * 100)
+          : 0,
+        pendingAssessments: gapsStats.inProgress || 0,
+        overdueAssessments: gapsStats.critical || 0,
+        activePolicies: controlsStats.active || 0,
+        implementedControls: controlsStats.total || 0,
+        criticalFindings: gapsStats.critical || 0,
+        highFindings: gapsStats.high || 0,
+        mediumFindings: gapsStats.medium || 0,
+        lowFindings: gapsStats.low || 0,
       });
+
+      // Set recent activity from obligations
       setRecentActivity([
-        { id: 1, type: 'compliance', message: 'Compliance assessment completed for ISO 27001', time: '2 hours ago', status: 'completed' },
-        { id: 2, type: 'policy', message: 'New policy approved: Data Protection Policy v2.0', time: '4 hours ago', status: 'approved' },
-        { id: 3, type: 'control', message: 'Control implementation verified: Access Control', time: '6 hours ago', status: 'verified' },
-        { id: 4, type: 'assessment', message: 'Compliance assessment created for GDPR', time: '1 day ago', status: 'created' },
-        { id: 5, type: 'regulation', message: 'New regulation added: OJK Circular No. 12/2023', time: '2 days ago', status: 'added' },
+        { id: 1, type: 'compliance', message: 'Compliance monitoring data loaded successfully', time: 'Just now', status: 'completed' },
+        { id: 2, type: 'control', message: `${controlsStats.total || 0} controls in system`, time: 'Live data', status: 'verified' },
+        { id: 3, type: 'assessment', message: `${gapsStats.total || 0} compliance gaps tracked`, time: 'Live data', status: 'created' },
+        { id: 4, type: 'policy', message: `${controlsStats.active || 0} active policies`, time: 'Live data', status: 'approved' },
+        { id: 5, type: 'regulation', message: `${obligationsStats.total || 0} regulatory obligations`, time: 'Live data', status: 'added' },
       ]);
+
       setUpcomingDeadlines([
-        { id: 1, item: 'GDPR Compliance Assessment', dueDate: '2024-01-15', priority: 'high' },
-        { id: 2, item: 'ISO 27001 Control Review', dueDate: '2024-01-20', priority: 'medium' },
-        { id: 3, item: 'Policy Review: Access Control', dueDate: '2024-01-25', priority: 'low' },
-        { id: 4, item: 'UU PDP Compliance Assessment', dueDate: '2024-02-01', priority: 'high' },
+        { id: 1, item: 'Critical Compliance Gaps', dueDate: 'Immediate', priority: gapsStats.critical > 0 ? 'critical' : 'low' },
+        { id: 2, item: 'High Priority Gaps', dueDate: 'This Week', priority: gapsStats.high > 0 ? 'high' : 'low' },
+        { id: 3, item: 'Medium Priority Gaps', dueDate: 'This Month', priority: gapsStats.medium > 0 ? 'medium' : 'low' },
+        { id: 4, item: 'Low Priority Gaps', dueDate: 'Next Quarter', priority: 'low' },
       ]);
+
+    } catch (error) {
+      console.error('Error loading monitoring data:', error);
+      // Set fallback empty data
+      setStats({
+        totalRegulations: 0, activeRegulations: 0, complianceRate: 0,
+        pendingAssessments: 0, overdueAssessments: 0, activePolicies: 0,
+        implementedControls: 0, criticalFindings: 0, highFindings: 0,
+        mediumFindings: 0, lowFindings: 0,
+      });
+      setRecentActivity([]);
+      setUpcomingDeadlines([]);
+    } finally {
       setLoading(false);
-    }, 500);
+    }
   };
 
   const handleRefresh = async () => {
@@ -162,7 +203,7 @@ export const RegOpsMonitoring: React.FC<RegOpsMonitoringProps> = ({ domain }) =>
                   <div>
                     <p className="text-gray-400 text-sm">Pending Assessments</p>
                     <p className="text-3xl font-bold text-white mt-1">{stats.pendingAssessments}</p>
-                    <p className="text-red-400 text-xs mt-1">{stats.overdueAssessments} overdue</p>
+                    <p className="text-red-400 text-xs mt-1">{stats.overdueAssessments} critical</p>
                   </div>
                   <div className="p-3 bg-yellow-500/20 rounded-lg">
                     <Clock className="w-6 h-6 text-yellow-400" />
@@ -177,7 +218,7 @@ export const RegOpsMonitoring: React.FC<RegOpsMonitoringProps> = ({ domain }) =>
                   <div>
                     <p className="text-gray-400 text-sm">Implemented Controls</p>
                     <p className="text-3xl font-bold text-white mt-1">{stats.implementedControls}</p>
-                    <p className="text-gray-500 text-xs mt-1">{stats.activePolicies} active policies</p>
+                    <p className="text-gray-500 text-xs mt-1">{stats.activePolicies} active</p>
                   </div>
                   <div className="p-3 bg-purple-500/20 rounded-lg">
                     <Shield className="w-6 h-6 text-purple-400" />
@@ -235,13 +276,12 @@ export const RegOpsMonitoring: React.FC<RegOpsMonitoringProps> = ({ domain }) =>
                 <div className="space-y-3">
                   {recentActivity.map((activity) => (
                     <div key={activity.id} className="flex items-start gap-3 p-3 bg-gray-800/50 rounded-lg">
-                      <div className={`w-2 h-2 rounded-full mt-2 ${
-                        activity.status === 'completed' || activity.status === 'approved' || activity.status === 'verified'
+                      <div className={`w-2 h-2 rounded-full mt-2 ${activity.status === 'completed' || activity.status === 'approved' || activity.status === 'verified'
                           ? 'bg-green-400'
                           : activity.status === 'added' || activity.status === 'created'
-                          ? 'bg-blue-400'
-                          : 'bg-yellow-400'
-                      }`} />
+                            ? 'bg-blue-400'
+                            : 'bg-yellow-400'
+                        }`} />
                       <div className="flex-1">
                         <p className="text-gray-200 text-sm">{activity.message}</p>
                         <p className="text-gray-500 text-xs mt-1">{activity.time}</p>
@@ -256,7 +296,7 @@ export const RegOpsMonitoring: React.FC<RegOpsMonitoringProps> = ({ domain }) =>
               <div className="p-4">
                 <h3 className="text-white font-semibold mb-4 flex items-center gap-2">
                   <Clock className="w-5 h-5 text-cyan-400" />
-                  Upcoming Deadlines
+                  Priority Gaps
                 </h3>
                 <div className="space-y-3">
                   {upcomingDeadlines.map((deadline) => (
@@ -283,7 +323,7 @@ export const RegOpsMonitoring: React.FC<RegOpsMonitoringProps> = ({ domain }) =>
                 <AlertTriangle className="w-6 h-6 text-red-400" />
                 <div className="flex-1">
                   <p className="text-red-400 font-semibold">Action Required</p>
-                  <p className="text-red-300 text-sm">You have {stats.overdueAssessments} overdue compliance assessment(s)</p>
+                  <p className="text-red-300 text-sm">You have {stats.overdueAssessments} critical compliance gap(s)</p>
                 </div>
                 <Button className="bg-red-600 hover:bg-red-700 text-white">
                   View Details
