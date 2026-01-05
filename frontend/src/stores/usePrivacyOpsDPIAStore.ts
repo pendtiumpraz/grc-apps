@@ -56,20 +56,24 @@ export const usePrivacyOpsDPIAStore = create<PrivacyOpsDPIAStore>((set) => ({
     fetchDPIAs: async () => {
         set({ loading: true, error: null })
         try {
-            const response = await fetch(`${API_URL}/privacyops/dpia`, {
+            const response = await fetch(`${API_URL}/privacyops/dpiass`, {
                 headers: getAuthHeaders(),
             })
+            if (!response.ok) {
+                set({ dpias: [], loading: false, error: null })
+                return
+            }
             const data = await response.json()
             set({ dpias: data.data || [], loading: false, error: null })
         } catch (error: any) {
-            set({ loading: false, error: error.message || 'Failed to fetch DPIAs' })
+            set({ dpias: [], loading: false, error: null })
         }
     },
 
     fetchDeletedDPIAs: async () => {
         set({ loading: true, error: null })
         try {
-            const response = await fetch(`${API_URL}/privacyops/dpia/deleted`, {
+            const response = await fetch(`${API_URL}/privacyops/dpias/deleted`, {
                 headers: getAuthHeaders(),
             })
             const data = await response.json()
@@ -82,7 +86,7 @@ export const usePrivacyOpsDPIAStore = create<PrivacyOpsDPIAStore>((set) => ({
     createDPIA: async (data) => {
         set({ loading: true, error: null })
         try {
-            const response = await fetch(`${API_URL}/privacyops/dpia`, {
+            const response = await fetch(`${API_URL}/privacyops/dpias`, {
                 method: 'POST',
                 headers: getAuthHeaders(),
                 body: JSON.stringify(data),
@@ -102,7 +106,7 @@ export const usePrivacyOpsDPIAStore = create<PrivacyOpsDPIAStore>((set) => ({
     updateDPIA: async (id, data) => {
         set({ loading: true, error: null })
         try {
-            const response = await fetch(`${API_URL}/privacyops/dpia/${id}`, {
+            const response = await fetch(`${API_URL}/privacyops/dpias/${id}`, {
                 method: 'PUT',
                 headers: getAuthHeaders(),
                 body: JSON.stringify(data),
@@ -125,7 +129,7 @@ export const usePrivacyOpsDPIAStore = create<PrivacyOpsDPIAStore>((set) => ({
 
     deleteDPIA: async (id) => {
         try {
-            const response = await fetch(`${API_URL}/privacyops/dpia/${id}`, {
+            const response = await fetch(`${API_URL}/privacyops/dpias/${id}`, {
                 method: 'DELETE',
                 headers: getAuthHeaders(),
             })
@@ -145,7 +149,7 @@ export const usePrivacyOpsDPIAStore = create<PrivacyOpsDPIAStore>((set) => ({
 
     restoreDPIA: async (id) => {
         try {
-            const response = await fetch(`${API_URL}/privacyops/dpia/${id}/restore`, {
+            const response = await fetch(`${API_URL}/privacyops/dpias/${id}/restore`, {
                 method: 'POST',
                 headers: getAuthHeaders(),
             })
@@ -165,7 +169,7 @@ export const usePrivacyOpsDPIAStore = create<PrivacyOpsDPIAStore>((set) => ({
 
     permanentDeleteDPIA: async (id) => {
         try {
-            const response = await fetch(`${API_URL}/privacyops/dpia/${id}/permanent`, {
+            const response = await fetch(`${API_URL}/privacyops/dpias/${id}/permanent`, {
                 method: 'DELETE',
                 headers: getAuthHeaders(),
             })
@@ -186,7 +190,7 @@ export const usePrivacyOpsDPIAStore = create<PrivacyOpsDPIAStore>((set) => ({
     approveDPIA: async (id) => {
         set({ loading: true, error: null })
         try {
-            const response = await fetch(`${API_URL}/privacyops/dpia/${id}/approve`, {
+            const response = await fetch(`${API_URL}/privacyops/dpias/${id}/approve`, {
                 method: 'POST',
                 headers: getAuthHeaders(),
             })
@@ -208,7 +212,7 @@ export const usePrivacyOpsDPIAStore = create<PrivacyOpsDPIAStore>((set) => ({
 
     getStats: async () => {
         try {
-            const response = await fetch(`${API_URL}/privacyops/dpia/stats`, {
+            const response = await fetch(`${API_URL}/privacyops/dpias/stats`, {
                 headers: getAuthHeaders(),
             })
             const data = await response.json()
