@@ -20,6 +20,10 @@ export default function ComplianceGapAnalysis() {
   const [viewMode, setViewMode] = useState<'list' | 'create' | 'edit' | 'trash'>('list')
   const [deleting, setDeleting] = useState<number | string | null>(null)
   const [restoring, setRestoring] = useState<number | string | null>(null)
+  const [formData, setFormData] = useState({
+    name: '', framework: '', currentState: '', targetState: '', gapDescription: '',
+    remediationPlan: '', priority: 'medium', status: 'identified', owner: '', targetDate: '',
+  })
 
   const {
     gaps,
@@ -122,6 +126,40 @@ export default function ComplianceGapAnalysis() {
       showError(error.message || 'Gagal menghapus gap')
     } finally {
       setDeleting(null)
+    }
+  }
+
+  const handleCreateGap = async () => {
+    try {
+      await createGap(formData)
+      showSuccess('Gap analysis berhasil dibuat')
+      setViewMode('list')
+      setFormData({ name: '', framework: '', currentState: '', targetState: '', gapDescription: '', remediationPlan: '', priority: 'medium', status: 'identified', owner: '', targetDate: '' })
+    } catch (error: any) {
+      showError(error.message || 'Gagal membuat gap analysis')
+    }
+  }
+
+  const handleEdit = (gap: any) => {
+    setFormData({
+      name: gap.name || '', framework: gap.framework || '', currentState: gap.currentState || '',
+      targetState: gap.targetState || '', gapDescription: gap.gapDescription || '',
+      remediationPlan: gap.remediationPlan || '', priority: gap.priority || 'medium',
+      status: gap.status || 'identified', owner: gap.owner || '', targetDate: gap.targetDate || '',
+    })
+    setSelectedGap(gap)
+    setViewMode('edit')
+  }
+
+  const handleUpdateGap = async () => {
+    try {
+      await updateGap(selectedGap.id, formData)
+      showSuccess('Gap analysis berhasil diupdate')
+      setViewMode('list')
+      setSelectedGap(null)
+      setFormData({ name: '', framework: '', currentState: '', targetState: '', gapDescription: '', remediationPlan: '', priority: 'medium', status: 'identified', owner: '', targetDate: '' })
+    } catch (error: any) {
+      showError(error.message || 'Gagal mengupdate gap analysis')
     }
   }
 
@@ -258,6 +296,127 @@ export default function ComplianceGapAnalysis() {
                 </div>
               </Card>
             </div>
+
+            {/* Create Form */}
+            {viewMode === 'create' && (
+              <Card className="bg-gray-900 border-gray-700 mb-8">
+                <div className="p-6">
+                  <h3 className="text-xl font-bold text-white mb-4">Create New Gap Assessment</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <Label className="text-gray-300 mb-2 block">Name</Label>
+                      <Input type="text" value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} className="bg-gray-800 border-gray-700 text-white" placeholder="Gap assessment name" />
+                    </div>
+                    <div>
+                      <Label className="text-gray-300 mb-2 block">Framework</Label>
+                      <Input type="text" value={formData.framework} onChange={(e) => setFormData({ ...formData, framework: e.target.value })} className="bg-gray-800 border-gray-700 text-white" placeholder="e.g. ISO 27001, GDPR" />
+                    </div>
+                    <div>
+                      <Label className="text-gray-300 mb-2 block">Current State</Label>
+                      <Input type="text" value={formData.currentState} onChange={(e) => setFormData({ ...formData, currentState: e.target.value })} className="bg-gray-800 border-gray-700 text-white" placeholder="Current compliance state" />
+                    </div>
+                    <div>
+                      <Label className="text-gray-300 mb-2 block">Target State</Label>
+                      <Input type="text" value={formData.targetState} onChange={(e) => setFormData({ ...formData, targetState: e.target.value })} className="bg-gray-800 border-gray-700 text-white" placeholder="Target compliance state" />
+                    </div>
+                    <div>
+                      <Label className="text-gray-300 mb-2 block">Priority</Label>
+                      <select value={formData.priority} onChange={(e) => setFormData({ ...formData, priority: e.target.value })} className="w-full bg-gray-800 border border-gray-700 text-white rounded-md px-3 py-2">
+                        <option value="low">Low</option>
+                        <option value="medium">Medium</option>
+                        <option value="high">High</option>
+                        <option value="critical">Critical</option>
+                      </select>
+                    </div>
+                    <div>
+                      <Label className="text-gray-300 mb-2 block">Owner</Label>
+                      <Input type="text" value={formData.owner} onChange={(e) => setFormData({ ...formData, owner: e.target.value })} className="bg-gray-800 border-gray-700 text-white" placeholder="Responsible owner" />
+                    </div>
+                    <div className="md:col-span-2">
+                      <Label className="text-gray-300 mb-2 block">Gap Description</Label>
+                      <textarea value={formData.gapDescription} onChange={(e) => setFormData({ ...formData, gapDescription: e.target.value })} className="w-full bg-gray-800 border border-gray-700 text-white rounded-md px-3 py-2 h-24" placeholder="Describe the compliance gap" />
+                    </div>
+                    <div className="md:col-span-2">
+                      <Label className="text-gray-300 mb-2 block">Remediation Plan</Label>
+                      <textarea value={formData.remediationPlan} onChange={(e) => setFormData({ ...formData, remediationPlan: e.target.value })} className="w-full bg-gray-800 border border-gray-700 text-white rounded-md px-3 py-2 h-24" placeholder="Plan to address the gap" />
+                    </div>
+                  </div>
+                  <div className="flex gap-3 justify-end mt-6">
+                    <Button variant="outline" onClick={() => { setViewMode('list'); setFormData({ name: '', framework: '', currentState: '', targetState: '', gapDescription: '', remediationPlan: '', priority: 'medium', status: 'identified', owner: '', targetDate: '' }) }} className="border-gray-600 text-gray-300 hover:bg-gray-700">
+                      Cancel
+                    </Button>
+                    <Button onClick={handleCreateGap} disabled={loading} className="bg-cyan-600 hover:bg-cyan-700 text-white">
+                      {loading ? 'Creating...' : 'Create Gap Assessment'}
+                    </Button>
+                  </div>
+                </div>
+              </Card>
+            )}
+
+            {/* Edit Form */}
+            {viewMode === 'edit' && (
+              <Card className="bg-gray-900 border-gray-700 mb-8">
+                <div className="p-6">
+                  <h3 className="text-xl font-bold text-white mb-4">Edit Gap Assessment</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <Label className="text-gray-300 mb-2 block">Name</Label>
+                      <Input type="text" value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} className="bg-gray-800 border-gray-700 text-white" />
+                    </div>
+                    <div>
+                      <Label className="text-gray-300 mb-2 block">Framework</Label>
+                      <Input type="text" value={formData.framework} onChange={(e) => setFormData({ ...formData, framework: e.target.value })} className="bg-gray-800 border-gray-700 text-white" />
+                    </div>
+                    <div>
+                      <Label className="text-gray-300 mb-2 block">Current State</Label>
+                      <Input type="text" value={formData.currentState} onChange={(e) => setFormData({ ...formData, currentState: e.target.value })} className="bg-gray-800 border-gray-700 text-white" />
+                    </div>
+                    <div>
+                      <Label className="text-gray-300 mb-2 block">Target State</Label>
+                      <Input type="text" value={formData.targetState} onChange={(e) => setFormData({ ...formData, targetState: e.target.value })} className="bg-gray-800 border-gray-700 text-white" />
+                    </div>
+                    <div>
+                      <Label className="text-gray-300 mb-2 block">Priority</Label>
+                      <select value={formData.priority} onChange={(e) => setFormData({ ...formData, priority: e.target.value })} className="w-full bg-gray-800 border border-gray-700 text-white rounded-md px-3 py-2">
+                        <option value="low">Low</option>
+                        <option value="medium">Medium</option>
+                        <option value="high">High</option>
+                        <option value="critical">Critical</option>
+                      </select>
+                    </div>
+                    <div>
+                      <Label className="text-gray-300 mb-2 block">Status</Label>
+                      <select value={formData.status} onChange={(e) => setFormData({ ...formData, status: e.target.value })} className="w-full bg-gray-800 border border-gray-700 text-white rounded-md px-3 py-2">
+                        <option value="identified">Identified</option>
+                        <option value="in_progress">In Progress</option>
+                        <option value="remediated">Remediated</option>
+                        <option value="accepted">Accepted</option>
+                      </select>
+                    </div>
+                    <div>
+                      <Label className="text-gray-300 mb-2 block">Owner</Label>
+                      <Input type="text" value={formData.owner} onChange={(e) => setFormData({ ...formData, owner: e.target.value })} className="bg-gray-800 border-gray-700 text-white" />
+                    </div>
+                    <div className="md:col-span-2">
+                      <Label className="text-gray-300 mb-2 block">Gap Description</Label>
+                      <textarea value={formData.gapDescription} onChange={(e) => setFormData({ ...formData, gapDescription: e.target.value })} className="w-full bg-gray-800 border border-gray-700 text-white rounded-md px-3 py-2 h-24" />
+                    </div>
+                    <div className="md:col-span-2">
+                      <Label className="text-gray-300 mb-2 block">Remediation Plan</Label>
+                      <textarea value={formData.remediationPlan} onChange={(e) => setFormData({ ...formData, remediationPlan: e.target.value })} className="w-full bg-gray-800 border border-gray-700 text-white rounded-md px-3 py-2 h-24" />
+                    </div>
+                  </div>
+                  <div className="flex gap-3 justify-end mt-6">
+                    <Button variant="outline" onClick={() => { setViewMode('list'); setSelectedGap(null); setFormData({ name: '', framework: '', currentState: '', targetState: '', gapDescription: '', remediationPlan: '', priority: 'medium', status: 'identified', owner: '', targetDate: '' }) }} className="border-gray-600 text-gray-300 hover:bg-gray-700">
+                      Cancel
+                    </Button>
+                    <Button onClick={handleUpdateGap} disabled={loading} className="bg-cyan-600 hover:bg-cyan-700 text-white">
+                      {loading ? 'Updating...' : 'Update Gap Assessment'}
+                    </Button>
+                  </div>
+                </div>
+              </Card>
+            )}
 
             {/* Gap List */}
             <div className="mb-8">

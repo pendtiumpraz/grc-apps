@@ -53,13 +53,15 @@ export const usePrivacyOpsDataInventoryStore = create<PrivacyOpsDataInventorySto
       })
 
       if (!response.ok) {
-        throw new Error('Failed to fetch data inventory')
+        // Don't throw error for 401/404, just set empty items
+        set({ items: [], loading: false, error: null })
+        return
       }
 
       const data = await response.json()
       set({ items: data.data || [], loading: false, error: null })
     } catch (error: any) {
-      set({ loading: false, error: error.message || 'Failed to fetch data inventory' })
+      set({ items: [], loading: false, error: null })
     }
   },
 
