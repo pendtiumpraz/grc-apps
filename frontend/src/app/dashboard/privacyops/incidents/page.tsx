@@ -310,7 +310,7 @@ export default function IncidentsPage() {
                     </div>
                     <div className="flex gap-2">
                       <Button
-                        onClick={() => setIsCreating(true)}
+                        onClick={() => setViewMode('create')}
                         disabled={loading}
                         className="bg-cyan-600 hover:bg-cyan-700 text-white disabled:opacity-50"
                       >
@@ -324,7 +324,7 @@ export default function IncidentsPage() {
             </div>
 
             {/* Create Form */}
-            {isCreating && (
+            {viewMode === 'create' && (
               <Card className="bg-gray-900 border-gray-700 mb-8">
                 <div className="p-6">
                   <h3 className="text-xl font-bold text-white mb-4">Create New Incident</h3>
@@ -414,7 +414,7 @@ export default function IncidentsPage() {
                     <Button
                       variant="outline"
                       onClick={() => {
-                        setIsCreating(false)
+                        setViewMode('list')
                         setFormData({
                           title: '',
                           description: '',

@@ -299,7 +299,7 @@ export default function VendorsPage() {
             </div>
 
             {/* Create Form */}
-            {isCreating && (
+            {viewMode === 'create' && (
               <Card className="bg-gray-900 border-gray-700 mb-8">
                 <div className="p-6">
                   <h3 className="text-xl font-bold text-white mb-4">Create New Vendor</h3>
@@ -375,7 +375,7 @@ export default function VendorsPage() {
                     <Button
                       variant="outline"
                       onClick={() => {
-                        setIsCreating(false)
+                        setViewMode('list')
                         setFormData({
                           name: '',
                           type: '',
