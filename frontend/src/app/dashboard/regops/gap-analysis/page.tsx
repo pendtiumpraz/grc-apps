@@ -242,7 +242,7 @@ export default function ComplianceGapAnalysis() {
                     </div>
                     <div className="flex gap-2">
                       <Button
-                        onClick={handleCreateGap}
+                        onClick={() => setViewMode('create')}
                         disabled={loading}
                         className="bg-cyan-600 hover:bg-cyan-700 text-white disabled:opacity-50"
                       >
