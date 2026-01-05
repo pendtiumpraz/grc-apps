@@ -403,13 +403,13 @@ export default function ComplianceGapAnalysis() {
                       <div className="flex gap-3 justify-end pt-4 border-t border-gray-700">
                         <Button
                           variant="outline"
-                          onClick={() => handleUpdateGap(selectedGap)}
+                          onClick={() => setViewMode('edit')}
                           className="border-gray-600 text-gray-300 hover:bg-gray-700"
                         >
                           Edit Gap
                         </Button>
                         <Button
-                          onClick={() => handleDeleteGap(selectedGap.id)}
+                          onClick={() => handleDeleteGap(selectedGap.id, selectedGap.name)}
                           className="bg-red-600 hover:bg-red-700 text-white"
                         >
                           Delete Gap

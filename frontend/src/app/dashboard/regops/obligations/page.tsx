@@ -507,13 +507,13 @@ export default function ObligationMappingPage() {
                       <div className="flex gap-3 justify-end pt-4 border-t border-gray-700">
                         <Button
                           variant="outline"
-                          onClick={() => handleUpdateObligation(selectedObligation.id)}
+                          onClick={() => updateObligation(selectedObligation.id, { status: 'compliant' })}
                           className="border-gray-600 text-gray-300 hover:bg-gray-700"
                         >
                           Mark as Compliant
                         </Button>
                         <Button
-                          onClick={() => handleDeleteObligation(selectedObligation.id)}
+                          onClick={() => deleteObligation(selectedObligation.id)}
                           className="bg-red-600 hover:bg-red-700 text-white"
                         >
                           Delete
