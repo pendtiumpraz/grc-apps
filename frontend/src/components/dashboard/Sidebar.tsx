@@ -60,7 +60,7 @@ const tenantAdminMenuItems: MenuItem[] = [
     {
         icon: TrendingUp, label: 'RiskOps', href: '/dashboard/riskops', subItems: [
             { label: 'Overview', href: '/dashboard/riskops' },
-            { label: 'Risk Register', href: '/dashboard/riskops' },
+            { label: 'Risk Register', href: '/dashboard/riskops/risk-register' },
             { label: 'Vulnerabilities', href: '/dashboard/riskops/vulnerabilities' },
             { label: 'Vendors', href: '/dashboard/riskops/vendors' },
             { label: 'Continuity', href: '/dashboard/riskops/continuity' },
@@ -115,7 +115,7 @@ const regularUserMenuItems: MenuItem[] = [
     {
         icon: TrendingUp, label: 'RiskOps', href: '/dashboard/riskops', subItems: [
             { label: 'Overview', href: '/dashboard/riskops' },
-            { label: 'Risk Register', href: '/dashboard/riskops' },
+            { label: 'Risk Register', href: '/dashboard/riskops/risk-register' },
             { label: 'Vulnerabilities', href: '/dashboard/riskops/vulnerabilities' },
             { label: 'Vendors', href: '/dashboard/riskops/vendors' },
             { label: 'Continuity', href: '/dashboard/riskops/continuity' },
