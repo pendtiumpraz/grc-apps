@@ -54,6 +54,10 @@ export const useGapAnalysisStore = create<GapAnalysisStore>((set) => ({
             const response = await fetch(`${API_URL}/regops/gap-analysis`, {
                 headers: getAuthHeaders(),
             })
+            if (!response.ok) {
+                set({ gaps: [], loading: false, error: null })
+                return
+            }
             const data = await response.json()
             set({ gaps: data.data || [], loading: false, error: null })
         } catch (error: any) {
@@ -67,6 +71,10 @@ export const useGapAnalysisStore = create<GapAnalysisStore>((set) => ({
             const response = await fetch(`${API_URL}/regops/gap-analysis/deleted`, {
                 headers: getAuthHeaders(),
             })
+            if (!response.ok) {
+                set({ deletedGaps: [], loading: false, error: null })
+                return
+            }
             const data = await response.json()
             set({ deletedGaps: data.data || [], loading: false, error: null })
         } catch (error: any) {
