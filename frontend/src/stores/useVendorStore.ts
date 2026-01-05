@@ -56,20 +56,24 @@ export const useVendorStore = create<VendorStore>((set) => ({
     fetchVendors: async () => {
         set({ loading: true, error: null })
         try {
-            const response = await fetch(`${API_URL}/riskops/vendor-assessments`, {
+            const response = await fetch(`${API_URL}/riskops/vendors`, {
                 headers: getAuthHeaders(),
             })
+            if (!response.ok) {
+                set({ vendors: [], loading: false, error: null })
+                return
+            }
             const data = await response.json()
             set({ vendors: data.data || [], loading: false, error: null })
         } catch (error: any) {
-            set({ loading: false, error: error.message || 'Failed to fetch vendors' })
+            set({ vendors: [], loading: false, error: null })
         }
     },
 
     fetchDeletedVendors: async () => {
         set({ loading: true, error: null })
         try {
-            const response = await fetch(`${API_URL}/riskops/vendor-assessments/deleted`, {
+            const response = await fetch(`${API_URL}/riskops/vendors/deleted`, {
                 headers: getAuthHeaders(),
             })
             const data = await response.json()
@@ -82,7 +86,7 @@ export const useVendorStore = create<VendorStore>((set) => ({
     createVendor: async (data) => {
         set({ loading: true, error: null })
         try {
-            const response = await fetch(`${API_URL}/riskops/vendor-assessments`, {
+            const response = await fetch(`${API_URL}/riskops/vendors`, {
                 method: 'POST',
                 headers: getAuthHeaders(),
                 body: JSON.stringify(data),
@@ -102,7 +106,7 @@ export const useVendorStore = create<VendorStore>((set) => ({
     updateVendor: async (id, data) => {
         set({ loading: true, error: null })
         try {
-            const response = await fetch(`${API_URL}/riskops/vendor-assessments/${id}`, {
+            const response = await fetch(`${API_URL}/riskops/vendors/${id}`, {
                 method: 'PUT',
                 headers: getAuthHeaders(),
                 body: JSON.stringify(data),
@@ -125,7 +129,7 @@ export const useVendorStore = create<VendorStore>((set) => ({
 
     deleteVendor: async (id) => {
         try {
-            const response = await fetch(`${API_URL}/riskops/vendor-assessments/${id}`, {
+            const response = await fetch(`${API_URL}/riskops/vendors/${id}`, {
                 method: 'DELETE',
                 headers: getAuthHeaders(),
             })
@@ -145,7 +149,7 @@ export const useVendorStore = create<VendorStore>((set) => ({
 
     restoreVendor: async (id) => {
         try {
-            const response = await fetch(`${API_URL}/riskops/vendor-assessments/${id}/restore`, {
+            const response = await fetch(`${API_URL}/riskops/vendors/${id}/restore`, {
                 method: 'POST',
                 headers: getAuthHeaders(),
             })
@@ -165,7 +169,7 @@ export const useVendorStore = create<VendorStore>((set) => ({
 
     permanentDeleteVendor: async (id) => {
         try {
-            const response = await fetch(`${API_URL}/riskops/vendor-assessments/${id}/permanent`, {
+            const response = await fetch(`${API_URL}/riskops/vendors/${id}/permanent`, {
                 method: 'DELETE',
                 headers: getAuthHeaders(),
             })
