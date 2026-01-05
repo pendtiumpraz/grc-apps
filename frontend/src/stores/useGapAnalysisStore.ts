@@ -51,7 +51,7 @@ export const useGapAnalysisStore = create<GapAnalysisStore>((set) => ({
     fetchGaps: async () => {
         set({ loading: true, error: null })
         try {
-            const response = await fetch(`${API_URL}/regops/gap-analysis`, {
+            const response = await fetch(`${API_URL}/regops/compliance-gaps`, {
                 headers: getAuthHeaders(),
             })
             if (!response.ok) {
@@ -68,7 +68,7 @@ export const useGapAnalysisStore = create<GapAnalysisStore>((set) => ({
     fetchDeletedGaps: async () => {
         set({ loading: true, error: null })
         try {
-            const response = await fetch(`${API_URL}/regops/gap-analysis/deleted`, {
+            const response = await fetch(`${API_URL}/regops/compliance-gaps/deleted`, {
                 headers: getAuthHeaders(),
             })
             if (!response.ok) {
@@ -85,7 +85,7 @@ export const useGapAnalysisStore = create<GapAnalysisStore>((set) => ({
     createGap: async (data) => {
         set({ loading: true, error: null })
         try {
-            const response = await fetch(`${API_URL}/regops/gap-analysis`, {
+            const response = await fetch(`${API_URL}/regops/compliance-gaps`, {
                 method: 'POST',
                 headers: getAuthHeaders(),
                 body: JSON.stringify(data),
@@ -105,7 +105,7 @@ export const useGapAnalysisStore = create<GapAnalysisStore>((set) => ({
     updateGap: async (id, data) => {
         set({ loading: true, error: null })
         try {
-            const response = await fetch(`${API_URL}/regops/gap-analysis/${id}`, {
+            const response = await fetch(`${API_URL}/regops/compliance-gaps/${id}`, {
                 method: 'PUT',
                 headers: getAuthHeaders(),
                 body: JSON.stringify(data),
@@ -128,7 +128,7 @@ export const useGapAnalysisStore = create<GapAnalysisStore>((set) => ({
 
     deleteGap: async (id) => {
         try {
-            const response = await fetch(`${API_URL}/regops/gap-analysis/${id}`, {
+            const response = await fetch(`${API_URL}/regops/compliance-gaps/${id}`, {
                 method: 'DELETE',
                 headers: getAuthHeaders(),
             })
@@ -146,7 +146,7 @@ export const useGapAnalysisStore = create<GapAnalysisStore>((set) => ({
 
     restoreGap: async (id) => {
         try {
-            const response = await fetch(`${API_URL}/regops/gap-analysis/${id}/restore`, {
+            const response = await fetch(`${API_URL}/regops/compliance-gaps/${id}/restore`, {
                 method: 'POST',
                 headers: getAuthHeaders(),
             })
@@ -164,7 +164,7 @@ export const useGapAnalysisStore = create<GapAnalysisStore>((set) => ({
 
     permanentDeleteGap: async (id) => {
         try {
-            const response = await fetch(`${API_URL}/regops/gap-analysis/${id}/permanent`, {
+            const response = await fetch(`${API_URL}/regops/compliance-gaps/${id}/permanent`, {
                 method: 'DELETE',
                 headers: getAuthHeaders(),
             })
