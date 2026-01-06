@@ -51,13 +51,14 @@ export const useAuditOpsGovernanceStore = create<GovernanceState>()(
           })
 
           if (!response.ok) {
-            throw new Error('Failed to fetch KRIs')
+            set({ kris: [], loading: false, error: null })
+            return
           }
 
           const data = await response.json()
           set({ kris: data.data || [], loading: false })
         } catch (error) {
-          set({ error: (error as Error).message, loading: false })
+          set({ kris: [], loading: false, error: null })
         }
       },
 

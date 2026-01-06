@@ -52,13 +52,14 @@ export const useAuditOpsContinuousAuditStore = create<ContinuousAuditState>()(
           })
 
           if (!response.ok) {
-            throw new Error('Failed to fetch continuous audit tests')
+            set({ tests: [], loading: false, error: null })
+            return
           }
 
           const data = await response.json()
           set({ tests: data.data || [], loading: false })
         } catch (error) {
-          set({ error: (error as Error).message, loading: false })
+          set({ tests: [], loading: false, error: null })
         }
       },
 

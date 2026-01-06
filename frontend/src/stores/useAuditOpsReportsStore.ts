@@ -49,13 +49,14 @@ export const useAuditOpsReportsStore = create<ReportsState>()(
           })
 
           if (!response.ok) {
-            throw new Error('Failed to fetch reports')
+            set({ reports: [], loading: false, error: null })
+            return
           }
 
           const data = await response.json()
           set({ reports: data.data || [], loading: false })
         } catch (error) {
-          set({ error: (error as Error).message, loading: false })
+          set({ reports: [], loading: false, error: null })
         }
       },
 
