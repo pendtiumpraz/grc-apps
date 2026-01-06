@@ -55,20 +55,24 @@ export const useContinuityStore = create<ContinuityStore>((set) => ({
     fetchPlans: async () => {
         set({ loading: true, error: null })
         try {
-            const response = await fetch(`${API_URL}/riskops/business-continuity`, {
+            const response = await fetch(`${API_URL}/riskops/continuity`, {
                 headers: getAuthHeaders(),
             })
+            if (!response.ok) {
+                set({ plans: [], loading: false, error: null })
+                return
+            }
             const data = await response.json()
             set({ plans: data.data || [], loading: false, error: null })
         } catch (error: any) {
-            set({ loading: false, error: error.message || 'Failed to fetch continuity plans' })
+            set({ plans: [], loading: false, error: null })
         }
     },
 
     fetchDeletedPlans: async () => {
         set({ loading: true, error: null })
         try {
-            const response = await fetch(`${API_URL}/riskops/business-continuity/deleted`, {
+            const response = await fetch(`${API_URL}/riskops/continuity/deleted`, {
                 headers: getAuthHeaders(),
             })
             const data = await response.json()
@@ -81,7 +85,7 @@ export const useContinuityStore = create<ContinuityStore>((set) => ({
     createPlan: async (data) => {
         set({ loading: true, error: null })
         try {
-            const response = await fetch(`${API_URL}/riskops/business-continuity`, {
+            const response = await fetch(`${API_URL}/riskops/continuity`, {
                 method: 'POST',
                 headers: getAuthHeaders(),
                 body: JSON.stringify(data),
@@ -101,7 +105,7 @@ export const useContinuityStore = create<ContinuityStore>((set) => ({
     updatePlan: async (id, data) => {
         set({ loading: true, error: null })
         try {
-            const response = await fetch(`${API_URL}/riskops/business-continuity/${id}`, {
+            const response = await fetch(`${API_URL}/riskops/continuity/${id}`, {
                 method: 'PUT',
                 headers: getAuthHeaders(),
                 body: JSON.stringify(data),
@@ -124,7 +128,7 @@ export const useContinuityStore = create<ContinuityStore>((set) => ({
 
     deletePlan: async (id) => {
         try {
-            const response = await fetch(`${API_URL}/riskops/business-continuity/${id}`, {
+            const response = await fetch(`${API_URL}/riskops/continuity/${id}`, {
                 method: 'DELETE',
                 headers: getAuthHeaders(),
             })
@@ -144,7 +148,7 @@ export const useContinuityStore = create<ContinuityStore>((set) => ({
 
     restorePlan: async (id) => {
         try {
-            const response = await fetch(`${API_URL}/riskops/business-continuity/${id}/restore`, {
+            const response = await fetch(`${API_URL}/riskops/continuity/${id}/restore`, {
                 method: 'POST',
                 headers: getAuthHeaders(),
             })
@@ -164,7 +168,7 @@ export const useContinuityStore = create<ContinuityStore>((set) => ({
 
     permanentDeletePlan: async (id) => {
         try {
-            const response = await fetch(`${API_URL}/riskops/business-continuity/${id}/permanent`, {
+            const response = await fetch(`${API_URL}/riskops/continuity/${id}/permanent`, {
                 method: 'DELETE',
                 headers: getAuthHeaders(),
             })
@@ -185,7 +189,7 @@ export const useContinuityStore = create<ContinuityStore>((set) => ({
     activatePlan: async (id) => {
         set({ loading: true, error: null })
         try {
-            const response = await fetch(`${API_URL}/riskops/business-continuity/${id}/activate`, {
+            const response = await fetch(`${API_URL}/riskops/continuity/${id}/activate`, {
                 method: 'POST',
                 headers: getAuthHeaders(),
             })
