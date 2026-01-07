@@ -149,16 +149,14 @@ export const useAIDocumentStore = create<AIDocumentStore>((set, get) => ({
       })
 
       if (!response.ok) {
-        throw new Error('Failed to fetch templates')
+        set({ templates: [], templatesLoading: false, templatesError: null })
+        return
       }
 
       const result = await response.json()
       set({ templates: result.data || [], templatesLoading: false })
     } catch (error) {
-      set({
-        templatesError: error instanceof Error ? error.message : 'Unknown error',
-        templatesLoading: false
-      })
+      set({ templates: [], templatesLoading: false, templatesError: null })
     }
   },
 
@@ -262,16 +260,14 @@ export const useAIDocumentStore = create<AIDocumentStore>((set, get) => ({
       })
 
       if (!response.ok) {
-        throw new Error('Failed to fetch documents')
+        set({ documents: [], documentsLoading: false, documentsError: null })
+        return
       }
 
       const result = await response.json()
       set({ documents: result.data || [], documentsLoading: false })
     } catch (error) {
-      set({
-        documentsError: error instanceof Error ? error.message : 'Unknown error',
-        documentsLoading: false
-      })
+      set({ documents: [], documentsLoading: false, documentsError: null })
     }
   },
 
@@ -375,16 +371,14 @@ export const useAIDocumentStore = create<AIDocumentStore>((set, get) => ({
       })
 
       if (!response.ok) {
-        throw new Error('Failed to fetch analyses')
+        set({ analyses: [], analysesLoading: false, analysesError: null })
+        return
       }
 
       const result = await response.json()
       set({ analyses: result.data || [], analysesLoading: false })
     } catch (error) {
-      set({
-        analysesError: error instanceof Error ? error.message : 'Unknown error',
-        analysesLoading: false
-      })
+      set({ analyses: [], analysesLoading: false, analysesError: null })
     }
   },
 
