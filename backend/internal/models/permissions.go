@@ -238,25 +238,25 @@ var RolePermissions = map[string][]string{
 	RoleAuditor: {
 		"auditops.view", "auditops.create", "auditops.update", "auditops.delete",
 		"ai.view", "ai.update", "ai.chat", "ai.generate", "ai.analyze", "ai.autofill",
-		"document.view", "document.create", "document.update", "document.delete",
+		"document.view", "document.create", "document.update", "document.delete", "document.analyze", "document.autofill",
 		"dashboard.view",
 	},
 	RoleAuditAnalyst: {
 		"auditops.view",
 		"ai.view", "ai.chat", "ai.generate", "ai.analyze", "ai.autofill",
-		"document.view", "document.create", "document.update", "document.delete",
+		"document.view", "document.create", "document.update", "document.delete", "document.analyze", "document.autofill",
 		"dashboard.view",
 	},
 	RoleSecurityOfficer: {
 		"riskops.view", "riskops.create", "riskops.update", "riskops.delete",
 		"ai.view", "ai.update", "ai.chat", "ai.generate", "ai.analyze", "ai.autofill",
-		"document.view", "document.create", "document.update", "document.delete",
+		"document.view", "document.create", "document.update", "document.delete", "document.analyze", "document.autofill",
 		"dashboard.view",
 	},
 	RoleSystemAdmin: {
 		"regops.view", "privacyops.view", "riskops.view", "auditops.view",
 		"ai.view", "ai.update", "ai.chat", "ai.generate", "ai.analyze", "ai.autofill",
-		"document.view", "document.create", "document.update", "document.delete",
+		"document.view", "document.create", "document.update", "document.delete", "document.analyze", "document.autofill",
 		"dashboard.view", "dashboard.customize",
 	},
 	RoleRegularUser: {
@@ -264,8 +264,8 @@ var RolePermissions = map[string][]string{
 		"privacyops.view",
 		"riskops.view",
 		"auditops.view",
-		"ai.view", "ai.chat",
-		"document.view",
+		"ai.view", "ai.chat", "ai.analyze",
+		"document.view", "document.analyze",
 		"dashboard.view",
 	},
 }
