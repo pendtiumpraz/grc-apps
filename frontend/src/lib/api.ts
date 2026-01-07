@@ -92,7 +92,7 @@ const authenticatedRequest = async (endpoint: string, method: string, body?: any
   try {
     const token = TokenManager.getToken()
     if (!token) {
-      throw new Error('No authentication token found')
+      return { success: false, error: 'No authentication token found', data: null }
     }
 
     const response = await fetch(`${API_BASE_URL}${endpoint}`, {
@@ -103,15 +103,14 @@ const authenticatedRequest = async (endpoint: string, method: string, body?: any
 
     if (response.status === 401) {
       TokenManager.clear()
-      throw new Error('Unauthorized. Please login again.')
+      return { success: false, error: 'Unauthorized. Please login again.', data: null }
+    }
+
+    if (!response.ok) {
+      return { success: false, error: 'Request failed', data: null }
     }
 
     const data = await response.json()
-
-    if (!response.ok) {
-      throw new Error(data.message || data.error || 'Request failed')
-    }
-
     return { success: true, data, message: data.message }
   } catch (error: any) {
     console.error(`API Error (${method} ${endpoint}):`, error)
