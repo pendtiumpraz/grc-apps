@@ -11,7 +11,8 @@ import { Label } from '@/components/ui/label'
 import { Search, Shield, Plus, Eye, Edit, Trash2, CheckCircle, AlertTriangle, Clock, Loader2, X } from 'lucide-react'
 import { useControlStore } from '@/stores/useControlStore'
 import { confirmDelete, showSuccess, showError } from '@/lib/sweetalert'
-import { AIDocumentGenerator, AIDocumentAnalyzer, useAIDocuments } from '@/components/ai/AIDocuments'
+import { AIDocumentGenerator, AIDocumentAnalyzer, useAIDocuments }
+import DocumentUploadAnalyzer from '@/components/ai/DocumentUploadAnalyzer' from '@/components/ai/AIDocuments'
 import { Wand2, Sparkles } from 'lucide-react'
 
 export default function ControlManagement() {
@@ -526,3 +527,4 @@ export default function ControlManagement() {
     </div>
   )
 }
+

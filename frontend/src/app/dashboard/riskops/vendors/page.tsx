@@ -11,7 +11,8 @@ import { Label } from '@/components/ui/label'
 import { Search, Building2, Plus, CheckCircle, Clock, AlertTriangle, Edit, Trash2, Eye, X, RotateCcw, Trash, Loader2, Download, Sparkles, Wand2, Filter, Building } from 'lucide-react'
 import { useVendorStore } from '@/stores/useVendorStore'
 import { confirmDelete, confirmRestore, confirmPermanentDelete, showSuccess, showError } from '@/lib/sweetalert'
-import { AIDocumentGenerator, AIDocumentAnalyzer, useAIDocuments } from '@/components/ai/AIDocuments'
+import { AIDocumentGenerator, AIDocumentAnalyzer, useAIDocuments }
+import DocumentUploadAnalyzer from '@/components/ai/DocumentUploadAnalyzer' from '@/components/ai/AIDocuments'
 
 export default function VendorsPage() {
   const [searchTerm, setSearchTerm] = useState('')
@@ -576,3 +577,4 @@ export default function VendorsPage() {
     </div>
   )
 }
+

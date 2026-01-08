@@ -10,7 +10,8 @@ import { Label } from '@/components/ui/label'
 import { Search, FileText, Upload, Plus, CheckCircle, Clock, AlertTriangle, Edit, Trash2, Eye, X, RotateCcw, Trash, Loader2, Download, Sparkles, Wand2 } from 'lucide-react'
 import { useEvidenceStore } from '@/stores/useEvidenceStore'
 import { confirmDelete, confirmRestore, confirmPermanentDelete, showSuccess, showError } from '@/lib/sweetalert'
-import { AIDocumentGenerator, AIDocumentAnalyzer, useAIDocuments } from '@/components/ai/AIDocuments'
+import { AIDocumentGenerator, AIDocumentAnalyzer, useAIDocuments }
+import DocumentUploadAnalyzer from '@/components/ai/DocumentUploadAnalyzer' from '@/components/ai/AIDocuments'
 
 export default function EvidenceManagement() {
   const [searchTerm, setSearchTerm] = useState('')
@@ -705,3 +706,4 @@ export default function EvidenceManagement() {
     </div>
   )
 }
+

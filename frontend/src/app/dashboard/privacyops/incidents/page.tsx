@@ -11,7 +11,8 @@ import { Label } from '@/components/ui/label'
 import { Search, AlertTriangle, Plus, CheckCircle, Clock, Edit, Trash2, Eye, X, RotateCcw, Trash, Loader2, Download, Sparkles, Wand2, Filter } from 'lucide-react'
 import { usePrivacyOpsIncidentStore } from '@/stores/usePrivacyOpsIncidentStore'
 import { confirmDelete, confirmRestore, confirmPermanentDelete, showSuccess, showError } from '@/lib/sweetalert'
-import { AIDocumentGenerator, AIDocumentAnalyzer, useAIDocuments } from '@/components/ai/AIDocuments'
+import { AIDocumentGenerator, AIDocumentAnalyzer, useAIDocuments }
+import DocumentUploadAnalyzer from '@/components/ai/DocumentUploadAnalyzer' from '@/components/ai/AIDocuments'
 
 export default function IncidentsPage() {
   const [searchTerm, setSearchTerm] = useState('')
@@ -633,3 +634,4 @@ export default function IncidentsPage() {
     </div>
   )
 }
+

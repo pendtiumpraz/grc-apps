@@ -11,7 +11,8 @@ import { Label } from '@/components/ui/label'
 import { Search, Shield, Plus, CheckCircle, AlertTriangle, TrendingUp, Edit, Trash2, Eye, X, RotateCcw, Trash, Loader2, Download, Sparkles, Wand2, Filter } from 'lucide-react'
 import { useObligationStore } from '@/stores/useObligationStore'
 import { confirmDelete, confirmRestore, confirmPermanentDelete, showSuccess, showError } from '@/lib/sweetalert'
-import { AIDocumentGenerator, AIDocumentAnalyzer, useAIDocuments } from '@/components/ai/AIDocuments'
+import { AIDocumentGenerator, AIDocumentAnalyzer, useAIDocuments }
+import DocumentUploadAnalyzer from '@/components/ai/DocumentUploadAnalyzer' from '@/components/ai/AIDocuments'
 
 export default function ObligationMappingPage() {
   const [searchTerm, setSearchTerm] = useState('')
@@ -548,3 +549,4 @@ export default function ObligationMappingPage() {
     </div>
   )
 }
+

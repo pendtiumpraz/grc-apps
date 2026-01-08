@@ -15,6 +15,7 @@ import { usePrivacyOpsDSRStore } from '@/stores/usePrivacyOpsDSRStore'
 import { confirmDelete, confirmRestore, confirmPermanentDelete, showSuccess, showError } from '@/lib/sweetalert'
 import DocumentExportModal, { useDocumentExport } from '@/components/documents/DocumentExportModal'
 import { AIDocumentGenerator, AIDocumentAnalyzer, useAIDocuments } from '@/components/ai/AIDocuments'
+import DocumentUploadAnalyzer from '@/components/ai/DocumentUploadAnalyzer'
 
 export default function DSRPage() {
   const [searchTerm, setSearchTerm] = useState('')
@@ -385,6 +386,17 @@ export default function DSRPage() {
                 </div>
               </div>
             </Card>
+
+            {/* Document Upload & AI Analyze Section */}
+            {viewMode === 'list' && (
+              <div className="mb-6">
+                <DocumentUploadAnalyzer
+                  moduleType="dsr"
+                  moduleName="Data Subject Request (DSR)"
+                  moduleContext={{ dsrCount: dsrs.length }}
+                />
+              </div>
+            )}
 
             {/* Create/Edit Form */}
             {(viewMode === 'create' || viewMode === 'edit') && (
