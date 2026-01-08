@@ -80,10 +80,12 @@ export default function DocsPage() {
             icon: <Shield className="w-5 h-5" />,
             color: 'from-blue-500 to-indigo-500',
             items: [
+                { id: 'regulations', title: 'Regulations', description: 'Database regulasi' },
+                { id: 'obligations', title: 'Obligation Mapping', description: 'Mapping kewajiban regulasi' },
                 { id: 'gap-analysis', title: 'Gap Analysis', description: 'Identifikasi kesenjangan kepatuhan' },
                 { id: 'controls', title: 'Controls', description: 'Kelola kontrol keamanan' },
                 { id: 'policies', title: 'Policies', description: 'Manajemen kebijakan' },
-                { id: 'obligations', title: 'Obligations', description: 'Mapping kewajiban regulasi' },
+                { id: 'regops-monitoring', title: 'Monitoring', description: 'Pemantauan kepatuhan' },
             ]
         },
         {
@@ -92,10 +94,14 @@ export default function DocsPage() {
             icon: <Lock className="w-5 h-5" />,
             color: 'from-purple-500 to-pink-500',
             items: [
+                { id: 'privacy-overview', title: 'Overview', description: 'Dashboard privasi' },
                 { id: 'data-inventory', title: 'Data Inventory', description: 'Katalog data pribadi' },
-                { id: 'dsr', title: 'DSR', description: 'Data Subject Requests' },
+                { id: 'ropa', title: 'RoPA', description: 'Record of Processing Activities' },
                 { id: 'dpia', title: 'DPIA', description: 'Data Protection Impact Assessment' },
+                { id: 'dsr', title: 'DSR', description: 'Data Subject Requests' },
+                { id: 'privacy-controls', title: 'Privacy Controls', description: 'Kontrol privasi' },
                 { id: 'incidents', title: 'Incidents', description: 'Penanganan data breach' },
+                { id: 'privacy-monitoring', title: 'Monitoring', description: 'Pemantauan privasi' },
             ]
         },
         {
@@ -104,10 +110,12 @@ export default function DocsPage() {
             icon: <TrendingUp className="w-5 h-5" />,
             color: 'from-orange-500 to-red-500',
             items: [
+                { id: 'risk-overview', title: 'Overview', description: 'Dashboard risiko' },
                 { id: 'risk-register', title: 'Risk Register', description: 'Katalog semua risiko' },
                 { id: 'vulnerabilities', title: 'Vulnerabilities', description: 'Tracking kerentanan' },
                 { id: 'vendors', title: 'Vendors', description: 'Third-party risk management' },
                 { id: 'continuity', title: 'Continuity', description: 'Business Continuity Planning' },
+                { id: 'risk-monitoring', title: 'Monitoring', description: 'Pemantauan risiko' },
             ]
         },
         {
@@ -116,9 +124,12 @@ export default function DocsPage() {
             icon: <FileCheck className="w-5 h-5" />,
             color: 'from-green-500 to-emerald-500',
             items: [
+                { id: 'audit-overview', title: 'Overview', description: 'Dashboard audit' },
                 { id: 'internal-audits', title: 'Internal Audits', description: 'Perencanaan & pelaksanaan audit' },
-                { id: 'evidence', title: 'Evidence', description: 'Repository bukti audit' },
                 { id: 'governance', title: 'Governance (KRI)', description: 'Key Risk Indicators' },
+                { id: 'continuous-audit', title: 'Continuous Audit', description: 'Audit berkelanjutan' },
+                { id: 'evidence', title: 'Evidence', description: 'Repository bukti audit' },
+                { id: 'audit-monitoring', title: 'Monitoring', description: 'Pemantauan audit' },
                 { id: 'reports', title: 'Reports', description: 'Laporan audit' },
             ]
         },
@@ -156,22 +167,39 @@ export default function DocsPage() {
                 return <ArchitectureSection />
             case 'roles':
                 return <RolesSection />
+            // RegOps
+            case 'regulations':
+                return <RegulationsSection />
+            case 'obligations':
+                return <ObligationsSection />
             case 'gap-analysis':
                 return <GapAnalysisSection />
             case 'controls':
                 return <ControlsSection />
             case 'policies':
                 return <PoliciesSection />
-            case 'obligations':
-                return <ObligationsSection />
+            case 'regops-monitoring':
+                return <MonitoringSection title="RegOps Monitoring" color="blue" />
+            // PrivacyOps
+            case 'privacy-overview':
+                return <PrivacyOverviewSection />
             case 'data-inventory':
                 return <DataInventorySection />
-            case 'dsr':
-                return <DSRSection />
+            case 'ropa':
+                return <RoPASection />
             case 'dpia':
                 return <DPIASection />
+            case 'dsr':
+                return <DSRSection />
+            case 'privacy-controls':
+                return <PrivacyControlsSection />
             case 'incidents':
                 return <IncidentsSection />
+            case 'privacy-monitoring':
+                return <MonitoringSection title="Privacy Monitoring" color="purple" />
+            // RiskOps
+            case 'risk-overview':
+                return <RiskOverviewSection />
             case 'risk-register':
                 return <RiskRegisterSection />
             case 'vulnerabilities':
@@ -180,20 +208,31 @@ export default function DocsPage() {
                 return <VendorsSection />
             case 'continuity':
                 return <ContinuitySection />
+            case 'risk-monitoring':
+                return <MonitoringSection title="Risk Monitoring" color="orange" />
+            // AuditOps
+            case 'audit-overview':
+                return <AuditOverviewSection />
             case 'internal-audits':
                 return <InternalAuditsSection />
-            case 'evidence':
-                return <EvidenceSection />
             case 'governance':
                 return <GovernanceSection />
+            case 'continuous-audit':
+                return <ContinuousAuditSection />
+            case 'evidence':
+                return <EvidenceSection />
+            case 'audit-monitoring':
+                return <MonitoringSection title="Audit Monitoring" color="green" />
             case 'reports':
                 return <ReportsSection />
+            // Documents
             case 'doc-generator':
                 return <DocGeneratorSection />
             case 'doc-analyzer':
                 return <DocAnalyzerSection />
             case 'templates':
                 return <TemplatesSection />
+            // AI Features
             case 'ai-chat':
                 return <AIChatSection />
             case 'ai-generate':
@@ -1598,6 +1637,333 @@ function AIAnalyzeSection() {
             <p className="text-gray-400">
                 Analisis dokumen dengan AI untuk menemukan compliance issues dan rekomendasi perbaikan.
             </p>
+        </div>
+    )
+}
+
+// ============ NEW SECTIONS ============
+
+function RegulationsSection() {
+    return (
+        <div className="space-y-6">
+            <div className="flex items-center gap-3">
+                <div className="p-2 bg-blue-500/20 rounded-lg">
+                    <Shield className="w-6 h-6 text-blue-400" />
+                </div>
+                <h2 className="text-2xl font-bold text-white">Regulations Database</h2>
+            </div>
+
+            <p className="text-gray-400">
+                <strong className="text-blue-400">Regulations</strong> adalah database regulasi dan standar
+                yang digunakan organisasi sebagai acuan kepatuhan.
+            </p>
+
+            <div className="space-y-4">
+                <h3 className="text-lg font-semibold text-white">Regulasi yang Didukung:</h3>
+                <div className="grid grid-cols-2 gap-3">
+                    {[
+                        { reg: 'ISO 27001', desc: 'Information Security Management' },
+                        { reg: 'ISO 27701', desc: 'Privacy Information Management' },
+                        { reg: 'GDPR', desc: 'EU General Data Protection Regulation' },
+                        { reg: 'UU PDP', desc: 'UU Perlindungan Data Pribadi Indonesia' },
+                        { reg: 'PCI DSS', desc: 'Payment Card Industry Data Security' },
+                        { reg: 'SOC 2', desc: 'Service Organization Control 2' },
+                        { reg: 'HIPAA', desc: 'Health Insurance Portability' },
+                        { reg: 'NIST CSF', desc: 'Cybersecurity Framework' },
+                    ].map((item, idx) => (
+                        <div key={idx} className="p-3 bg-gray-800/50 rounded-lg border border-gray-700">
+                            <div className="text-blue-400 font-medium">{item.reg}</div>
+                            <div className="text-gray-400 text-xs">{item.desc}</div>
+                        </div>
+                    ))}
+                </div>
+            </div>
+
+            <div className="p-4 bg-blue-500/10 rounded-lg border border-blue-500/20">
+                <h4 className="text-blue-400 font-medium mb-2">📋 Fitur</h4>
+                <ul className="text-gray-400 text-sm space-y-1">
+                    <li>• Lihat semua kontrol dari setiap regulasi</li>
+                    <li>• Mapping kontrol ke obligations</li>
+                    <li>• Import custom framework</li>
+                </ul>
+            </div>
+        </div>
+    )
+}
+
+function RoPASection() {
+    return (
+        <div className="space-y-6">
+            <div className="flex items-center gap-3">
+                <div className="p-2 bg-purple-500/20 rounded-lg">
+                    <ClipboardList className="w-6 h-6 text-purple-400" />
+                </div>
+                <h2 className="text-2xl font-bold text-white">RoPA (Record of Processing Activities)</h2>
+            </div>
+
+            <p className="text-gray-400">
+                <strong className="text-purple-400">RoPA</strong> adalah catatan wajib yang mendokumentasikan
+                semua aktivitas pemrosesan data pribadi dalam organisasi. Wajib berdasarkan GDPR Article 30 dan UU PDP.
+            </p>
+
+            <div className="space-y-4">
+                <h3 className="text-lg font-semibold text-white">Informasi yang Dicatat:</h3>
+                <div className="grid grid-cols-2 gap-3">
+                    {[
+                        'Nama aktivitas pemrosesan',
+                        'Tujuan pemrosesan',
+                        'Kategori data pribadi',
+                        'Kategori subjek data',
+                        'Dasar hukum pemrosesan',
+                        'Penerima data',
+                        'Transfer ke luar negeri',
+                        'Retention period',
+                        'Measures keamanan',
+                        'PIC / Owner',
+                    ].map((field, idx) => (
+                        <div key={idx} className="p-2 bg-gray-800/50 rounded-lg border border-gray-700">
+                            <span className="text-gray-300 text-sm">{field}</span>
+                        </div>
+                    ))}
+                </div>
+            </div>
+
+            <div className="p-4 bg-purple-500/10 rounded-lg border border-purple-500/20">
+                <h4 className="text-purple-400 font-medium mb-2">⚖️ Dasar Hukum</h4>
+                <ul className="text-gray-400 text-sm space-y-1">
+                    <li>• <strong className="text-white">GDPR Article 30</strong> - Records of processing activities</li>
+                    <li>• <strong className="text-white">UU PDP Pasal 31</strong> - Kewajiban pencatatan pemrosesan</li>
+                </ul>
+            </div>
+        </div>
+    )
+}
+
+function PrivacyOverviewSection() {
+    return (
+        <div className="space-y-6">
+            <div className="flex items-center gap-3">
+                <div className="p-2 bg-purple-500/20 rounded-lg">
+                    <Lock className="w-6 h-6 text-purple-400" />
+                </div>
+                <h2 className="text-2xl font-bold text-white">PrivacyOps Overview</h2>
+            </div>
+
+            <p className="text-gray-400">
+                Dashboard privasi yang menampilkan ringkasan status perlindungan data di organisasi.
+            </p>
+
+            <div className="grid grid-cols-3 gap-4">
+                {[
+                    { label: 'Data Assets', value: 'XX', color: 'text-purple-400' },
+                    { label: 'Open DSR', value: 'XX', color: 'text-yellow-400' },
+                    { label: 'Active DPIA', value: 'XX', color: 'text-blue-400' },
+                ].map((stat, idx) => (
+                    <div key={idx} className="p-4 bg-gray-800/50 rounded-lg border border-gray-700 text-center">
+                        <div className={`text-3xl font-bold ${stat.color}`}>{stat.value}</div>
+                        <div className="text-gray-400 text-sm">{stat.label}</div>
+                    </div>
+                ))}
+            </div>
+        </div>
+    )
+}
+
+function PrivacyControlsSection() {
+    return (
+        <div className="space-y-6">
+            <div className="flex items-center gap-3">
+                <div className="p-2 bg-purple-500/20 rounded-lg">
+                    <Shield className="w-6 h-6 text-purple-400" />
+                </div>
+                <h2 className="text-2xl font-bold text-white">Privacy Controls</h2>
+            </div>
+
+            <p className="text-gray-400">
+                <strong className="text-purple-400">Privacy Controls</strong> adalah kontrol-kontrol khusus
+                yang diterapkan untuk melindungi data pribadi.
+            </p>
+
+            <div className="space-y-3">
+                {[
+                    { ctrl: 'Consent Management', desc: 'Sistem pengelolaan persetujuan subjek data' },
+                    { ctrl: 'Data Minimization', desc: 'Hanya mengumpulkan data yang diperlukan' },
+                    { ctrl: 'Purpose Limitation', desc: 'Menggunakan data sesuai tujuan yang dinyatakan' },
+                    { ctrl: 'Storage Limitation', desc: 'Menghapus data setelah tidak diperlukan' },
+                    { ctrl: 'Data Encryption', desc: 'Enkripsi data at-rest dan in-transit' },
+                    { ctrl: 'Access Control', desc: 'Membatasi akses ke data pribadi' },
+                ].map((item, idx) => (
+                    <div key={idx} className="p-3 bg-gray-800/50 rounded-lg border border-gray-700">
+                        <div className="text-purple-400 font-medium">{item.ctrl}</div>
+                        <div className="text-gray-400 text-sm">{item.desc}</div>
+                    </div>
+                ))}
+            </div>
+        </div>
+    )
+}
+
+function RiskOverviewSection() {
+    return (
+        <div className="space-y-6">
+            <div className="flex items-center gap-3">
+                <div className="p-2 bg-orange-500/20 rounded-lg">
+                    <TrendingUp className="w-6 h-6 text-orange-400" />
+                </div>
+                <h2 className="text-2xl font-bold text-white">RiskOps Overview</h2>
+            </div>
+
+            <p className="text-gray-400">
+                Dashboard risiko yang menampilkan risk heatmap, top risks, dan trend risiko.
+            </p>
+
+            <div className="p-4 bg-gray-800/50 rounded-lg border border-gray-700">
+                <h4 className="text-white font-medium mb-3">Risk Heatmap</h4>
+                <div className="grid grid-cols-5 gap-1 text-xs text-center">
+                    {/* Header */}
+                    <div></div>
+                    {['Rare', 'Unlikely', 'Moderate', 'Likely', 'Certain'].map((h, i) => (
+                        <div key={i} className="text-gray-500">{h}</div>
+                    ))}
+                    {/* Rows */}
+                    {['Critical', 'High', 'Medium', 'Low', 'Negligible'].map((impact, i) => (
+                        <React.Fragment key={i}>
+                            <div className="text-gray-500 text-right pr-2">{impact}</div>
+                            {[5, 4, 3, 2, 1].map((_, j) => {
+                                const score = (5 - i) * (j + 1)
+                                const color = score >= 15 ? 'bg-red-500' : score >= 10 ? 'bg-orange-500' : score >= 5 ? 'bg-yellow-500' : 'bg-green-500'
+                                return <div key={j} className={`${color}/50 rounded p-1`}>{score}</div>
+                            })}
+                        </React.Fragment>
+                    ))}
+                </div>
+            </div>
+        </div>
+    )
+}
+
+function AuditOverviewSection() {
+    return (
+        <div className="space-y-6">
+            <div className="flex items-center gap-3">
+                <div className="p-2 bg-green-500/20 rounded-lg">
+                    <FileCheck className="w-6 h-6 text-green-400" />
+                </div>
+                <h2 className="text-2xl font-bold text-white">AuditOps Overview</h2>
+            </div>
+
+            <p className="text-gray-400">
+                Dashboard audit yang menampilkan status audit, upcoming audits, dan findings summary.
+            </p>
+
+            <div className="grid grid-cols-3 gap-4">
+                {[
+                    { label: 'Planned Audits', value: 'XX', color: 'text-blue-400' },
+                    { label: 'In Progress', value: 'XX', color: 'text-yellow-400' },
+                    { label: 'Completed', value: 'XX', color: 'text-green-400' },
+                ].map((stat, idx) => (
+                    <div key={idx} className="p-4 bg-gray-800/50 rounded-lg border border-gray-700 text-center">
+                        <div className={`text-3xl font-bold ${stat.color}`}>{stat.value}</div>
+                        <div className="text-gray-400 text-sm">{stat.label}</div>
+                    </div>
+                ))}
+            </div>
+        </div>
+    )
+}
+
+function ContinuousAuditSection() {
+    return (
+        <div className="space-y-6">
+            <div className="flex items-center gap-3">
+                <div className="p-2 bg-green-500/20 rounded-lg">
+                    <Workflow className="w-6 h-6 text-green-400" />
+                </div>
+                <h2 className="text-2xl font-bold text-white">Continuous Audit</h2>
+            </div>
+
+            <p className="text-gray-400">
+                <strong className="text-green-400">Continuous Audit</strong> adalah pengujian otomatis
+                yang berjalan secara berkala untuk memverifikasi kontrol tetap efektif.
+            </p>
+
+            <div className="space-y-4">
+                <h3 className="text-lg font-semibold text-white">Jenis Automated Tests:</h3>
+                <div className="grid grid-cols-2 gap-3">
+                    {[
+                        { test: 'Access Review', desc: 'Verifikasi hak akses user' },
+                        { test: 'Config Compliance', desc: 'Cek konfigurasi sistem' },
+                        { test: 'Patch Status', desc: 'Cek status patching' },
+                        { test: 'Backup Verification', desc: 'Verifikasi backup berhasil' },
+                        { test: 'Log Monitoring', desc: 'Analisis log untuk anomali' },
+                        { test: 'Vulnerability Scan', desc: 'Scan kerentanan otomatis' },
+                    ].map((item, idx) => (
+                        <div key={idx} className="p-3 bg-gray-800/50 rounded-lg border border-gray-700">
+                            <div className="text-green-400 font-medium text-sm">{item.test}</div>
+                            <div className="text-gray-400 text-xs">{item.desc}</div>
+                        </div>
+                    ))}
+                </div>
+            </div>
+
+            <div className="p-4 bg-green-500/10 rounded-lg border border-green-500/20">
+                <h4 className="text-green-400 font-medium mb-2">🔄 Automasi</h4>
+                <p className="text-gray-400 text-sm">
+                    Test dapat dijadwalkan harian, mingguan, atau bulanan. Notifikasi akan dikirim jika test gagal.
+                </p>
+            </div>
+        </div>
+    )
+}
+
+function MonitoringSection({ title, color }: { title: string; color: string }) {
+    const colorClasses: { [key: string]: { bg: string; text: string; border: string } } = {
+        blue: { bg: 'bg-blue-500/20', text: 'text-blue-400', border: 'border-blue-500/20' },
+        purple: { bg: 'bg-purple-500/20', text: 'text-purple-400', border: 'border-purple-500/20' },
+        orange: { bg: 'bg-orange-500/20', text: 'text-orange-400', border: 'border-orange-500/20' },
+        green: { bg: 'bg-green-500/20', text: 'text-green-400', border: 'border-green-500/20' },
+    }
+    const colors = colorClasses[color] || colorClasses.blue
+
+    return (
+        <div className="space-y-6">
+            <div className="flex items-center gap-3">
+                <div className={`p-2 ${colors.bg} rounded-lg`}>
+                    <BarChart3 className={`w-6 h-6 ${colors.text}`} />
+                </div>
+                <h2 className="text-2xl font-bold text-white">{title}</h2>
+            </div>
+
+            <p className="text-gray-400">
+                Dashboard monitoring real-time untuk memantau status dan trend.
+            </p>
+
+            <div className="space-y-4">
+                <h3 className="text-lg font-semibold text-white">Fitur Monitoring:</h3>
+                <div className="grid grid-cols-2 gap-3">
+                    {[
+                        { feature: 'Real-time Dashboard', desc: 'Visualisasi data live' },
+                        { feature: 'Trend Analysis', desc: 'Analisis tren historis' },
+                        { feature: 'Alert Configuration', desc: 'Atur threshold & notifikasi' },
+                        { feature: 'Scheduled Reports', desc: 'Laporan otomatis berkala' },
+                    ].map((item, idx) => (
+                        <div key={idx} className="p-3 bg-gray-800/50 rounded-lg border border-gray-700">
+                            <div className={`${colors.text} font-medium text-sm`}>{item.feature}</div>
+                            <div className="text-gray-400 text-xs">{item.desc}</div>
+                        </div>
+                    ))}
+                </div>
+            </div>
+
+            <div className={`p-4 ${colors.bg} rounded-lg border ${colors.border}`}>
+                <h4 className={`${colors.text} font-medium mb-2`}>📊 Metrics Tracked</h4>
+                <ul className="text-gray-400 text-sm space-y-1">
+                    <li>• Compliance score over time</li>
+                    <li>• Open issues count</li>
+                    <li>• Response time metrics</li>
+                    <li>• Trend indicators</li>
+                </ul>
+            </div>
         </div>
     )
 }
