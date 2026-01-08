@@ -1620,12 +1620,59 @@ function AIChatSection() {
 }
 
 function AIGenerateSection() {
+    const modules = [
+        { name: 'DPIA', desc: 'Generate DPIA Report otomatis' },
+        { name: 'RoPA', desc: 'Generate RoPA documentation' },
+        { name: 'DSR', desc: 'Generate respons DSR' },
+        { name: 'Incidents', desc: 'Generate incident report' },
+        { name: 'Risk Register', desc: 'Generate risk assessment' },
+        { name: 'Policies', desc: 'Generate draft kebijakan' },
+        { name: 'Controls', desc: 'Generate control documentation' },
+        { name: 'Gap Analysis', desc: 'Generate gap analysis report' },
+        { name: 'Audit', desc: 'Generate audit report' },
+        { name: 'Vendors', desc: 'Generate vendor assessment' },
+        { name: 'Continuity', desc: 'Generate BCP document' },
+    ]
+
     return (
         <div className="space-y-6">
-            <h2 className="text-2xl font-bold text-white">AI Generate</h2>
+            <div className="flex items-center gap-3">
+                <div className="p-2 bg-yellow-500/20 rounded-lg">
+                    <Wand2 className="w-6 h-6 text-yellow-400" />
+                </div>
+                <h2 className="text-2xl font-bold text-white">AI Generate (Wand Icon)</h2>
+            </div>
+
             <p className="text-gray-400">
-                Generate dokumen otomatis menggunakan AI (OpenAI GPT-4 atau Google Gemini).
+                <strong className="text-yellow-400">AI Generate</strong> tersedia di SEMUA modul untuk
+                menggenerate dokumen secara otomatis menggunakan AI (OpenAI GPT-4 atau Google Gemini).
             </p>
+
+            <div className="p-4 bg-yellow-500/10 rounded-lg border border-yellow-500/20">
+                <h4 className="text-yellow-400 font-medium mb-3">🪄 Cara Menggunakan:</h4>
+                <ol className="text-gray-400 text-sm space-y-2">
+                    <li>1. Buka halaman modul (DPIA, RoPA, Risk Register, dll)</li>
+                    <li>2. Klik tombol <span className="text-purple-400">🪄 Wand</span> pada item yang ingin di-generate</li>
+                    <li>3. Pilih jenis dokumen yang ingin dibuat</li>
+                    <li>4. Klik Generate dan tunggu AI membuat dokumen</li>
+                    <li>5. Review hasil, edit jika perlu, lalu download</li>
+                </ol>
+            </div>
+
+            <div className="space-y-3">
+                <h3 className="text-lg font-semibold text-white">Modul dengan AI Generate:</h3>
+                <div className="grid grid-cols-2 gap-2">
+                    {modules.map((m, idx) => (
+                        <div key={idx} className="flex items-center gap-2 p-2 bg-gray-800/50 rounded border border-gray-700">
+                            <CheckCircle className="w-4 h-4 text-green-400" />
+                            <div>
+                                <span className="text-white text-sm font-medium">{m.name}</span>
+                                <span className="text-gray-500 text-xs block">{m.desc}</span>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            </div>
         </div>
     )
 }
@@ -1633,10 +1680,45 @@ function AIGenerateSection() {
 function AIAnalyzeSection() {
     return (
         <div className="space-y-6">
-            <h2 className="text-2xl font-bold text-white">AI Analyze</h2>
+            <div className="flex items-center gap-3">
+                <div className="p-2 bg-pink-500/20 rounded-lg">
+                    <Sparkles className="w-6 h-6 text-pink-400" />
+                </div>
+                <h2 className="text-2xl font-bold text-white">AI Analyze (Sparkles Icon)</h2>
+            </div>
+
             <p className="text-gray-400">
-                Analisis dokumen dengan AI untuk menemukan compliance issues dan rekomendasi perbaikan.
+                <strong className="text-pink-400">AI Analyze</strong> tersedia di SEMUA modul untuk
+                menganalisis data dan dokumen untuk menemukan compliance issues dan rekomendasi.
             </p>
+
+            <div className="p-4 bg-pink-500/10 rounded-lg border border-pink-500/20">
+                <h4 className="text-pink-400 font-medium mb-3">✨ Cara Menggunakan:</h4>
+                <ol className="text-gray-400 text-sm space-y-2">
+                    <li>1. Buka halaman modul (DPIA, RoPA, Risk Register, dll)</li>
+                    <li>2. Klik tombol <span className="text-pink-400">✨ Sparkles</span> pada item yang ingin dianalisis</li>
+                    <li>3. AI akan menganalisis secara otomatis</li>
+                    <li>4. Lihat hasil: Compliance Score, Findings, Recommendations</li>
+                </ol>
+            </div>
+
+            <div className="space-y-3">
+                <h3 className="text-lg font-semibold text-white">Hasil Analisis AI:</h3>
+                <div className="grid grid-cols-3 gap-3">
+                    <div className="p-4 bg-gray-800/50 rounded-lg border border-gray-700 text-center">
+                        <div className="text-3xl font-bold text-green-400">Score</div>
+                        <p className="text-gray-400 text-sm">Compliance Score 0-100</p>
+                    </div>
+                    <div className="p-4 bg-gray-800/50 rounded-lg border border-gray-700 text-center">
+                        <div className="text-3xl font-bold text-orange-400">Issues</div>
+                        <p className="text-gray-400 text-sm">Daftar masalah ditemukan</p>
+                    </div>
+                    <div className="p-4 bg-gray-800/50 rounded-lg border border-gray-700 text-center">
+                        <div className="text-3xl font-bold text-blue-400">Recs</div>
+                        <p className="text-gray-400 text-sm">Rekomendasi perbaikan</p>
+                    </div>
+                </div>
+            </div>
         </div>
     )
 }
