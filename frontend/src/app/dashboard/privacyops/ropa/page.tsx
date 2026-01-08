@@ -15,6 +15,7 @@ import { usePrivacyOpsRoPAStore } from '@/stores/usePrivacyOpsRoPAStore'
 import { confirmDelete, confirmRestore, confirmPermanentDelete, showSuccess, showError } from '@/lib/sweetalert'
 import DocumentExportModal, { useDocumentExport } from '@/components/documents/DocumentExportModal'
 import { AIDocumentGenerator, AIDocumentAnalyzer, useAIDocuments } from '@/components/ai/AIDocuments'
+import DocumentUploadAnalyzer from '@/components/ai/DocumentUploadAnalyzer'
 
 export default function RoPAPage() {
   const [searchTerm, setSearchTerm] = useState('')
@@ -340,6 +341,17 @@ export default function RoPAPage() {
                 </div>
               </div>
             </Card>
+
+            {/* Document Upload & AI Analyze Section */}
+            {viewMode === 'list' && (
+              <div className="mb-6">
+                <DocumentUploadAnalyzer
+                  moduleType="ropa"
+                  moduleName="RoPA (Record of Processing Activities)"
+                  moduleContext={{ activityCount: activities.length }}
+                />
+              </div>
+            )}
 
             {/* Create/Edit Form */}
             {(viewMode === 'create' || viewMode === 'edit') && (

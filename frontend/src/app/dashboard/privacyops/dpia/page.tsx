@@ -14,6 +14,7 @@ import {
 import { usePrivacyOpsDPIAStore } from '@/stores/usePrivacyOpsDPIAStore'
 import { confirmDelete, confirmRestore, confirmPermanentDelete, showSuccess, showError } from '@/lib/sweetalert'
 import { AIDocumentGenerator, AIDocumentAnalyzer, useAIDocuments } from '@/components/ai/AIDocuments'
+import DocumentUploadAnalyzer from '@/components/ai/DocumentUploadAnalyzer'
 
 export default function DPIAManagement() {
   const [searchTerm, setSearchTerm] = useState('')
@@ -399,6 +400,17 @@ export default function DPIAManagement() {
                 </div>
               </div>
             </Card>
+
+            {/* Document Upload & AI Analyze Section */}
+            {viewMode === 'list' && (
+              <div className="mb-6">
+                <DocumentUploadAnalyzer
+                  moduleType="dpia"
+                  moduleName="DPIA (Data Protection Impact Assessment)"
+                  moduleContext={{ dpiaCount: dpias.length }}
+                />
+              </div>
+            )}
 
             {/* Create/Edit Form */}
             {(viewMode === 'create' || viewMode === 'edit') && (
