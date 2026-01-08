@@ -154,6 +154,9 @@ func seedSampleData(db *gorm.DB) {
 		db.Create(&l)
 	}
 
+	// Seed document templates for all tenants
+	seedDocumentTemplates(db, tenants)
+
 	log.Println("Sample data seeded successfully")
 }
 
@@ -242,4 +245,96 @@ func (d *Database) Close() error {
 		return err
 	}
 	return sqlDB.Close()
+}
+
+// seedDocumentTemplates creates sample document templates for each tenant
+func seedDocumentTemplates(db *gorm.DB, tenants []models.Tenant) {
+	templates := []struct {
+		Title        string
+		Description  string
+		DocumentType string
+		TemplateType string
+		Content      string
+	}{
+		{
+			Title:        "Kebijakan Privasi Data",
+			Description:  "Template kebijakan privasi data sesuai UU PDP dan GDPR",
+			DocumentType: "policy",
+			TemplateType: "privacy_policy",
+			Content:      "# Kebijakan Privasi Data\n\n## 1. Pendahuluan\n[Nama Perusahaan] berkomitmen untuk melindungi privasi data pribadi Anda.\n\n## 2. Data yang Dikumpulkan\n- Nama lengkap\n- Alamat email\n- Nomor telepon\n\n## 3. Tujuan Pemrosesan\nData digunakan untuk:\n- Menyediakan layanan\n- Komunikasi\n- Peningkatan layanan\n\n## 4. Hak Subjek Data\nAnda memiliki hak untuk:\n- Mengakses data\n- Memperbaiki data\n- Menghapus data\n- Memindahkan data",
+		},
+		{
+			Title:        "DPIA Report Template",
+			Description:  "Template Data Protection Impact Assessment",
+			DocumentType: "assessment",
+			TemplateType: "dpia_report",
+			Content:      "# Data Protection Impact Assessment\n\n## 1. Informasi Proyek\n- Nama Proyek:\n- PIC:\n- Tanggal:\n\n## 2. Deskripsi Pemrosesan\n\n## 3. Identifikasi Risiko\n\n## 4. Tindakan Mitigasi\n\n## 5. Kesimpulan",
+		},
+		{
+			Title:        "Information Security Policy",
+			Description:  "Template kebijakan keamanan informasi ISO 27001",
+			DocumentType: "policy",
+			TemplateType: "security_policy",
+			Content:      "# Information Security Policy\n\n## 1. Purpose\nThis policy establishes the security requirements for [Company Name].\n\n## 2. Scope\nApplies to all employees, contractors, and third parties.\n\n## 3. Roles & Responsibilities\n\n## 4. Access Control\n\n## 5. Data Classification\n\n## 6. Incident Response",
+		},
+		{
+			Title:        "Risk Assessment Report",
+			Description:  "Template laporan penilaian risiko",
+			DocumentType: "report",
+			TemplateType: "risk_assessment",
+			Content:      "# Risk Assessment Report\n\n## Executive Summary\n\n## Risk Register\n| ID | Risk | Likelihood | Impact | Score | Mitigation |\n|----|------|------------|--------|-------|------------|\n\n## Recommendations\n\n## Conclusion",
+		},
+		{
+			Title:        "Audit Report Template",
+			Description:  "Template laporan audit internal",
+			DocumentType: "report",
+			TemplateType: "audit_report",
+			Content:      "# Internal Audit Report\n\n## 1. Audit Scope\n\n## 2. Methodology\n\n## 3. Findings\n\n## 4. Recommendations\n\n## 5. Management Response\n\n## 6. Conclusion",
+		},
+		{
+			Title:        "Incident Response Report",
+			Description:  "Template laporan insiden keamanan/data breach",
+			DocumentType: "report",
+			TemplateType: "incident_report",
+			Content:      "# Incident Response Report\n\n## Incident Details\n- Date Detected:\n- Date Reported:\n- Severity:\n\n## Description\n\n## Impact Assessment\n\n## Remediation Actions\n\n## Lessons Learned",
+		},
+		{
+			Title:        "Vendor Assessment Questionnaire",
+			Description:  "Template kuesioner penilaian vendor",
+			DocumentType: "questionnaire",
+			TemplateType: "vendor_assessment",
+			Content:      "# Vendor Security Assessment\n\n## Company Information\n\n## Security Controls\n1. Do you have ISO 27001 certification?\n2. How do you handle data encryption?\n3. What is your incident response process?\n\n## Privacy Compliance\n\n## Business Continuity",
+		},
+		{
+			Title:        "Business Continuity Plan",
+			Description:  "Template rencana kelangsungan bisnis",
+			DocumentType: "plan",
+			TemplateType: "bcp",
+			Content:      "# Business Continuity Plan\n\n## 1. Purpose & Scope\n\n## 2. Business Impact Analysis\n\n## 3. Recovery Strategies\n- RTO:\n- RPO:\n\n## 4. Communication Plan\n\n## 5. Testing Schedule",
+		},
+	}
+
+	for _, t := range tenants {
+		// Check if templates already exist for this tenant
+		var count int64
+		db.Model(&models.Document{}).Where("tenant_id = ? AND is_generated = ?", t.ID, false).Count(&count)
+		if count > 0 {
+			continue // Already has templates
+		}
+
+		for _, tmpl := range templates {
+			doc := models.Document{
+				TenantID:     t.ID,
+				Title:        tmpl.Title,
+				Description:  tmpl.Description,
+				DocumentType: tmpl.DocumentType,
+				TemplateType: tmpl.TemplateType,
+				Content:      tmpl.Content,
+				Status:       "published",
+				IsGenerated:  false,
+			}
+			db.Create(&doc)
+		}
+		log.Printf("Document templates seeded for tenant: %s", t.Name)
+	}
 }
