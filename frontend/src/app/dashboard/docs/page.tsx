@@ -206,90 +206,94 @@ export default function DocsPage() {
     }
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-gray-950 via-gray-900 to-gray-950">
+        <div className="min-h-screen bg-[#0a0e1a] flex">
             <Sidebar />
-            <div className="ml-64">
+
+            <div className="flex-1 flex flex-col overflow-hidden">
                 <TopNav />
-                <main className="p-6">
-                    {/* Header */}
-                    <div className="flex items-center gap-4 mb-6">
-                        <div className="p-3 bg-gradient-to-br from-cyan-500 to-blue-600 rounded-xl shadow-lg shadow-cyan-500/20">
-                            <Book className="w-8 h-8 text-white" />
-                        </div>
-                        <div>
-                            <h1 className="text-3xl font-bold text-white">Documentation</h1>
-                            <p className="text-gray-400">Panduan lengkap menggunakan Komplai GRC Platform</p>
-                        </div>
-                    </div>
 
-                    <div className="flex gap-6">
-                        {/* Docs Sidebar Navigation */}
-                        <div className="w-80 flex-shrink-0">
-                            <Card className="bg-gray-900/50 border-gray-800 backdrop-blur-sm sticky top-6">
-                                <div className="p-4 border-b border-gray-800">
-                                    <div className="relative">
-                                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
-                                        <input
-                                            type="text"
-                                            placeholder="Cari dokumentasi..."
-                                            className="w-full pl-10 pr-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-cyan-500"
-                                        />
-                                    </div>
-                                </div>
-                                <div className="p-2 max-h-[calc(100vh-250px)] overflow-y-auto">
-                                    {menuItems.map((menu) => (
-                                        <div key={menu.id} className="mb-1">
-                                            <button
-                                                onClick={() => toggleMenu(menu.id)}
-                                                className={`w-full flex items-center justify-between p-3 rounded-lg transition-all ${expandedMenus.includes(menu.id)
-                                                    ? 'bg-gray-800/80 text-white'
-                                                    : 'hover:bg-gray-800/50 text-gray-400 hover:text-white'
-                                                    }`}
-                                            >
-                                                <div className="flex items-center gap-3">
-                                                    <div className={`p-2 rounded-lg bg-gradient-to-br ${menu.color}`}>
-                                                        {menu.icon}
-                                                    </div>
-                                                    <span className="font-medium">{menu.title}</span>
-                                                </div>
-                                                {expandedMenus.includes(menu.id)
-                                                    ? <ChevronDown className="w-4 h-4" />
-                                                    : <ChevronRight className="w-4 h-4" />
-                                                }
-                                            </button>
+                <main className="flex-1 overflow-y-auto">
+                    <div className="max-w-7xl mx-auto px-6 py-6">
+                        {/* Header */}
+                        <div className="flex items-center gap-4 mb-6">
+                            <div className="p-3 bg-gradient-to-br from-cyan-500 to-blue-600 rounded-xl shadow-lg shadow-cyan-500/20">
+                                <Book className="w-8 h-8 text-white" />
+                            </div>
+                            <div>
+                                <h1 className="text-3xl font-bold text-white">Documentation</h1>
+                                <p className="text-gray-400">Panduan lengkap menggunakan Komplai GRC Platform</p>
+                            </div>
+                        </div>
 
-                                            {expandedMenus.includes(menu.id) && menu.items && (
-                                                <div className="ml-4 mt-1 space-y-1">
-                                                    {menu.items.map((item) => (
-                                                        <button
-                                                            key={item.id}
-                                                            onClick={() => setActiveSection(item.id)}
-                                                            className={`w-full flex items-start gap-3 p-3 rounded-lg transition-all text-left ${activeSection === item.id
-                                                                ? 'bg-cyan-500/20 text-cyan-400 border-l-2 border-cyan-500'
-                                                                : 'hover:bg-gray-800/50 text-gray-400 hover:text-white'
-                                                                }`}
-                                                        >
-                                                            <div>
-                                                                <div className="font-medium text-sm">{item.title}</div>
-                                                                <div className="text-xs text-gray-500">{item.description}</div>
-                                                            </div>
-                                                        </button>
-                                                    ))}
-                                                </div>
-                                            )}
+                        <div className="flex gap-6">
+                            {/* Docs Sidebar Navigation */}
+                            <div className="w-80 flex-shrink-0">
+                                <Card className="bg-gray-900/50 border-gray-800 backdrop-blur-sm sticky top-6">
+                                    <div className="p-4 border-b border-gray-800">
+                                        <div className="relative">
+                                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
+                                            <input
+                                                type="text"
+                                                placeholder="Cari dokumentasi..."
+                                                className="w-full pl-10 pr-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-cyan-500"
+                                            />
                                         </div>
-                                    ))}
-                                </div>
-                            </Card>
-                        </div>
+                                    </div>
+                                    <div className="p-2 max-h-[calc(100vh-250px)] overflow-y-auto">
+                                        {menuItems.map((menu) => (
+                                            <div key={menu.id} className="mb-1">
+                                                <button
+                                                    onClick={() => toggleMenu(menu.id)}
+                                                    className={`w-full flex items-center justify-between p-3 rounded-lg transition-all ${expandedMenus.includes(menu.id)
+                                                        ? 'bg-gray-800/80 text-white'
+                                                        : 'hover:bg-gray-800/50 text-gray-400 hover:text-white'
+                                                        }`}
+                                                >
+                                                    <div className="flex items-center gap-3">
+                                                        <div className={`p-2 rounded-lg bg-gradient-to-br ${menu.color}`}>
+                                                            {menu.icon}
+                                                        </div>
+                                                        <span className="font-medium">{menu.title}</span>
+                                                    </div>
+                                                    {expandedMenus.includes(menu.id)
+                                                        ? <ChevronDown className="w-4 h-4" />
+                                                        : <ChevronRight className="w-4 h-4" />
+                                                    }
+                                                </button>
 
-                        {/* Content Area */}
-                        <div className="flex-1 min-w-0">
-                            <Card className="bg-gray-900/50 border-gray-800 backdrop-blur-sm">
-                                <div className="p-8">
-                                    {renderContent()}
-                                </div>
-                            </Card>
+                                                {expandedMenus.includes(menu.id) && menu.items && (
+                                                    <div className="ml-4 mt-1 space-y-1">
+                                                        {menu.items.map((item) => (
+                                                            <button
+                                                                key={item.id}
+                                                                onClick={() => setActiveSection(item.id)}
+                                                                className={`w-full flex items-start gap-3 p-3 rounded-lg transition-all text-left ${activeSection === item.id
+                                                                    ? 'bg-cyan-500/20 text-cyan-400 border-l-2 border-cyan-500'
+                                                                    : 'hover:bg-gray-800/50 text-gray-400 hover:text-white'
+                                                                    }`}
+                                                            >
+                                                                <div>
+                                                                    <div className="font-medium text-sm">{item.title}</div>
+                                                                    <div className="text-xs text-gray-500">{item.description}</div>
+                                                                </div>
+                                                            </button>
+                                                        ))}
+                                                    </div>
+                                                )}
+                                            </div>
+                                        ))}
+                                    </div>
+                                </Card>
+                            </div>
+
+                            {/* Content Area */}
+                            <div className="flex-1 min-w-0">
+                                <Card className="bg-gray-900/50 border-gray-800 backdrop-blur-sm">
+                                    <div className="p-8">
+                                        {renderContent()}
+                                    </div>
+                                </Card>
+                            </div>
                         </div>
                     </div>
                 </main>
