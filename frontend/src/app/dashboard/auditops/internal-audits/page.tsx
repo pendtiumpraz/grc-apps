@@ -12,6 +12,7 @@ import { Search, FileCheck, Plus, CheckCircle, Clock, AlertTriangle, Play, Pause
 import { useAuditStore } from '@/stores/useAuditStore'
 import { confirmDelete, confirmRestore, confirmPermanentDelete, showSuccess, showError } from '@/lib/sweetalert'
 import { AIDocumentGenerator, AIDocumentAnalyzer, useAIDocuments } from '@/components/ai/AIDocuments'
+import DocumentUploadAnalyzer from '@/components/ai/DocumentUploadAnalyzer'
 
 export default function InternalAuditsPage() {
   const [searchTerm, setSearchTerm] = useState('')
@@ -309,6 +310,17 @@ export default function InternalAuditsPage() {
                 </div>
               </Card>
             </div>
+
+            {/* Document Upload & AI Analyze Section */}
+            {viewMode === 'list' && (
+              <div className="mb-8">
+                <DocumentUploadAnalyzer
+                  moduleType="audit"
+                  moduleName="Internal Audit"
+                  moduleContext={{ auditCount: audits.length }}
+                />
+              </div>
+            )}
 
             {/* Create Form */}
             {viewMode === 'create' && (

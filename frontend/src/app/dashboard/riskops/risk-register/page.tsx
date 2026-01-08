@@ -14,6 +14,7 @@ import {
 import { useRiskRegisterStore } from '@/stores/useRiskRegisterStore'
 import { confirmDelete, confirmRestore, confirmPermanentDelete, showSuccess, showError } from '@/lib/sweetalert'
 import { AIDocumentGenerator, AIDocumentAnalyzer, useAIDocuments } from '@/components/ai/AIDocuments'
+import DocumentUploadAnalyzer from '@/components/ai/DocumentUploadAnalyzer'
 
 export default function RiskRegister() {
   const [searchTerm, setSearchTerm] = useState('')
@@ -395,6 +396,17 @@ export default function RiskRegister() {
                 </div>
               </div>
             </Card>
+
+            {/* Document Upload & AI Analyze Section */}
+            {viewMode === 'list' && (
+              <div className="mb-6">
+                <DocumentUploadAnalyzer
+                  moduleType="risk"
+                  moduleName="Risk Register"
+                  moduleContext={{ riskCount: risks.length }}
+                />
+              </div>
+            )}
 
             {/* Create/Edit Form */}
             {(viewMode === 'create' || viewMode === 'edit') && (

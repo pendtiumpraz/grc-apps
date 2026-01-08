@@ -12,6 +12,7 @@ import { Search, FileText, Plus, CheckCircle, Clock, AlertTriangle, Edit, Trash2
 import { usePolicyStore } from '@/stores/usePolicyStore'
 import { confirmDelete, confirmRestore, confirmPermanentDelete, showSuccess, showError } from '@/lib/sweetalert'
 import { AIDocumentGenerator, AIDocumentAnalyzer, useAIDocuments } from '@/components/ai/AIDocuments'
+import DocumentUploadAnalyzer from '@/components/ai/DocumentUploadAnalyzer'
 
 export default function PoliciesPage() {
   const [searchTerm, setSearchTerm] = useState('')
@@ -277,6 +278,17 @@ export default function PoliciesPage() {
                 </div>
               </Card>
             </div>
+
+            {/* Document Upload & AI Analyze Section */}
+            {viewMode === 'list' && (
+              <div className="mb-8">
+                <DocumentUploadAnalyzer
+                  moduleType="policy"
+                  moduleName="Policies"
+                  moduleContext={{ policyCount: policies.length }}
+                />
+              </div>
+            )}
 
             {/* Create Form */}
             {viewMode === 'create' && (
