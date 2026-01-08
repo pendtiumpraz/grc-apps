@@ -1,8 +1,6 @@
 'use client'
 
 import React, { useState } from 'react'
-import Sidebar from '@/components/dashboard/Sidebar'
-import TopNav from '@/components/dashboard/TopNav'
 import { Card } from '@/components/ui/card'
 import {
     Book,
@@ -206,95 +204,87 @@ export default function DocsPage() {
     }
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-gray-950 via-gray-900 to-gray-950">
-            <Sidebar />
-            <div className="ml-64">
-                <TopNav />
-                <main className="p-6">
-                    {/* Header */}
-                    <div className="mb-8">
-                        <div className="flex items-center gap-4 mb-4">
-                            <div className="p-3 bg-gradient-to-br from-cyan-500 to-blue-600 rounded-xl shadow-lg shadow-cyan-500/20">
-                                <Book className="w-8 h-8 text-white" />
-                            </div>
-                            <div>
-                                <h1 className="text-3xl font-bold text-white">Documentation</h1>
-                                <p className="text-gray-400">Panduan lengkap menggunakan Komplai GRC Platform</p>
+        <div className="space-y-6">
+            {/* Header */}
+            <div className="flex items-center gap-4">
+                <div className="p-3 bg-gradient-to-br from-cyan-500 to-blue-600 rounded-xl shadow-lg shadow-cyan-500/20">
+                    <Book className="w-8 h-8 text-white" />
+                </div>
+                <div>
+                    <h1 className="text-3xl font-bold text-white">Documentation</h1>
+                    <p className="text-gray-400">Panduan lengkap menggunakan Komplai GRC Platform</p>
+                </div>
+            </div>
+
+            <div className="flex gap-6">
+                {/* Sidebar Navigation */}
+                <div className="w-80 flex-shrink-0">
+                    <Card className="bg-gray-900/50 border-gray-800 backdrop-blur-sm sticky top-6">
+                        <div className="p-4 border-b border-gray-800">
+                            <div className="relative">
+                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
+                                <input
+                                    type="text"
+                                    placeholder="Cari dokumentasi..."
+                                    className="w-full pl-10 pr-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-cyan-500"
+                                />
                             </div>
                         </div>
-                    </div>
-
-                    <div className="flex gap-6">
-                        {/* Sidebar Navigation */}
-                        <div className="w-80 flex-shrink-0">
-                            <Card className="bg-gray-900/50 border-gray-800 backdrop-blur-sm sticky top-6">
-                                <div className="p-4 border-b border-gray-800">
-                                    <div className="relative">
-                                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
-                                        <input
-                                            type="text"
-                                            placeholder="Cari dokumentasi..."
-                                            className="w-full pl-10 pr-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-cyan-500"
-                                        />
-                                    </div>
-                                </div>
-                                <div className="p-2 max-h-[calc(100vh-250px)] overflow-y-auto">
-                                    {menuItems.map((menu) => (
-                                        <div key={menu.id} className="mb-1">
-                                            <button
-                                                onClick={() => toggleMenu(menu.id)}
-                                                className={`w-full flex items-center justify-between p-3 rounded-lg transition-all ${expandedMenus.includes(menu.id)
-                                                    ? 'bg-gray-800/80 text-white'
-                                                    : 'hover:bg-gray-800/50 text-gray-400 hover:text-white'
-                                                    }`}
-                                            >
-                                                <div className="flex items-center gap-3">
-                                                    <div className={`p-2 rounded-lg bg-gradient-to-br ${menu.color}`}>
-                                                        {menu.icon}
-                                                    </div>
-                                                    <span className="font-medium">{menu.title}</span>
-                                                </div>
-                                                {expandedMenus.includes(menu.id)
-                                                    ? <ChevronDown className="w-4 h-4" />
-                                                    : <ChevronRight className="w-4 h-4" />
-                                                }
-                                            </button>
-
-                                            {expandedMenus.includes(menu.id) && menu.items && (
-                                                <div className="ml-4 mt-1 space-y-1">
-                                                    {menu.items.map((item) => (
-                                                        <button
-                                                            key={item.id}
-                                                            onClick={() => setActiveSection(item.id)}
-                                                            className={`w-full flex items-start gap-3 p-3 rounded-lg transition-all text-left ${activeSection === item.id
-                                                                ? 'bg-cyan-500/20 text-cyan-400 border-l-2 border-cyan-500'
-                                                                : 'hover:bg-gray-800/50 text-gray-400 hover:text-white'
-                                                                }`}
-                                                        >
-                                                            <div>
-                                                                <div className="font-medium text-sm">{item.title}</div>
-                                                                <div className="text-xs text-gray-500">{item.description}</div>
-                                                            </div>
-                                                        </button>
-                                                    ))}
-                                                </div>
-                                            )}
+                        <div className="p-2 max-h-[calc(100vh-250px)] overflow-y-auto">
+                            {menuItems.map((menu) => (
+                                <div key={menu.id} className="mb-1">
+                                    <button
+                                        onClick={() => toggleMenu(menu.id)}
+                                        className={`w-full flex items-center justify-between p-3 rounded-lg transition-all ${expandedMenus.includes(menu.id)
+                                            ? 'bg-gray-800/80 text-white'
+                                            : 'hover:bg-gray-800/50 text-gray-400 hover:text-white'
+                                            }`}
+                                    >
+                                        <div className="flex items-center gap-3">
+                                            <div className={`p-2 rounded-lg bg-gradient-to-br ${menu.color}`}>
+                                                {menu.icon}
+                                            </div>
+                                            <span className="font-medium">{menu.title}</span>
                                         </div>
-                                    ))}
-                                </div>
-                            </Card>
-                        </div>
+                                        {expandedMenus.includes(menu.id)
+                                            ? <ChevronDown className="w-4 h-4" />
+                                            : <ChevronRight className="w-4 h-4" />
+                                        }
+                                    </button>
 
-                        {/* Content Area */}
-                        <div className="flex-1 min-w-0">
-                            <Card className="bg-gray-900/50 border-gray-800 backdrop-blur-sm">
-                                <div className="p-8">
-                                    {renderContent()}
+                                    {expandedMenus.includes(menu.id) && menu.items && (
+                                        <div className="ml-4 mt-1 space-y-1">
+                                            {menu.items.map((item) => (
+                                                <button
+                                                    key={item.id}
+                                                    onClick={() => setActiveSection(item.id)}
+                                                    className={`w-full flex items-start gap-3 p-3 rounded-lg transition-all text-left ${activeSection === item.id
+                                                        ? 'bg-cyan-500/20 text-cyan-400 border-l-2 border-cyan-500'
+                                                        : 'hover:bg-gray-800/50 text-gray-400 hover:text-white'
+                                                        }`}
+                                                >
+                                                    <div>
+                                                        <div className="font-medium text-sm">{item.title}</div>
+                                                        <div className="text-xs text-gray-500">{item.description}</div>
+                                                    </div>
+                                                </button>
+                                            ))}
+                                        </div>
+                                    )}
                                 </div>
-                            </Card>
+                            ))}
                         </div>
-                    </div>
-                </main>
+                    </Card>
+                </div>
+
+                {/* Content Area */}
+                <div className="flex-1 min-w-0">
+                    <Card className="bg-gray-900/50 border-gray-800 backdrop-blur-sm">
+                        <div className="p-8">
+                            {renderContent()}
+                        </div>
+                    </Card>
+                </div>
             </div>
         </div>
     )
@@ -718,17 +708,66 @@ function GapAnalysisSection() {
 function ControlsSection() {
     return (
         <div className="space-y-6">
-            <h2 className="text-2xl font-bold text-white">Controls</h2>
+            <div className="flex items-center gap-3">
+                <div className="p-2 bg-blue-500/20 rounded-lg">
+                    <Shield className="w-6 h-6 text-blue-400" />
+                </div>
+                <h2 className="text-2xl font-bold text-white">Controls</h2>
+            </div>
+
             <p className="text-gray-400">
-                Kelola kontrol keamanan dan kepatuhan organisasi. Setiap kontrol memiliki status,
-                owner, dan jadwal review.
+                <strong className="text-blue-400">Controls</strong> adalah tindakan atau mekanisme yang diterapkan
+                untuk memenuhi persyaratan keamanan dan kepatuhan. Contoh: enkripsi data, backup harian, access control.
             </p>
-            <div className="grid grid-cols-2 gap-3">
-                {['Implemented', 'Partially Implemented', 'Not Implemented', 'Not Applicable'].map((status, idx) => (
-                    <div key={idx} className="p-3 bg-gray-800/50 rounded-lg border border-gray-700 text-center">
-                        <span className="text-gray-300">{status}</span>
-                    </div>
-                ))}
+
+            <div className="space-y-4">
+                <h3 className="text-lg font-semibold text-white">Field yang Tersedia:</h3>
+                <div className="grid grid-cols-2 gap-3">
+                    {[
+                        { field: 'Control ID', desc: 'ID unik (misal: AC-001)' },
+                        { field: 'Name', desc: 'Nama kontrol' },
+                        { field: 'Description', desc: 'Penjelasan detail' },
+                        { field: 'Category', desc: 'Kategori (Access Control, Data Protection, dll)' },
+                        { field: 'Owner', desc: 'Penanggung jawab kontrol' },
+                        { field: 'Status', desc: 'Status implementasi' },
+                        { field: 'Evidence', desc: 'Bukti bahwa kontrol berjalan' },
+                        { field: 'Review Date', desc: 'Jadwal review berikutnya' },
+                    ].map((item, idx) => (
+                        <div key={idx} className="p-3 bg-gray-800/50 rounded-lg border border-gray-700">
+                            <div className="text-white font-medium text-sm">{item.field}</div>
+                            <div className="text-gray-400 text-xs">{item.desc}</div>
+                        </div>
+                    ))}
+                </div>
+            </div>
+
+            <div className="space-y-3">
+                <h3 className="text-lg font-semibold text-white">Status Kontrol:</h3>
+                <div className="grid grid-cols-2 gap-3">
+                    {[
+                        { status: 'Implemented', color: 'bg-green-500', desc: 'Sudah diterapkan sepenuhnya' },
+                        { status: 'Partially Implemented', color: 'bg-yellow-500', desc: 'Diterapkan sebagian' },
+                        { status: 'Not Implemented', color: 'bg-red-500', desc: 'Belum diterapkan' },
+                        { status: 'Not Applicable', color: 'bg-gray-500', desc: 'Tidak berlaku' },
+                    ].map((item, idx) => (
+                        <div key={idx} className="flex items-center gap-3 p-3 bg-gray-800/50 rounded-lg border border-gray-700">
+                            <div className={`w-3 h-3 rounded-full ${item.color}`} />
+                            <div>
+                                <div className="text-white text-sm font-medium">{item.status}</div>
+                                <div className="text-gray-400 text-xs">{item.desc}</div>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            </div>
+
+            <div className="p-4 bg-blue-500/10 rounded-lg border border-blue-500/20">
+                <h4 className="text-blue-400 font-medium mb-2">🔗 Hubungan dengan Modul Lain</h4>
+                <ul className="text-gray-400 text-sm space-y-1">
+                    <li>• Controls terhubung ke <strong className="text-white">Obligations</strong> (kewajiban regulasi)</li>
+                    <li>• Controls diuji melalui <strong className="text-white">Audits</strong></li>
+                    <li>• Controls didokumentasikan dalam <strong className="text-white">Policies</strong></li>
+                </ul>
             </div>
         </div>
     )
@@ -737,17 +776,63 @@ function ControlsSection() {
 function PoliciesSection() {
     return (
         <div className="space-y-6">
-            <h2 className="text-2xl font-bold text-white">Policies</h2>
+            <div className="flex items-center gap-3">
+                <div className="p-2 bg-blue-500/20 rounded-lg">
+                    <FileText className="w-6 h-6 text-blue-400" />
+                </div>
+                <h2 className="text-2xl font-bold text-white">Policies</h2>
+            </div>
+
             <p className="text-gray-400">
-                Manajemen dokumen kebijakan dengan version control dan approval workflow.
+                <strong className="text-blue-400">Policies</strong> adalah dokumen kebijakan resmi organisasi
+                yang mendokumentasikan aturan, prosedur, dan standar yang harus diikuti.
             </p>
-            <div className="flex items-center gap-2 flex-wrap">
-                {['Draft', 'Under Review', 'Approved', 'Published', 'Archived'].map((s, idx) => (
-                    <React.Fragment key={idx}>
-                        <span className="px-3 py-1 bg-gray-800 rounded-full text-gray-300 text-sm">{s}</span>
-                        {idx < 4 && <ArrowRight className="w-4 h-4 text-gray-600" />}
-                    </React.Fragment>
-                ))}
+
+            <div className="space-y-4">
+                <h3 className="text-lg font-semibold text-white">Contoh Policy:</h3>
+                <div className="grid grid-cols-2 gap-3">
+                    {[
+                        'Kebijakan Keamanan Informasi',
+                        'Kebijakan Privasi Data',
+                        'Kebijakan Akses Pengguna',
+                        'Kebijakan Backup & Recovery',
+                        'Kebijakan Penggunaan Aset',
+                        'Kebijakan Incident Response',
+                    ].map((policy, idx) => (
+                        <div key={idx} className="p-3 bg-gray-800/50 rounded-lg border border-gray-700">
+                            <span className="text-gray-300 text-sm">{policy}</span>
+                        </div>
+                    ))}
+                </div>
+            </div>
+
+            <div className="space-y-3">
+                <h3 className="text-lg font-semibold text-white">Lifecycle Policy:</h3>
+                <div className="flex items-center gap-2 flex-wrap">
+                    {[
+                        { status: 'Draft', desc: 'Sedang ditulis' },
+                        { status: 'Under Review', desc: 'Ditinjau' },
+                        { status: 'Approved', desc: 'Disetujui' },
+                        { status: 'Published', desc: 'Dipublikasikan' },
+                        { status: 'Archived', desc: 'Diarsipkan' },
+                    ].map((s, idx) => (
+                        <React.Fragment key={idx}>
+                            <div className="px-3 py-2 bg-gray-800 rounded-lg text-center">
+                                <div className="text-white text-sm font-medium">{s.status}</div>
+                                <div className="text-gray-500 text-xs">{s.desc}</div>
+                            </div>
+                            {idx < 4 && <ArrowRight className="w-4 h-4 text-gray-600" />}
+                        </React.Fragment>
+                    ))}
+                </div>
+            </div>
+
+            <div className="p-4 bg-blue-500/10 rounded-lg border border-blue-500/20">
+                <h4 className="text-blue-400 font-medium mb-2">📝 Version Control</h4>
+                <p className="text-gray-400 text-sm">
+                    Setiap perubahan policy akan tercatat dengan version number, tanggal perubahan,
+                    dan siapa yang mengubah. Memudahkan audit trail.
+                </p>
             </div>
         </div>
     )
@@ -756,11 +841,50 @@ function PoliciesSection() {
 function ObligationsSection() {
     return (
         <div className="space-y-6">
-            <h2 className="text-2xl font-bold text-white">Obligations</h2>
+            <div className="flex items-center gap-3">
+                <div className="p-2 bg-blue-500/20 rounded-lg">
+                    <ClipboardList className="w-6 h-6 text-blue-400" />
+                </div>
+                <h2 className="text-2xl font-bold text-white">Obligations</h2>
+            </div>
+
             <p className="text-gray-400">
-                Mapping kewajiban regulasi ke kontrol yang mengimplementasikannya.
-                Membantu memastikan setiap persyaratan regulasi terpenuhi.
+                <strong className="text-blue-400">Obligations</strong> adalah kewajiban/persyaratan dari regulasi
+                yang harus dipenuhi. Fitur ini menghubungkan kewajiban regulasi dengan kontrol yang mengimplementasikannya.
             </p>
+
+            <div className="space-y-4">
+                <h3 className="text-lg font-semibold text-white">Contoh Mapping:</h3>
+                <div className="bg-gray-800/50 rounded-lg border border-gray-700 overflow-hidden">
+                    <div className="grid grid-cols-3 gap-4 p-3 bg-gray-700/50 font-medium text-white text-sm">
+                        <div>Regulasi</div>
+                        <div>Kewajiban</div>
+                        <div>Kontrol</div>
+                    </div>
+                    <div className="divide-y divide-gray-700">
+                        {[
+                            { reg: 'GDPR Art. 32', obl: 'Enkripsi data', ctrl: 'CTRL-001: Data Encryption' },
+                            { reg: 'ISO 27001 A.9', obl: 'Access Control', ctrl: 'CTRL-005: RBAC Implementation' },
+                            { reg: 'UU PDP Pasal 35', obl: 'Data Retention', ctrl: 'CTRL-012: Data Retention Policy' },
+                        ].map((row, idx) => (
+                            <div key={idx} className="grid grid-cols-3 gap-4 p-3 text-sm">
+                                <div className="text-cyan-400">{row.reg}</div>
+                                <div className="text-gray-300">{row.obl}</div>
+                                <div className="text-green-400">{row.ctrl}</div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            </div>
+
+            <div className="p-4 bg-blue-500/10 rounded-lg border border-blue-500/20">
+                <h4 className="text-blue-400 font-medium mb-2">🎯 Manfaat</h4>
+                <ul className="text-gray-400 text-sm space-y-1">
+                    <li>• Memastikan tidak ada kewajiban regulasi yang terlewat</li>
+                    <li>• Melihat kontrol mana yang memenuhi multiple obligations</li>
+                    <li>• Memudahkan audit dengan traceability yang jelas</li>
+                </ul>
+            </div>
         </div>
     )
 }
@@ -830,10 +954,60 @@ function DSRSection() {
 function DPIASection() {
     return (
         <div className="space-y-6">
-            <h2 className="text-2xl font-bold text-white">DPIA (Data Protection Impact Assessment)</h2>
+            <div className="flex items-center gap-3">
+                <div className="p-2 bg-purple-500/20 rounded-lg">
+                    <FileSearch className="w-6 h-6 text-purple-400" />
+                </div>
+                <h2 className="text-2xl font-bold text-white">DPIA (Data Protection Impact Assessment)</h2>
+            </div>
+
             <p className="text-gray-400">
-                Menilai dampak privasi dari proyek atau sistem baru yang memproses data pribadi.
+                <strong className="text-purple-400">DPIA</strong> adalah penilaian yang wajib dilakukan sebelum
+                memulai pemrosesan data berisiko tinggi. Bertujuan mengidentifikasi dan meminimalkan risiko privasi.
             </p>
+
+            <div className="space-y-4">
+                <h3 className="text-lg font-semibold text-white">Kapan DPIA Diperlukan?</h3>
+                <div className="grid gap-3">
+                    {[
+                        'Pemrosesan data sensitif dalam skala besar',
+                        'Profiling atau automated decision-making',
+                        'Monitoring sistematis area publik (CCTV)',
+                        'Penggunaan teknologi baru',
+                        'Transfer data ke luar negeri',
+                    ].map((item, idx) => (
+                        <div key={idx} className="flex items-center gap-3 p-3 bg-gray-800/50 rounded-lg">
+                            <AlertTriangle className="w-4 h-4 text-yellow-400" />
+                            <span className="text-gray-300 text-sm">{item}</span>
+                        </div>
+                    ))}
+                </div>
+            </div>
+
+            <div className="space-y-3">
+                <h3 className="text-lg font-semibold text-white">Komponen DPIA:</h3>
+                <div className="grid grid-cols-2 gap-3">
+                    {[
+                        { comp: 'Deskripsi Pemrosesan', desc: 'Apa, kenapa, bagaimana' },
+                        { comp: 'Identifikasi Risiko', desc: 'Risiko terhadap subjek data' },
+                        { comp: 'Mitigasi', desc: 'Tindakan untuk mengurangi risiko' },
+                        { comp: 'Approval DPO', desc: 'Persetujuan dari Data Protection Officer' },
+                    ].map((item, idx) => (
+                        <div key={idx} className="p-3 bg-gray-800/50 rounded-lg border border-gray-700">
+                            <div className="text-purple-400 font-medium text-sm">{item.comp}</div>
+                            <div className="text-gray-400 text-xs">{item.desc}</div>
+                        </div>
+                    ))}
+                </div>
+            </div>
+
+            <div className="p-4 bg-purple-500/10 rounded-lg border border-purple-500/20">
+                <h4 className="text-purple-400 font-medium mb-2">⚖️ Dasar Hukum</h4>
+                <ul className="text-gray-400 text-sm space-y-1">
+                    <li>• <strong className="text-white">GDPR Article 35</strong> - Data Protection Impact Assessment</li>
+                    <li>• <strong className="text-white">UU PDP Pasal 34</strong> - Analisis Dampak Perlindungan Data</li>
+                </ul>
+            </div>
         </div>
     )
 }
@@ -841,10 +1015,63 @@ function DPIASection() {
 function IncidentsSection() {
     return (
         <div className="space-y-6">
-            <h2 className="text-2xl font-bold text-white">Incidents</h2>
+            <div className="flex items-center gap-3">
+                <div className="p-2 bg-red-500/20 rounded-lg">
+                    <AlertTriangle className="w-6 h-6 text-red-400" />
+                </div>
+                <h2 className="text-2xl font-bold text-white">Incidents (Data Breach)</h2>
+            </div>
+
             <p className="text-gray-400">
-                Mencatat dan menangani insiden data breach. Termasuk notifikasi ke otoritas jika diperlukan.
+                <strong className="text-red-400">Incidents</strong> adalah pencatatan dan penanganan insiden
+                keamanan data, terutama data breach. Termasuk kewajiban notifikasi ke otoritas dan subjek data.
             </p>
+
+            <div className="space-y-4">
+                <h3 className="text-lg font-semibold text-white">Workflow Incident Response:</h3>
+                <div className="flex items-center gap-2 flex-wrap">
+                    {[
+                        { step: 'Detect', color: 'bg-red-500' },
+                        { step: 'Contain', color: 'bg-orange-500' },
+                        { step: 'Investigate', color: 'bg-yellow-500' },
+                        { step: 'Notify', color: 'bg-blue-500' },
+                        { step: 'Remediate', color: 'bg-green-500' },
+                    ].map((s, idx) => (
+                        <React.Fragment key={idx}>
+                            <div className={`px-4 py-2 ${s.color} rounded-lg text-white text-sm font-medium`}>
+                                {s.step}
+                            </div>
+                            {idx < 4 && <ArrowRight className="w-4 h-4 text-gray-600" />}
+                        </React.Fragment>
+                    ))}
+                </div>
+            </div>
+
+            <div className="space-y-3">
+                <h3 className="text-lg font-semibold text-white">Data yang Dicatat:</h3>
+                <div className="grid grid-cols-2 gap-3">
+                    {[
+                        'Tanggal & waktu kejadian',
+                        'Jenis data yang terdampak',
+                        'Jumlah subjek data terdampak',
+                        'Penyebab insiden',
+                        'Tindakan yang diambil',
+                        'Status notifikasi',
+                    ].map((field, idx) => (
+                        <div key={idx} className="p-3 bg-gray-800/50 rounded-lg border border-gray-700">
+                            <span className="text-gray-300 text-sm">{field}</span>
+                        </div>
+                    ))}
+                </div>
+            </div>
+
+            <div className="p-4 bg-red-500/10 rounded-lg border border-red-500/20">
+                <h4 className="text-red-400 font-medium mb-2">⏰ Batas Waktu Notifikasi</h4>
+                <ul className="text-gray-400 text-sm space-y-1">
+                    <li>• <strong className="text-white">GDPR</strong>: 72 jam ke otoritas perlindungan data</li>
+                    <li>• <strong className="text-white">UU PDP</strong>: 3x24 jam ke subjek data yang terdampak</li>
+                </ul>
+            </div>
         </div>
     )
 }
@@ -888,10 +1115,62 @@ function RiskRegisterSection() {
 function VulnerabilitiesSection() {
     return (
         <div className="space-y-6">
-            <h2 className="text-2xl font-bold text-white">Vulnerabilities</h2>
+            <div className="flex items-center gap-3">
+                <div className="p-2 bg-orange-500/20 rounded-lg">
+                    <AlertTriangle className="w-6 h-6 text-orange-400" />
+                </div>
+                <h2 className="text-2xl font-bold text-white">Vulnerabilities</h2>
+            </div>
+
             <p className="text-gray-400">
-                Tracking kerentanan teknis. Bisa import dari vulnerability scanner.
+                <strong className="text-orange-400">Vulnerabilities</strong> adalah tracking kerentanan teknis
+                yang ditemukan di sistem, aplikasi, atau infrastruktur. Bisa input manual atau import dari scanner.
             </p>
+
+            <div className="space-y-4">
+                <h3 className="text-lg font-semibold text-white">Severity Levels:</h3>
+                <div className="grid grid-cols-4 gap-3">
+                    {[
+                        { level: 'Critical', score: '9.0-10.0', color: 'bg-red-500' },
+                        { level: 'High', score: '7.0-8.9', color: 'bg-orange-500' },
+                        { level: 'Medium', score: '4.0-6.9', color: 'bg-yellow-500' },
+                        { level: 'Low', score: '0.1-3.9', color: 'bg-green-500' },
+                    ].map((s, idx) => (
+                        <div key={idx} className="p-3 bg-gray-800/50 rounded-lg border border-gray-700 text-center">
+                            <div className={`w-3 h-3 rounded-full ${s.color} mx-auto mb-2`} />
+                            <div className="text-white font-medium text-sm">{s.level}</div>
+                            <div className="text-gray-500 text-xs">CVSS {s.score}</div>
+                        </div>
+                    ))}
+                </div>
+            </div>
+
+            <div className="space-y-3">
+                <h3 className="text-lg font-semibold text-white">Field yang Dicatat:</h3>
+                <div className="grid grid-cols-2 gap-3">
+                    {[
+                        'CVE ID / Reference',
+                        'Affected Asset/System',
+                        'Severity (CVSS Score)',
+                        'Description',
+                        'Discovery Date',
+                        'Remediation Status',
+                        'Due Date',
+                        'Owner',
+                    ].map((field, idx) => (
+                        <div key={idx} className="p-3 bg-gray-800/50 rounded-lg border border-gray-700">
+                            <span className="text-gray-300 text-sm">{field}</span>
+                        </div>
+                    ))}
+                </div>
+            </div>
+
+            <div className="p-4 bg-orange-500/10 rounded-lg border border-orange-500/20">
+                <h4 className="text-orange-400 font-medium mb-2">🔌 Integrasi</h4>
+                <p className="text-gray-400 text-sm">
+                    Bisa import hasil scan dari tools seperti Nessus, Qualys, OpenVAS, atau format CSV/JSON.
+                </p>
+            </div>
         </div>
     )
 }
@@ -899,10 +1178,52 @@ function VulnerabilitiesSection() {
 function VendorsSection() {
     return (
         <div className="space-y-6">
-            <h2 className="text-2xl font-bold text-white">Vendors</h2>
+            <div className="flex items-center gap-3">
+                <div className="p-2 bg-orange-500/20 rounded-lg">
+                    <Building2 className="w-6 h-6 text-orange-400" />
+                </div>
+                <h2 className="text-2xl font-bold text-white">Vendors (Third-Party Risk)</h2>
+            </div>
+
             <p className="text-gray-400">
-                Third-party risk management. Penilaian keamanan dan privasi vendor.
+                <strong className="text-orange-400">Vendor Management</strong> adalah pengelolaan risiko dari
+                pihak ketiga (vendor, supplier, partner) yang memiliki akses ke data atau sistem organisasi.
             </p>
+
+            <div className="space-y-4">
+                <h3 className="text-lg font-semibold text-white">Aspek Penilaian Vendor:</h3>
+                <div className="grid grid-cols-2 gap-3">
+                    {[
+                        { aspect: 'Security Assessment', desc: 'Kontrol keamanan vendor' },
+                        { aspect: 'Privacy Compliance', desc: 'Kepatuhan privasi data' },
+                        { aspect: 'Business Continuity', desc: 'Kesiapan disaster recovery' },
+                        { aspect: 'Contract Review', desc: 'Klausul keamanan di kontrak' },
+                        { aspect: 'Certifications', desc: 'ISO 27001, SOC 2, dll' },
+                        { aspect: 'SLA & Performance', desc: 'Kinerja dan SLA' },
+                    ].map((item, idx) => (
+                        <div key={idx} className="p-3 bg-gray-800/50 rounded-lg border border-gray-700">
+                            <div className="text-orange-400 font-medium text-sm">{item.aspect}</div>
+                            <div className="text-gray-400 text-xs">{item.desc}</div>
+                        </div>
+                    ))}
+                </div>
+            </div>
+
+            <div className="space-y-3">
+                <h3 className="text-lg font-semibold text-white">Risk Tiers:</h3>
+                <div className="grid grid-cols-3 gap-3">
+                    {[
+                        { tier: 'Tier 1 - Critical', desc: 'Akses data sensitif/critical system', color: 'border-red-500' },
+                        { tier: 'Tier 2 - Important', desc: 'Akses data bisnis', color: 'border-yellow-500' },
+                        { tier: 'Tier 3 - Standard', desc: 'Akses terbatas', color: 'border-green-500' },
+                    ].map((t, idx) => (
+                        <div key={idx} className={`p-3 bg-gray-800/50 rounded-lg border-l-4 ${t.color}`}>
+                            <div className="text-white font-medium text-sm">{t.tier}</div>
+                            <div className="text-gray-400 text-xs">{t.desc}</div>
+                        </div>
+                    ))}
+                </div>
+            </div>
         </div>
     )
 }
@@ -910,10 +1231,50 @@ function VendorsSection() {
 function ContinuitySection() {
     return (
         <div className="space-y-6">
-            <h2 className="text-2xl font-bold text-white">Business Continuity</h2>
+            <div className="flex items-center gap-3">
+                <div className="p-2 bg-orange-500/20 rounded-lg">
+                    <Zap className="w-6 h-6 text-orange-400" />
+                </div>
+                <h2 className="text-2xl font-bold text-white">Business Continuity</h2>
+            </div>
+
             <p className="text-gray-400">
-                Business Continuity & Disaster Recovery Planning. Persiapan menghadapi gangguan operasional.
+                <strong className="text-orange-400">Business Continuity Planning (BCP)</strong> adalah persiapan
+                untuk memastikan operasional bisnis tetap berjalan saat terjadi gangguan atau bencana.
             </p>
+
+            <div className="space-y-4">
+                <h3 className="text-lg font-semibold text-white">Komponen BCP:</h3>
+                <div className="grid grid-cols-2 gap-3">
+                    {[
+                        { comp: 'Business Impact Analysis', desc: 'Identifikasi proses kritis dan dampak gangguan' },
+                        { comp: 'Recovery Strategies', desc: 'Strategi pemulihan tiap proses' },
+                        { comp: 'Communication Plan', desc: 'Rencana komunikasi saat krisis' },
+                        { comp: 'Testing Schedule', desc: 'Jadwal pengujian rencana' },
+                    ].map((item, idx) => (
+                        <div key={idx} className="p-3 bg-gray-800/50 rounded-lg border border-gray-700">
+                            <div className="text-orange-400 font-medium text-sm">{item.comp}</div>
+                            <div className="text-gray-400 text-xs">{item.desc}</div>
+                        </div>
+                    ))}
+                </div>
+            </div>
+
+            <div className="space-y-3">
+                <h3 className="text-lg font-semibold text-white">Key Metrics:</h3>
+                <div className="grid grid-cols-2 gap-4">
+                    <div className="p-4 bg-gray-800/50 rounded-lg border border-gray-700">
+                        <div className="text-3xl font-bold text-cyan-400">RTO</div>
+                        <div className="text-white font-medium">Recovery Time Objective</div>
+                        <p className="text-gray-400 text-sm mt-2">Waktu maksimal untuk memulihkan sistem setelah gangguan</p>
+                    </div>
+                    <div className="p-4 bg-gray-800/50 rounded-lg border border-gray-700">
+                        <div className="text-3xl font-bold text-purple-400">RPO</div>
+                        <div className="text-white font-medium">Recovery Point Objective</div>
+                        <p className="text-gray-400 text-sm mt-2">Titik waktu terakhir data yang dapat dipulihkan</p>
+                    </div>
+                </div>
+            </div>
         </div>
     )
 }
@@ -948,8 +1309,46 @@ function InternalAuditsSection() {
 function EvidenceSection() {
     return (
         <div className="space-y-6">
-            <h2 className="text-2xl font-bold text-white">Evidence</h2>
-            <p className="text-gray-400">Repository bukti audit. Upload files dan link ke kontrol terkait.</p>
+            <div className="flex items-center gap-3">
+                <div className="p-2 bg-green-500/20 rounded-lg">
+                    <FileCheck className="w-6 h-6 text-green-400" />
+                </div>
+                <h2 className="text-2xl font-bold text-white">Evidence</h2>
+            </div>
+
+            <p className="text-gray-400">
+                <strong className="text-green-400">Evidence</strong> adalah repository bukti audit yang
+                mendokumentasikan bahwa kontrol berjalan efektif.
+            </p>
+
+            <div className="space-y-4">
+                <h3 className="text-lg font-semibold text-white">Jenis Evidence:</h3>
+                <div className="grid grid-cols-2 gap-3">
+                    {[
+                        { type: 'Screenshots', desc: 'Bukti visual dari konfigurasi/setting' },
+                        { type: 'Logs', desc: 'Log sistem yang menunjukkan aktivitas' },
+                        { type: 'Reports', desc: 'Laporan dari tools/sistem' },
+                        { type: 'Documents', desc: 'Dokumen kebijakan/prosedur' },
+                        { type: 'Interviews', desc: 'Catatan wawancara dengan staff' },
+                        { type: 'Observations', desc: 'Hasil observasi langsung' },
+                    ].map((item, idx) => (
+                        <div key={idx} className="p-3 bg-gray-800/50 rounded-lg border border-gray-700">
+                            <div className="text-green-400 font-medium text-sm">{item.type}</div>
+                            <div className="text-gray-400 text-xs">{item.desc}</div>
+                        </div>
+                    ))}
+                </div>
+            </div>
+
+            <div className="p-4 bg-green-500/10 rounded-lg border border-green-500/20">
+                <h4 className="text-green-400 font-medium mb-2">📁 Fitur</h4>
+                <ul className="text-gray-400 text-sm space-y-1">
+                    <li>• Upload files (PDF, images, docs)</li>
+                    <li>• Link evidence ke kontrol terkait</li>
+                    <li>• Tagging dan kategorisasi</li>
+                    <li>• Search dan filter</li>
+                </ul>
+            </div>
         </div>
     )
 }
@@ -957,10 +1356,49 @@ function EvidenceSection() {
 function GovernanceSection() {
     return (
         <div className="space-y-6">
-            <h2 className="text-2xl font-bold text-white">Governance (KRI)</h2>
+            <div className="flex items-center gap-3">
+                <div className="p-2 bg-green-500/20 rounded-lg">
+                    <BarChart3 className="w-6 h-6 text-green-400" />
+                </div>
+                <h2 className="text-2xl font-bold text-white">Governance (KRI)</h2>
+            </div>
+
             <p className="text-gray-400">
-                Key Risk Indicators tracking. Set threshold dan monitor nilai secara berkala.
+                <strong className="text-green-400">Key Risk Indicators (KRI)</strong> adalah metrik yang
+                dimonitor untuk mendeteksi potensi masalah sebelum menjadi risiko aktual.
             </p>
+
+            <div className="space-y-4">
+                <h3 className="text-lg font-semibold text-white">Contoh KRI:</h3>
+                <div className="space-y-3">
+                    {[
+                        { kri: 'Failed Login Attempts', threshold: '> 100/day', status: 'Normal' },
+                        { kri: 'System Downtime', threshold: '> 99.9% uptime', status: 'Normal' },
+                        { kri: 'Patch Compliance', threshold: '> 95% patched', status: 'Warning' },
+                        { kri: 'Overdue Training', threshold: '< 5% overdue', status: 'Critical' },
+                    ].map((item, idx) => (
+                        <div key={idx} className="flex items-center justify-between p-3 bg-gray-800/50 rounded-lg border border-gray-700">
+                            <div>
+                                <div className="text-white font-medium">{item.kri}</div>
+                                <div className="text-gray-500 text-sm">Threshold: {item.threshold}</div>
+                            </div>
+                            <span className={`px-3 py-1 rounded-full text-sm font-medium ${item.status === 'Normal' ? 'bg-green-500/20 text-green-400' :
+                                    item.status === 'Warning' ? 'bg-yellow-500/20 text-yellow-400' :
+                                        'bg-red-500/20 text-red-400'
+                                }`}>
+                                {item.status}
+                            </span>
+                        </div>
+                    ))}
+                </div>
+            </div>
+
+            <div className="p-4 bg-green-500/10 rounded-lg border border-green-500/20">
+                <h4 className="text-green-400 font-medium mb-2">🔔 Alert System</h4>
+                <p className="text-gray-400 text-sm">
+                    Sistem akan mengirim notifikasi ketika KRI melewati threshold yang ditentukan.
+                </p>
+            </div>
         </div>
     )
 }
@@ -968,8 +1406,51 @@ function GovernanceSection() {
 function ReportsSection() {
     return (
         <div className="space-y-6">
-            <h2 className="text-2xl font-bold text-white">Reports</h2>
-            <p className="text-gray-400">Generate laporan audit dalam format PDF atau DOCX.</p>
+            <div className="flex items-center gap-3">
+                <div className="p-2 bg-green-500/20 rounded-lg">
+                    <FileText className="w-6 h-6 text-green-400" />
+                </div>
+                <h2 className="text-2xl font-bold text-white">Reports</h2>
+            </div>
+
+            <p className="text-gray-400">
+                <strong className="text-green-400">Reports</strong> adalah fitur untuk generate laporan
+                audit dalam berbagai format.
+            </p>
+
+            <div className="space-y-4">
+                <h3 className="text-lg font-semibold text-white">Jenis Laporan:</h3>
+                <div className="grid grid-cols-2 gap-3">
+                    {[
+                        'Audit Summary Report',
+                        'Detailed Findings Report',
+                        'Management Report',
+                        'Compliance Status Report',
+                        'Remediation Tracking Report',
+                        'Trend Analysis Report',
+                    ].map((report, idx) => (
+                        <div key={idx} className="flex items-center gap-3 p-3 bg-gray-800/50 rounded-lg border border-gray-700">
+                            <FileText className="w-4 h-4 text-green-400" />
+                            <span className="text-gray-300 text-sm">{report}</span>
+                        </div>
+                    ))}
+                </div>
+            </div>
+
+            <div className="flex gap-4">
+                <div className="flex-1 p-4 bg-gray-800/50 rounded-lg border border-gray-700 text-center">
+                    <div className="text-3xl font-bold text-red-400">PDF</div>
+                    <p className="text-gray-400 text-sm">Export to PDF</p>
+                </div>
+                <div className="flex-1 p-4 bg-gray-800/50 rounded-lg border border-gray-700 text-center">
+                    <div className="text-3xl font-bold text-blue-400">DOCX</div>
+                    <p className="text-gray-400 text-sm">Export to Word</p>
+                </div>
+                <div className="flex-1 p-4 bg-gray-800/50 rounded-lg border border-gray-700 text-center">
+                    <div className="text-3xl font-bold text-green-400">XLSX</div>
+                    <p className="text-gray-400 text-sm">Export to Excel</p>
+                </div>
+            </div>
         </div>
     )
 }
