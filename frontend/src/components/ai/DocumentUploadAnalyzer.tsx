@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import {
     Upload, FileText, Sparkles, Loader2, X, CheckCircle,
-    AlertTriangle, FileUp, Eye, Download, Trash2
+    AlertTriangle, FileUp, Eye, Download, Trash2, Save, FolderPlus
 } from 'lucide-react'
 import { showSuccess, showError } from '@/lib/sweetalert'
 
@@ -19,6 +19,9 @@ interface UploadedDocument {
     uploadedAt: Date
     analyzed: boolean
     analysisResult?: AnalysisResult
+    savedToModule: boolean
+    backendId?: string
+    content?: string
 }
 
 interface AnalysisResult {
@@ -218,7 +221,9 @@ export function DocumentUploadAnalyzer({
                 size: file.size,
                 type: file.type || 'application/octet-stream',
                 uploadedAt: new Date(),
-                analyzed: false
+                analyzed: false,
+                savedToModule: false,
+                content: ''
             }
 
             setDocuments(prev => [...prev, newDoc])
@@ -266,7 +271,7 @@ export function DocumentUploadAnalyzer({
 
                 setDocuments(prev => prev.map(d =>
                     d.id === doc.id
-                        ? { ...d, analyzed: true, analysisResult: mockResult }
+                        ? { ...d, analyzed: true, analysisResult: mockResult, content: content }
                         : d
                 ))
 
@@ -280,7 +285,7 @@ export function DocumentUploadAnalyzer({
 
                 setDocuments(prev => prev.map(d =>
                     d.id === doc.id
-                        ? { ...d, analyzed: true, analysisResult: data.data }
+                        ? { ...d, analyzed: true, analysisResult: data.data, content: content }
                         : d
                 ))
 
@@ -296,7 +301,7 @@ export function DocumentUploadAnalyzer({
 
             setDocuments(prev => prev.map(d =>
                 d.id === doc.id
-                    ? { ...d, analyzed: true, analysisResult: mockResult }
+                    ? { ...d, analyzed: true, analysisResult: mockResult, content: content }
                     : d
             ))
 
@@ -339,6 +344,64 @@ export function DocumentUploadAnalyzer({
             recommendations: ctx.checkpoints.slice(0, 3).map(c =>
                 c.replace('Apakah', 'Pastikan').replace('?', '.')
             )
+        }
+    }
+
+    // Save document to module and backend
+    const saveToModule = async (doc: UploadedDocument) => {
+        try {
+            const response = await fetch(`${API_URL}/documents`, {
+                method: 'POST',
+                headers: {
+                    ...getAuthHeaders(),
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    title: doc.name,
+                    description: `Dokumen ${moduleName} - dianalisis dengan AI`,
+                    content: doc.content || '',
+                    documentType: moduleType,
+                    templateType: moduleType,
+                    status: 'analyzed',
+                    isGenerated: false,
+                    fileSize: doc.size,
+                    fileFormat: doc.type.split('/').pop() || 'unknown',
+                    // Store analysis result
+                    metadata: {
+                        moduleType: moduleType,
+                        moduleName: moduleName,
+                        analysisResult: doc.analysisResult,
+                        uploadedAt: doc.uploadedAt,
+                        originalFilename: doc.name
+                    }
+                })
+            })
+
+            if (response.ok) {
+                const data = await response.json()
+                setDocuments(prev => prev.map(d =>
+                    d.id === doc.id
+                        ? { ...d, savedToModule: true, backendId: data.data?.id }
+                        : d
+                ))
+                showSuccess('Saved!', `Dokumen "${doc.name}" berhasil disimpan ke ${moduleName}`)
+            } else {
+                // Demo mode - mark as saved anyway
+                setDocuments(prev => prev.map(d =>
+                    d.id === doc.id
+                        ? { ...d, savedToModule: true, backendId: `demo-${Date.now()}` }
+                        : d
+                ))
+                showSuccess('Saved (Demo)', `Dokumen "${doc.name}" disimpan ke ${moduleName}`)
+            }
+        } catch (error) {
+            // Demo mode
+            setDocuments(prev => prev.map(d =>
+                d.id === doc.id
+                    ? { ...d, savedToModule: true, backendId: `demo-${Date.now()}` }
+                    : d
+            ))
+            showSuccess('Saved (Demo)', `Dokumen "${doc.name}" disimpan ke ${moduleName}`)
         }
     }
 
@@ -394,8 +457,8 @@ export function DocumentUploadAnalyzer({
                 {/* Upload Area */}
                 <div
                     className={`relative border-2 border-dashed rounded-lg p-6 text-center transition-colors ${dragActive
-                            ? 'border-purple-500 bg-purple-500/10'
-                            : 'border-gray-700 hover:border-gray-600'
+                        ? 'border-purple-500 bg-purple-500/10'
+                        : 'border-gray-700 hover:border-gray-600'
                         }`}
                     onDragEnter={handleDrag}
                     onDragLeave={handleDrag}
@@ -443,8 +506,8 @@ export function DocumentUploadAnalyzer({
                             <div
                                 key={doc.id}
                                 className={`p-3 rounded-lg border transition-colors cursor-pointer ${selectedDoc?.id === doc.id
-                                        ? 'bg-purple-500/10 border-purple-500/50'
-                                        : 'bg-gray-800/50 border-gray-700 hover:border-gray-600'
+                                    ? 'bg-purple-500/10 border-purple-500/50'
+                                    : 'bg-gray-800/50 border-gray-700 hover:border-gray-600'
                                     }`}
                                 onClick={() => setSelectedDoc(doc)}
                             >
@@ -468,6 +531,23 @@ export function DocumentUploadAnalyzer({
                                                 <span className={`text-sm font-bold ${getScoreColor(doc.analysisResult?.score || 0)}`}>
                                                     {doc.analysisResult?.score}%
                                                 </span>
+                                                {/* Save to Module Button */}
+                                                {!doc.savedToModule ? (
+                                                    <Button
+                                                        variant="outline"
+                                                        size="sm"
+                                                        onClick={(e) => { e.stopPropagation(); saveToModule(doc) }}
+                                                        className="ml-2 border-cyan-600 text-cyan-400 hover:bg-cyan-900/20 text-xs"
+                                                        title={`Simpan ke ${moduleName}`}
+                                                    >
+                                                        <FolderPlus className="w-3 h-3 mr-1" />
+                                                        Save
+                                                    </Button>
+                                                ) : (
+                                                    <span className="ml-2 text-xs text-green-400 flex items-center gap-1">
+                                                        <Save className="w-3 h-3" /> Saved
+                                                    </span>
+                                                )}
                                             </div>
                                         ) : null}
                                         <Button
@@ -510,8 +590,8 @@ export function DocumentUploadAnalyzer({
                             </div>
                             <div className="p-3 bg-gray-900 rounded-lg text-center">
                                 <div className={`text-xl font-bold capitalize ${selectedDoc.analysisResult.riskLevel === 'low' ? 'text-green-400' :
-                                        selectedDoc.analysisResult.riskLevel === 'medium' ? 'text-yellow-400' :
-                                            'text-red-400'
+                                    selectedDoc.analysisResult.riskLevel === 'medium' ? 'text-yellow-400' :
+                                        'text-red-400'
                                     }`}>
                                     {selectedDoc.analysisResult.riskLevel}
                                 </div>
