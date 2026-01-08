@@ -22,6 +22,7 @@ const superAdminMenuItems: MenuItem[] = [
     { icon: Database, label: 'Billing', href: '/dashboard/platform/billing' },
     { icon: Settings, label: 'Logs', href: '/dashboard/platform/logs' },
     { icon: Sparkles, label: 'AI Settings', href: '/dashboard/settings/ai' },
+    { icon: FileText, label: 'Documentation', href: '/dashboard/docs' },
 ]
 
 // Menu items for Tenant Admin
