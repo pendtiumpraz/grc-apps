@@ -155,6 +155,16 @@ export default function DocsPage() {
                 { id: 'ai-analyze', title: 'AI Analyze', description: 'Analisis dengan AI' },
             ]
         },
+        {
+            id: 'business',
+            title: '💼 Business',
+            icon: <BarChart3 className="w-5 h-5" />,
+            color: 'from-emerald-500 to-teal-500',
+            items: [
+                { id: 'pricing', title: '💰 Pricing Proposal', description: 'Estimasi harga & biaya' },
+                { id: 'market', title: '📊 Market Analysis', description: 'Analisis pasar & peluang' },
+            ]
+        },
     ]
 
     const renderContent = () => {
@@ -239,6 +249,11 @@ export default function DocsPage() {
                 return <AIGenerateSection />
             case 'ai-analyze':
                 return <AIAnalyzeSection />
+            // Business
+            case 'pricing':
+                return <PricingSection />
+            case 'market':
+                return <MarketAnalysisSection />
             default:
                 return <OverviewSection />
         }
@@ -2036,16 +2051,342 @@ function MonitoringSection({ title, color }: { title: string; color: string }) {
                     ))}
                 </div>
             </div>
+        </div>
+        </div >
+    )
+}
 
-            <div className={`p-4 ${colors.bg} rounded-lg border ${colors.border}`}>
-                <h4 className={`${colors.text} font-medium mb-2`}>📊 Metrics Tracked</h4>
-                <ul className="text-gray-400 text-sm space-y-1">
-                    <li>• Compliance score over time</li>
-                    <li>• Open issues count</li>
-                    <li>• Response time metrics</li>
-                    <li>• Trend indicators</li>
-                </ul>
+// ========== PRICING SECTION ==========
+function PricingSection() {
+    return (
+        <div className="space-y-6">
+            <div>
+                <h2 className="text-2xl font-bold text-white mb-2">💰 Pricing Proposal</h2>
+                <p className="text-gray-400">Estimasi biaya pengembangan, operasional, dan model pricing.</p>
             </div>
+
+            {/* Development Cost */}
+            <Card className="bg-gray-900/50 border-gray-700 p-6">
+                <h3 className="text-xl font-bold text-emerald-400 mb-4">🛠️ Biaya Pengembangan (Development Cost)</h3>
+                <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                        <thead>
+                            <tr className="border-b border-gray-700">
+                                <th className="text-left py-2 text-gray-400">Modul</th>
+                                <th className="text-right py-2 text-gray-400">Jam Kerja</th>
+                                <th className="text-right py-2 text-gray-400">Estimasi Biaya</th>
+                            </tr>
+                        </thead>
+                        <tbody className="text-gray-300">
+                            <tr className="border-b border-gray-800"><td className="py-2">Core Architecture</td><td className="text-right">120 jam</td><td className="text-right text-emerald-400">Rp 90.000.000</td></tr>
+                            <tr className="border-b border-gray-800"><td className="py-2">Authentication & RBAC</td><td className="text-right">80 jam</td><td className="text-right text-emerald-400">Rp 60.000.000</td></tr>
+                            <tr className="border-b border-gray-800"><td className="py-2">PrivacyOps (5 modul)</td><td className="text-right">200 jam</td><td className="text-right text-emerald-400">Rp 150.000.000</td></tr>
+                            <tr className="border-b border-gray-800"><td className="py-2">RiskOps (4 modul)</td><td className="text-right">160 jam</td><td className="text-right text-emerald-400">Rp 120.000.000</td></tr>
+                            <tr className="border-b border-gray-800"><td className="py-2">RegOps (4 modul)</td><td className="text-right">160 jam</td><td className="text-right text-emerald-400">Rp 120.000.000</td></tr>
+                            <tr className="border-b border-gray-800"><td className="py-2">AuditOps (4 modul)</td><td className="text-right">140 jam</td><td className="text-right text-emerald-400">Rp 105.000.000</td></tr>
+                            <tr className="border-b border-gray-800"><td className="py-2">AI Integration</td><td className="text-right">100 jam</td><td className="text-right text-emerald-400">Rp 75.000.000</td></tr>
+                            <tr className="border-b border-gray-800"><td className="py-2">Document Management</td><td className="text-right">80 jam</td><td className="text-right text-emerald-400">Rp 60.000.000</td></tr>
+                            <tr className="border-b border-gray-800"><td className="py-2">Dashboard & UI/UX</td><td className="text-right">140 jam</td><td className="text-right text-emerald-400">Rp 105.000.000</td></tr>
+                            <tr className="border-b border-gray-800"><td className="py-2">Testing & QA</td><td className="text-right">100 jam</td><td className="text-right text-emerald-400">Rp 50.000.000</td></tr>
+                            <tr className="font-bold text-white"><td className="py-3">TOTAL</td><td className="text-right">1.280 jam</td><td className="text-right text-emerald-400 text-lg">Rp 935.000.000</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </Card>
+
+            {/* OPEX Monthly */}
+            <Card className="bg-gray-900/50 border-gray-700 p-6">
+                <h3 className="text-xl font-bold text-cyan-400 mb-4">📅 OPEX Bulanan (Operational Expenditure)</h3>
+                <div className="grid md:grid-cols-3 gap-4 mb-4">
+                    <div className="p-4 bg-blue-500/10 rounded-lg border border-blue-500/30">
+                        <h4 className="text-blue-400 font-semibold mb-3">🖥️ Infrastructure</h4>
+                        <div className="space-y-2 text-sm">
+                            <div className="flex justify-between"><span className="text-gray-400">Server Backend</span><span className="text-white">Rp 1.500.000</span></div>
+                            <div className="flex justify-between"><span className="text-gray-400">Server Frontend</span><span className="text-white">Rp 800.000</span></div>
+                            <div className="flex justify-between"><span className="text-gray-400">Database PostgreSQL</span><span className="text-white">Rp 1.200.000</span></div>
+                            <div className="flex justify-between"><span className="text-gray-400">CDN & Storage</span><span className="text-white">Rp 500.000</span></div>
+                            <div className="flex justify-between"><span className="text-gray-400">Monitoring</span><span className="text-white">Rp 800.000</span></div>
+                            <div className="flex justify-between font-bold border-t border-blue-500/30 pt-2 mt-2"><span className="text-blue-400">Subtotal</span><span className="text-blue-400">Rp 4.800.000</span></div>
+                        </div>
+                    </div>
+                    <div className="p-4 bg-purple-500/10 rounded-lg border border-purple-500/30">
+                        <h4 className="text-purple-400 font-semibold mb-3">🤖 AI Services</h4>
+                        <div className="space-y-2 text-sm">
+                            <div className="flex justify-between"><span className="text-gray-400">OpenAI GPT-4</span><span className="text-white">Rp 4.800.000</span></div>
+                            <div className="flex justify-between"><span className="text-gray-400">OpenAI GPT-3.5</span><span className="text-white">Rp 1.600.000</span></div>
+                            <div className="flex justify-between"><span className="text-gray-400">Google Gemini</span><span className="text-white">Rp 2.400.000</span></div>
+                            <div className="flex justify-between"><span className="text-gray-400">Document OCR</span><span className="text-white">Rp 800.000</span></div>
+                            <div className="flex justify-between font-bold border-t border-purple-500/30 pt-2 mt-2"><span className="text-purple-400">Subtotal</span><span className="text-purple-400">Rp 9.600.000</span></div>
+                        </div>
+                    </div>
+                    <div className="p-4 bg-teal-500/10 rounded-lg border border-teal-500/30">
+                        <h4 className="text-teal-400 font-semibold mb-3">🔧 3rd Party</h4>
+                        <div className="space-y-2 text-sm">
+                            <div className="flex justify-between"><span className="text-gray-400">Email Service</span><span className="text-white">Rp 500.000</span></div>
+                            <div className="flex justify-between"><span className="text-gray-400">Error Tracking</span><span className="text-white">Rp 400.000</span></div>
+                            <div className="flex justify-between"><span className="text-gray-400">Analytics</span><span className="text-white">Rp 800.000</span></div>
+                            <div className="flex justify-between font-bold border-t border-teal-500/30 pt-2 mt-2"><span className="text-teal-400">Subtotal</span><span className="text-teal-400">Rp 1.700.000</span></div>
+                        </div>
+                    </div>
+                </div>
+                <div className="p-4 bg-emerald-500/20 rounded-lg border border-emerald-500/50 text-center">
+                    <span className="text-gray-300 text-lg">Total OPEX Bulanan: </span>
+                    <span className="text-emerald-400 text-2xl font-bold">Rp 16.100.000</span>
+                    <span className="text-gray-400 text-sm"> /bulan</span>
+                </div>
+            </Card>
+
+            {/* Pricing Models */}
+            <Card className="bg-gray-900/50 border-gray-700 p-6">
+                <h3 className="text-xl font-bold text-yellow-400 mb-4">💎 Model Pricing</h3>
+                <div className="grid md:grid-cols-3 gap-4">
+                    <div className="p-5 bg-gradient-to-br from-blue-500/20 to-indigo-500/20 rounded-xl border border-blue-500/30">
+                        <div className="text-blue-400 text-sm font-medium mb-1">Option 1</div>
+                        <h4 className="text-white text-lg font-bold mb-2">Jual Putus (One-Time)</h4>
+                        <div className="text-3xl font-bold text-blue-400 mb-3">Rp 1.000.000.000</div>
+                        <p className="text-gray-400 text-sm mb-4">Hingga Rp 1.500.000.000</p>
+                        <ul className="text-gray-300 text-sm space-y-2">
+                            <li>✅ Full source code</li>
+                            <li>✅ White-label ready</li>
+                            <li>✅ Unlimited users</li>
+                            <li>✅ Dokumentasi lengkap</li>
+                            <li>✅ Installation & Setup</li>
+                            <li>✅ Training 3 hari</li>
+                            <li>✅ Support 3 bulan</li>
+                        </ul>
+                    </div>
+                    <div className="p-5 bg-gradient-to-br from-purple-500/20 to-pink-500/20 rounded-xl border border-purple-500/30 relative">
+                        <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-purple-500 text-white text-xs px-3 py-1 rounded-full">RECOMMENDED</div>
+                        <div className="text-purple-400 text-sm font-medium mb-1">Option 2</div>
+                        <h4 className="text-white text-lg font-bold mb-2">SaaS Subscription</h4>
+                        <div className="text-3xl font-bold text-purple-400 mb-1">Rp 35.000.000</div>
+                        <p className="text-gray-400 text-sm mb-4">/bulan (Professional)</p>
+                        <ul className="text-gray-300 text-sm space-y-2">
+                            <li>📦 Starter: Rp 15.000.000/bln</li>
+                            <li>💼 Professional: Rp 35.000.000/bln</li>
+                            <li>🏢 Enterprise: Rp 75.000.000/bln</li>
+                            <li>✅ All updates included</li>
+                            <li>✅ Dedicated support</li>
+                            <li>✅ Annual: diskon 15%</li>
+                        </ul>
+                    </div>
+                    <div className="p-5 bg-gradient-to-br from-orange-500/20 to-red-500/20 rounded-xl border border-orange-500/30">
+                        <div className="text-orange-400 text-sm font-medium mb-1">Option 3</div>
+                        <h4 className="text-white text-lg font-bold mb-2">Outsourcing Team</h4>
+                        <div className="text-3xl font-bold text-orange-400 mb-1">Rp 85.000.000</div>
+                        <p className="text-gray-400 text-sm mb-4">/bulan (Small Team)</p>
+                        <ul className="text-gray-300 text-sm space-y-2">
+                            <li>👤 Part-time: Rp 15.000.000/bln</li>
+                            <li>👨‍💻 Dedicated Dev: Rp 35.000.000/bln</li>
+                            <li>👥 Small Team: Rp 85.000.000/bln</li>
+                            <li>🚀 Full Team: Rp 150.000.000/bln</li>
+                            <li>✅ Ongoing development</li>
+                            <li>✅ Feature updates</li>
+                        </ul>
+                    </div>
+                </div>
+            </Card>
+
+            {/* Additional Services */}
+            <Card className="bg-gray-900/50 border-gray-700 p-6">
+                <h3 className="text-xl font-bold text-pink-400 mb-4">🔧 Layanan Tambahan</h3>
+                <div className="grid md:grid-cols-2 gap-3">
+                    {[
+                        { service: 'Custom Module Development', price: 'Rp 50.000.000 - Rp 150.000.000/modul' },
+                        { service: 'Integration (SAP, Oracle, dll)', price: 'Rp 80.000.000 - Rp 200.000.000' },
+                        { service: 'Custom Report Development', price: 'Rp 10.000.000 - Rp 30.000.000/report' },
+                        { service: 'On-site Training', price: 'Rp 15.000.000/hari' },
+                        { service: 'Annual Support Contract', price: 'Rp 120.000.000 - Rp 240.000.000/tahun' },
+                        { service: 'Security Audit & Pentest', price: 'Rp 50.000.000 - Rp 100.000.000' },
+                    ].map((item, idx) => (
+                        <div key={idx} className="flex justify-between p-3 bg-gray-800/50 rounded-lg border border-gray-700">
+                            <span className="text-gray-300">{item.service}</span>
+                            <span className="text-pink-400 font-medium">{item.price}</span>
+                        </div>
+                    ))}
+                </div>
+            </Card>
         </div>
     )
 }
+
+// ========== MARKET ANALYSIS SECTION ==========
+function MarketAnalysisSection() {
+    return (
+        <div className="space-y-6">
+            <div>
+                <h2 className="text-2xl font-bold text-white mb-2">📊 Market Analysis</h2>
+                <p className="text-gray-400">Analisis pasar GRC Indonesia dan peluang bisnis.</p>
+            </div>
+
+            {/* Market Size */}
+            <Card className="bg-gray-900/50 border-gray-700 p-6">
+                <h3 className="text-xl font-bold text-cyan-400 mb-4">🌍 Ukuran Pasar GRC Indonesia</h3>
+                <div className="grid md:grid-cols-3 gap-4 mb-4">
+                    <div className="p-5 bg-gradient-to-br from-cyan-500/20 to-blue-500/20 rounded-xl border border-cyan-500/30 text-center">
+                        <div className="text-gray-400 text-sm mb-1">Total Addressable Market (TAM)</div>
+                        <div className="text-3xl font-bold text-cyan-400">Rp 4,3 Triliun</div>
+                        <div className="text-gray-500 text-xs mt-1">/tahun</div>
+                    </div>
+                    <div className="p-5 bg-gradient-to-br from-purple-500/20 to-pink-500/20 rounded-xl border border-purple-500/30 text-center">
+                        <div className="text-gray-400 text-sm mb-1">Serviceable Addressable Market (SAM)</div>
+                        <div className="text-3xl font-bold text-purple-400">Rp 800 Miliar</div>
+                        <div className="text-gray-500 text-xs mt-1">/tahun</div>
+                    </div>
+                    <div className="p-5 bg-gradient-to-br from-emerald-500/20 to-teal-500/20 rounded-xl border border-emerald-500/30 text-center">
+                        <div className="text-gray-400 text-sm mb-1">Serviceable Obtainable Market (SOM)</div>
+                        <div className="text-3xl font-bold text-emerald-400">Rp 50-100 Miliar</div>
+                        <div className="text-gray-500 text-xs mt-1">5 tahun proyeksi</div>
+                    </div>
+                </div>
+                <div className="p-3 bg-yellow-500/10 rounded-lg border border-yellow-500/30">
+                    <span className="text-yellow-400 font-medium">📈 CAGR Global: 14% per tahun (2024-2030)</span>
+                </div>
+            </Card>
+
+            {/* Target Industries */}
+            <Card className="bg-gray-900/50 border-gray-700 p-6">
+                <h3 className="text-xl font-bold text-orange-400 mb-4">🏢 Target Industri</h3>
+                <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                        <thead>
+                            <tr className="border-b border-gray-700">
+                                <th className="text-left py-2 text-gray-400">Industri</th>
+                                <th className="text-right py-2 text-gray-400">Jumlah Target</th>
+                                <th className="text-right py-2 text-gray-400">Budget Rata-rata</th>
+                                <th className="text-right py-2 text-gray-400">Market Value</th>
+                            </tr>
+                        </thead>
+                        <tbody className="text-gray-300">
+                            <tr className="border-b border-gray-800"><td className="py-2">🏦 Perbankan</td><td className="text-right">120 bank</td><td className="text-right">Rp 2-10 M/thn</td><td className="text-right text-orange-400">Rp 720 Miliar</td></tr>
+                            <tr className="border-b border-gray-800"><td className="py-2">💳 Fintech</td><td className="text-right">350+ licensed</td><td className="text-right">Rp 500K-2M/thn</td><td className="text-right text-orange-400">Rp 350 Miliar</td></tr>
+                            <tr className="border-b border-gray-800"><td className="py-2">🏥 Healthcare</td><td className="text-right">3.000+ RS</td><td className="text-right">Rp 200K-1M/thn</td><td className="text-right text-orange-400">Rp 900 Miliar</td></tr>
+                            <tr className="border-b border-gray-800"><td className="py-2">📱 Telco</td><td className="text-right">60 perusahaan</td><td className="text-right">Rp 5-20 M/thn</td><td className="text-right text-orange-400">Rp 400 Miliar</td></tr>
+                            <tr className="border-b border-gray-800"><td className="py-2">🏭 Manufacturing</td><td className="text-right">500 enterprise</td><td className="text-right">Rp 500K-2M/thn</td><td className="text-right text-orange-400">Rp 500 Miliar</td></tr>
+                            <tr className="border-b border-gray-800"><td className="py-2">🏛️ BUMN/SOE</td><td className="text-right">107 entities</td><td className="text-right">Rp 2-10 M/thn</td><td className="text-right text-orange-400">Rp 535 Miliar</td></tr>
+                            <tr className="border-b border-gray-800"><td className="py-2">🛒 E-commerce</td><td className="text-right">50 major</td><td className="text-right">Rp 1-5 M/thn</td><td className="text-right text-orange-400">Rp 150 Miliar</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </Card>
+
+            {/* Regulatory Drivers */}
+            <Card className="bg-gray-900/50 border-gray-700 p-6">
+                <h3 className="text-xl font-bold text-red-400 mb-4">⚖️ Regulatory Drivers</h3>
+                <div className="grid md:grid-cols-2 gap-4">
+                    <div className="p-4 bg-red-500/10 rounded-lg border border-red-500/30">
+                        <h4 className="text-red-400 font-bold mb-2">🇮🇩 UU PDP (No. 27/2022)</h4>
+                        <ul className="text-gray-300 text-sm space-y-1">
+                            <li>• Effective: October 2024</li>
+                            <li>• Denda: sampai 2% pendapatan tahunan</li>
+                            <li>• Pidana: sampai 5 tahun penjara</li>
+                            <li>• Maksimal denda: Rp 60 Miliar</li>
+                        </ul>
+                    </div>
+                    <div className="p-4 bg-blue-500/10 rounded-lg border border-blue-500/30">
+                        <h4 className="text-blue-400 font-bold mb-2">🏦 POJK 11/2022</h4>
+                        <ul className="text-gray-300 text-sm space-y-1">
+                            <li>• IT Risk untuk sektor keuangan</li>
+                            <li>• Wajib untuk semua LJK</li>
+                            <li>• Self-assessment & audit</li>
+                            <li>• Reporting ke OJK</li>
+                        </ul>
+                    </div>
+                </div>
+            </Card>
+
+            {/* Revenue Projection */}
+            <Card className="bg-gray-900/50 border-gray-700 p-6">
+                <h3 className="text-xl font-bold text-emerald-400 mb-4">📈 Proyeksi Revenue (5 Tahun)</h3>
+                <div className="grid md:grid-cols-2 gap-6">
+                    <div>
+                        <h4 className="text-gray-400 font-medium mb-3">Skenario Konservatif</h4>
+                        <div className="space-y-2">
+                            {[
+                                { year: 'Tahun 1', customers: 5, revenue: 'Rp 2 Miliar' },
+                                { year: 'Tahun 2', customers: 15, revenue: 'Rp 5,25 Miliar' },
+                                { year: 'Tahun 3', customers: 35, revenue: 'Rp 11,2 Miliar' },
+                                { year: 'Tahun 4', customers: 60, revenue: 'Rp 18 Miliar' },
+                                { year: 'Tahun 5', customers: 100, revenue: 'Rp 28 Miliar' },
+                            ].map((item, idx) => (
+                                <div key={idx} className="flex justify-between p-2 bg-gray-800/50 rounded">
+                                    <span className="text-gray-300">{item.year} ({item.customers} customer)</span>
+                                    <span className="text-emerald-400 font-medium">{item.revenue}</span>
+                                </div>
+                            ))}
+                            <div className="flex justify-between p-3 bg-emerald-500/20 rounded-lg border border-emerald-500/30 font-bold">
+                                <span className="text-white">Total 5 Tahun</span>
+                                <span className="text-emerald-400">Rp 64,45 Miliar</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div>
+                        <h4 className="text-gray-400 font-medium mb-3">Skenario Optimistis</h4>
+                        <div className="space-y-2">
+                            {[
+                                { year: 'Tahun 1', customers: 10, revenue: 'Rp 5 Miliar' },
+                                { year: 'Tahun 2', customers: 30, revenue: 'Rp 13,5 Miliar' },
+                                { year: 'Tahun 3', customers: 70, revenue: 'Rp 28 Miliar' },
+                                { year: 'Tahun 4', customers: 120, revenue: 'Rp 45,6 Miliar' },
+                                { year: 'Tahun 5', customers: 200, revenue: 'Rp 70 Miliar' },
+                            ].map((item, idx) => (
+                                <div key={idx} className="flex justify-between p-2 bg-gray-800/50 rounded">
+                                    <span className="text-gray-300">{item.year} ({item.customers} customer)</span>
+                                    <span className="text-purple-400 font-medium">{item.revenue}</span>
+                                </div>
+                            ))}
+                            <div className="flex justify-between p-3 bg-purple-500/20 rounded-lg border border-purple-500/30 font-bold">
+                                <span className="text-white">Total 5 Tahun</span>
+                                <span className="text-purple-400">Rp 162,1 Miliar</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </Card>
+
+            {/* Competitive Advantage */}
+            <Card className="bg-gray-900/50 border-gray-700 p-6">
+                <h3 className="text-xl font-bold text-yellow-400 mb-4">🏆 Keunggulan Kompetitif</h3>
+                <div className="grid md:grid-cols-2 gap-4">
+                    {[
+                        { title: '🤖 AI-Powered', desc: 'Auto-generate DPIA, RoPA, smart risk assessment' },
+                        { title: '🇮🇩 Indonesia-Focused', desc: 'UU PDP ready, Bahasa Indonesia, regulasi lokal' },
+                        { title: '💰 Cost-Effective', desc: '50-70% lebih murah dari kompetitor global' },
+                        { title: '📦 Comprehensive', desc: '15+ modul terintegrasi dalam satu platform' },
+                        { title: '🔧 Customizable', desc: 'On-premise atau cloud, white-label ready' },
+                        { title: '🤝 Local Support', desc: 'Tim support Indonesia, timezone yang sama' },
+                    ].map((item, idx) => (
+                        <div key={idx} className="p-4 bg-yellow-500/10 rounded-lg border border-yellow-500/30">
+                            <h4 className="text-yellow-400 font-bold mb-1">{item.title}</h4>
+                            <p className="text-gray-300 text-sm">{item.desc}</p>
+                        </div>
+                    ))}
+                </div>
+            </Card>
+
+            {/* Investment Summary */}
+            <Card className="bg-gradient-to-br from-emerald-500/20 to-cyan-500/20 border-emerald-500/30 p-6">
+                <h3 className="text-xl font-bold text-white mb-4">💎 Investment Summary</h3>
+                <div className="grid md:grid-cols-4 gap-4 text-center">
+                    <div>
+                        <div className="text-gray-400 text-sm">Development Cost</div>
+                        <div className="text-2xl font-bold text-emerald-400">Rp 935 Juta</div>
+                    </div>
+                    <div>
+                        <div className="text-gray-400 text-sm">Monthly OPEX</div>
+                        <div className="text-2xl font-bold text-cyan-400">Rp 16,1 Juta</div>
+                    </div>
+                    <div>
+                        <div className="text-gray-400 text-sm">Break-even</div>
+                        <div className="text-2xl font-bold text-yellow-400">12-18 bulan</div>
+                    </div>
+                    <div>
+                        <div className="text-gray-400 text-sm">5-Year Revenue</div>
+                        <div className="text-2xl font-bold text-purple-400">Rp 64-162 M</div>
+                    </div>
+                </div>
+            </Card>
+        </div>
+    )
+}
+
