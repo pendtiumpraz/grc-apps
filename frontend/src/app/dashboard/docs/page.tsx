@@ -2052,7 +2052,6 @@ function MonitoringSection({ title, color }: { title: string; color: string }) {
                 </div>
             </div>
         </div>
-        </div >
     )
 }
 
