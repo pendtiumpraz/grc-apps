@@ -15,6 +15,7 @@ import { usePrivacyOpsDPIAStore } from '@/stores/usePrivacyOpsDPIAStore'
 import { confirmDelete, confirmRestore, confirmPermanentDelete, showSuccess, showError } from '@/lib/sweetalert'
 import { AIDocumentGenerator, AIDocumentAnalyzer, useAIDocuments } from '@/components/ai/AIDocuments'
 import DocumentUploadAnalyzer from '@/components/ai/DocumentUploadAnalyzer'
+import { SmartDocumentGenerator } from '@/components/ai/SmartDocumentGenerator'
 
 export default function DPIAManagement() {
   const [searchTerm, setSearchTerm] = useState('')
@@ -24,6 +25,7 @@ export default function DPIAManagement() {
   const [viewMode, setViewMode] = useState<'list' | 'create' | 'edit' | 'trash'>('list')
   const [deleting, setDeleting] = useState<number | null>(null)
   const [restoring, setRestoring] = useState<number | null>(null)
+  const [showDocGenerator, setShowDocGenerator] = useState(false)
   const [formData, setFormData] = useState({
     name: '',
     processingActivity: '',
@@ -394,6 +396,15 @@ export default function DPIAManagement() {
                       >
                         <Plus className="w-4 h-4 mr-2" />
                         New DPIA
+                      </Button>
+                    )}
+                    {viewMode === 'list' && (
+                      <Button
+                        onClick={() => setShowDocGenerator(true)}
+                        className="bg-purple-600 hover:bg-purple-700 text-white"
+                      >
+                        <Wand2 className="w-4 h-4 mr-2" />
+                        Generate Document
                       </Button>
                     )}
                   </div>
@@ -897,6 +908,15 @@ export default function DPIAManagement() {
         moduleType={aiModuleType}
         moduleData={aiModuleData}
         moduleName={aiModuleName}
+      />
+
+      {/* Smart Document Generator Modal */}
+      <SmartDocumentGenerator
+        isOpen={showDocGenerator}
+        onClose={() => setShowDocGenerator(false)}
+        moduleType="dpia"
+        moduleName="DPIA (Data Protection Impact Assessment)"
+        moduleData={selectedDPIA || {}}
       />
     </div>
   )

@@ -15,6 +15,7 @@ import { useVulnerabilityStore } from '@/stores/useVulnerabilityStore'
 import { confirmDelete, confirmRestore, confirmPermanentDelete, showSuccess, showError } from '@/lib/sweetalert'
 import { AIDocumentGenerator, AIDocumentAnalyzer, useAIDocuments }
 import DocumentUploadAnalyzer from '@/components/ai/DocumentUploadAnalyzer' from '@/components/ai/AIDocuments'
+import { SmartDocumentGenerator } from '@/components/ai/SmartDocumentGenerator'
 
 export default function VulnerabilitiesPage() {
   const [searchTerm, setSearchTerm] = useState('')
@@ -735,4 +736,5 @@ export default function VulnerabilitiesPage() {
     </div>
   )
 }
+
 

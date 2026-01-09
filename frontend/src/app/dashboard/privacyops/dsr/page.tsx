@@ -16,6 +16,7 @@ import { confirmDelete, confirmRestore, confirmPermanentDelete, showSuccess, sho
 import DocumentExportModal, { useDocumentExport } from '@/components/documents/DocumentExportModal'
 import { AIDocumentGenerator, AIDocumentAnalyzer, useAIDocuments } from '@/components/ai/AIDocuments'
 import DocumentUploadAnalyzer from '@/components/ai/DocumentUploadAnalyzer'
+import { SmartDocumentGenerator } from '@/components/ai/SmartDocumentGenerator'
 
 export default function DSRPage() {
   const [searchTerm, setSearchTerm] = useState('')
@@ -839,3 +840,4 @@ export default function DSRPage() {
     </div>
   )
 }
+

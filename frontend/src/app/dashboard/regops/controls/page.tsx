@@ -13,6 +13,7 @@ import { useControlStore } from '@/stores/useControlStore'
 import { confirmDelete, showSuccess, showError } from '@/lib/sweetalert'
 import { AIDocumentGenerator, AIDocumentAnalyzer, useAIDocuments }
 import DocumentUploadAnalyzer from '@/components/ai/DocumentUploadAnalyzer' from '@/components/ai/AIDocuments'
+import { SmartDocumentGenerator } from '@/components/ai/SmartDocumentGenerator'
 import { Wand2, Sparkles } from 'lucide-react'
 
 export default function ControlManagement() {
@@ -527,4 +528,5 @@ export default function ControlManagement() {
     </div>
   )
 }
+
 
